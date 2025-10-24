@@ -13,4 +13,9 @@ public sealed class LoggingOptions
     public bool UseSeq { get; set; }
     public string SeqUrl { get; set; } = "http://localhost:5341";
     public string? SeqApiKey { get; set; }
+    public Dictionary<string, LogEventLevel> LevelOverrides { get; } = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["Microsoft"] = LogEventLevel.Warning,
+        ["System"] = LogEventLevel.Warning
+    };
 }

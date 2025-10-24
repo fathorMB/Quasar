@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Logging;
+using System.Diagnostics;
 using System.Reflection;
 
 namespace Quasar.Cqrs;
@@ -5,14 +7,25 @@ namespace Quasar.Cqrs;
 public sealed class Mediator : IMediator
 {
     private readonly IServiceProvider _provider;
+    private readonly ILogger<Mediator> _logger;
 
-    public Mediator(IServiceProvider provider) => _provider = provider;
+    public Mediator(IServiceProvider provider, ILogger<Mediator> logger)
+    {
+        _provider = provider;
+        _logger = logger;
+    }
 
     public Task<TResult> Send<TResult>(ICommand<TResult> command, CancellationToken cancellationToken = default)
-        => InvokePipeline<TResult>(command!, isCommand: true, cancellationToken);
+    {
+        _logger.LogDebug("Dispatching command {CommandType}", command?.GetType().Name ?? typeof(TResult).Name);
+        return InvokePipeline<TResult>(command!, isCommand: true, cancellationToken);
+    }
 
     public Task<TResult> Send<TResult>(IQuery<TResult> query, CancellationToken cancellationToken = default)
-        => InvokePipeline<TResult>(query!, isCommand: false, cancellationToken);
+    {
+        _logger.LogDebug("Dispatching query {QueryType}", query?.GetType().Name ?? typeof(TResult).Name);
+        return InvokePipeline<TResult>(query!, isCommand: false, cancellationToken);
+    }
 
     private async Task<TResult> InvokePipeline<TResult>(object request, bool isCommand, CancellationToken ct)
     {
@@ -20,12 +33,18 @@ public sealed class Mediator : IMediator
 
         var requestType = request.GetType();
 
+        _logger.LogTrace("Resolving handler for {RequestType}", requestType.Name);
+
         var handlerType = isCommand
             ? typeof(ICommandHandler<,>).MakeGenericType(requestType, typeof(TResult))
             : typeof(IQueryHandler<,>).MakeGenericType(requestType, typeof(TResult));
 
-        var handler = _provider.GetService(handlerType)
-                     ?? throw new InvalidOperationException($"Handler not registered for {requestType.Name} -> {typeof(TResult).Name}");
+        var handler = _provider.GetService(handlerType);
+        if (handler is null)
+        {
+            _logger.LogError("Handler not registered for {RequestType} -> {ResponseType}", requestType.Name, typeof(TResult).Name);
+            throw new InvalidOperationException($"Handler not registered for {requestType.Name} -> {typeof(TResult).Name}");
+        }
 
         var behaviorsType = typeof(IEnumerable<>).MakeGenericType(typeof(IPipelineBehavior<,>).MakeGenericType(requestType, typeof(TResult)));
         var behaviors = (IEnumerable<object>?)_provider.GetService(behaviorsType) ?? Array.Empty<object>();
@@ -43,9 +62,26 @@ public sealed class Mediator : IMediator
             var handle = behaviorType.GetMethod("Handle")
                          ?? throw new InvalidOperationException($"Behavior {behaviorType.Name} does not implement Handle method");
             var currentNext = next;
-            next = () => (Task<TResult>)handle.Invoke(behavior, new object?[] { request, ct, currentNext })!;
+            next = () =>
+            {
+                _logger.LogTrace("Executing behavior {Behavior} for {RequestType}", behaviorType.Name, requestType.Name);
+                return (Task<TResult>)handle.Invoke(behavior, new object?[] { request, ct, currentNext })!;
+            };
         }
 
-        return await next().ConfigureAwait(false);
+        var sw = Stopwatch.StartNew();
+        try
+        {
+            var result = await next().ConfigureAwait(false);
+            sw.Stop();
+            _logger.LogDebug("Completed {RequestType} in {Elapsed}ms", requestType.Name, sw.Elapsed.TotalMilliseconds);
+            return result;
+        }
+        catch (Exception ex)
+        {
+            sw.Stop();
+            _logger.LogError(ex, "Error executing {RequestType} after {Elapsed}ms", requestType.Name, sw.Elapsed.TotalMilliseconds);
+            throw;
+        }
     }
 }

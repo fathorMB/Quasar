@@ -14,18 +14,21 @@ using Quasar.Projections.Abstractions;
 using Quasar.Identity.Web;
 using Quasar.Identity.Persistence.Relational.EfCore;
 using Quasar.Logging;
+using Serilog.Events;
 using System.IO;
 
 var builder = WebApplication.CreateBuilder(args);
 var services = builder.Services;
 var configuration = builder.Configuration;
 
-builder.Host.UseQuasarSerilog(options =>
+builder.Host.UseQuasarSerilog(configuration, "Logging", options =>
 {
     options.UseConsole = true;
-    options.UseFile = false;
-    options.UseSeq = false;
-    //options.FilePath = Path.Combine(AppContext.BaseDirectory, "logs", "quasar.log");
+    options.UseFile = true;
+    options.FilePath = Path.Combine(AppContext.BaseDirectory, "logs", "quasar.log");
+    options.LevelOverrides["Microsoft"] = LogEventLevel.Warning;
+    options.LevelOverrides["Microsoft.EntityFrameworkCore"] = LogEventLevel.Warning;
+    options.LevelOverrides["Quasar"] = LogEventLevel.Debug;
 });
 
 // CQRS + ES wiring
