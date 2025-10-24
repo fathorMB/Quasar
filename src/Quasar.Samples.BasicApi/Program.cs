@@ -18,6 +18,7 @@ using Quasar.Logging;
 using Quasar.Seeding;
 using Serilog.Events;
 using System.IO;
+using Quasar.Samples.BasicApi.Swagger;
 
 var builder = WebApplication.CreateBuilder(args);
 var services = builder.Services;
@@ -56,7 +57,10 @@ services.AddQuasarEventSerializer(typeMap);
 
 // Swagger
 services.AddEndpointsApiExplorer();
-services.AddSwaggerGen();
+services.AddSwaggerGen(options =>
+{
+    options.SchemaFilter<IdentitySchemaExamples>();
+});
 
 // Identity core services (must be registered before Build)
 services.AddQuasarIdentity(o =>
