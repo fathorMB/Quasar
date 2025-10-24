@@ -84,7 +84,7 @@ switch (storeMode)
         services.AddScoped<object, Quasar.Identity.Persistence.Relational.EfCore.IdentityProjections>();
         services.AddPollingProjector("MainProjector", new[] { SampleConfig.CounterStreamId, SampleConfig.CartStreamId }, TimeSpan.FromMilliseconds(500));
         // Identity read models
-        services.UseEfCoreSqlServerReadModels<IdentityReadModelContext>(sqlConnString);
+        services.UseEfCoreSqlServerReadModels<IdentityReadModelContext>(sqlConnString, registerRepositories: false);
         break;
     case "sqlite":
         var sqliteConnString = configuration.GetConnectionString("QuasarSqlite") ?? "Data Source=quasar.db";
@@ -103,7 +103,7 @@ switch (storeMode)
         services.AddScoped<object, Quasar.Identity.Persistence.Relational.EfCore.IdentityProjections>();
         services.AddPollingProjector("MainProjector", new[] { SampleConfig.CounterStreamId, SampleConfig.CartStreamId }, TimeSpan.FromMilliseconds(500));
         // Identity read models
-        services.UseEfCoreSqliteReadModels<IdentityReadModelContext>(sqliteConnString);
+        services.UseEfCoreSqliteReadModels<IdentityReadModelContext>(sqliteConnString, registerRepositories: false);
         break;
     default:
         services.UseInMemoryEventStore();
@@ -117,7 +117,7 @@ switch (storeMode)
         services.AddScoped<object, Quasar.Identity.Persistence.Relational.EfCore.IdentityProjections>();
         services.AddPollingProjector("MainProjector", new[] { SampleConfig.CounterStreamId, SampleConfig.CartStreamId }, TimeSpan.FromMilliseconds(500));
         // Identity read models
-        services.UseEfCoreSqliteReadModels<IdentityReadModelContext>(demoSqlite);
+        services.UseEfCoreSqliteReadModels<IdentityReadModelContext>(demoSqlite, registerRepositories: false);
         break;
 }
 
@@ -142,6 +142,8 @@ using (var scope = app.Services.CreateScope())
     if (idDb is not null) await idDb.Database.MigrateAsync();
 }
 
+await SeedDemoAclAsync(app.Services);
+
 // Identity endpoints
 app.MapQuasarIdentityEndpoints();
 
@@ -156,7 +158,7 @@ app.UseSwaggerUI(options =>
 app.MapPost("/counter/increment", async (IMediator mediator, int amount, HttpRequest req) =>
 {
     if (amount <= 0) return Results.BadRequest("amount is required");
-    var subject = req.Headers.TryGetValue("X-Subject", out var s) && Guid.TryParse(s, out var sid) ? sid : Guid.NewGuid();
+    var subject = req.Headers.TryGetValue("X-Subject", out var s) && Guid.TryParse(s, out var sid) ? sid : SampleConfig.DemoUserId;
     var result = await mediator.Send(new IncrementCounterCommand(subject, amount));
     return Results.Ok(new { count = result });
 }).WithName("IncrementCounter")
@@ -173,7 +175,7 @@ app.MapGet("/counter", async (IReadRepository<CounterReadModel> repo) =>
 app.MapPost("/cart/add", async (IMediator mediator, Guid productId, int quantity, HttpRequest req) =>
 {
     if (productId == Guid.Empty || quantity <= 0) return Results.BadRequest("productId and quantity are required");
-    var subject = req.Headers.TryGetValue("X-Subject", out var s) && Guid.TryParse(s, out var sid) ? sid : Guid.NewGuid();
+    var subject = req.Headers.TryGetValue("X-Subject", out var s) && Guid.TryParse(s, out var sid) ? sid : SampleConfig.DemoUserId;
     var total = await mediator.Send(new AddCartItemCommand(subject, productId, quantity));
     return Results.Ok(new { totalItems = total });
 }).WithName("AddCartItem").WithTags("Cart");
@@ -245,4 +247,52 @@ app.MapPost("/debug/rebuild/cart", async (IServiceProvider sp) =>
 }).WithName("DebugRebuildCart").WithTags("Debug");
 
 app.Run();
+
+
+static async Task SeedDemoAclAsync(IServiceProvider services)
+{
+    using var scope = services.CreateScope();
+    var db = scope.ServiceProvider.GetService<IdentityReadModelContext>();
+    if (db is null) return;
+    var userId = SampleConfig.DemoUserId;
+    var user = await db.Users.FirstOrDefaultAsync(u => u.Id == userId);
+    if (user is null)
+    {
+        user = new IdentityUserReadModel
+        {
+            Id = userId,
+            Username = "swagger-demo",
+            Email = "swagger-demo@example.com"
+        };
+        db.Users.Add(user);
+    }
+
+    var role = await db.Roles.FirstOrDefaultAsync(r => r.Name == SampleConfig.DemoRoleName);
+    Guid roleId;
+    if (role is null)
+    {
+        roleId = SampleConfig.DemoRoleId;
+        db.Roles.Add(new IdentityRoleReadModel { Id = roleId, Name = SampleConfig.DemoRoleName });
+    }
+    else
+    {
+        roleId = role.Id;
+    }
+
+    if (!await db.RolePermissions.AnyAsync(rp => rp.RoleId == roleId && rp.Permission == SampleConfig.CartAddPermission))
+    {
+        db.RolePermissions.Add(new IdentityRolePermissionReadModel { RoleId = roleId, Permission = SampleConfig.CartAddPermission });
+    }
+
+    if (!await db.UserRoles.AnyAsync(ur => ur.UserId == userId && ur.RoleId == roleId))
+    {
+        db.UserRoles.Add(new IdentityUserRoleReadModel { UserId = userId, RoleId = roleId });
+    }
+
+    await db.SaveChangesAsync();
+}
+
+
+
+
 

@@ -80,7 +80,7 @@ public static class DependencyInjection
     }
 
     // Read models via EF Core
-    public static IServiceCollection UseEfCoreSqlServerReadModels<TContext>(this IServiceCollection services, string connectionString)
+    public static IServiceCollection UseEfCoreSqlServerReadModels<TContext>(this IServiceCollection services, string connectionString, bool registerRepositories = true)
         where TContext : ReadModelContext
     {
         services.AddDbContext<TContext>(o =>
@@ -88,12 +88,15 @@ public static class DependencyInjection
             o.UseSqlServer(connectionString, b => b.MigrationsAssembly(typeof(TContext).Assembly.FullName));
             o.ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning));
         });
-        services.AddScoped<ReadModelContext>(sp => sp.GetRequiredService<TContext>());
-        services.AddScoped(typeof(IReadRepository<>), typeof(EfReadRepository<>));
+        if (registerRepositories)
+        {
+            services.AddScoped<ReadModelContext>(sp => sp.GetRequiredService<TContext>());
+            services.AddScoped(typeof(IReadRepository<>), typeof(EfReadRepository<>));
+        }
         return services;
     }
 
-    public static IServiceCollection UseEfCoreSqliteReadModels<TContext>(this IServiceCollection services, string connectionString)
+    public static IServiceCollection UseEfCoreSqliteReadModels<TContext>(this IServiceCollection services, string connectionString, bool registerRepositories = true)
         where TContext : ReadModelContext
     {
         services.AddDbContext<TContext>(o =>
@@ -101,8 +104,11 @@ public static class DependencyInjection
             o.UseSqlite(connectionString, b => b.MigrationsAssembly(typeof(TContext).Assembly.FullName));
             o.ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning));
         });
-        services.AddScoped<ReadModelContext>(sp => sp.GetRequiredService<TContext>());
-        services.AddScoped(typeof(IReadRepository<>), typeof(EfReadRepository<>));
+        if (registerRepositories)
+        {
+            services.AddScoped<ReadModelContext>(sp => sp.GetRequiredService<TContext>());
+            services.AddScoped(typeof(IReadRepository<>), typeof(EfReadRepository<>));
+        }
         return services;
     }
 
