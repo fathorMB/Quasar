@@ -13,6 +13,7 @@ using System.Data.Common;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Quasar.Security;
 using Quasar.Persistence.Abstractions;
+using Quasar.Persistence.TimeSeries.Timescale;
 
 namespace Quasar.Web;
 
@@ -137,6 +138,12 @@ public static class DependencyInjection
             projectorName,
             streamIds,
             interval));
+        return services;
+    }
+
+    public static IServiceCollection UseTimescaleTimeSeries(this IServiceCollection services, Action<TimescaleOptions> configure)
+    {
+        TimescaleServiceCollectionExtensions.UseTimescaleTimeSeries(services, configure);
         return services;
     }
 }

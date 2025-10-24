@@ -1,11 +1,16 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.0-rc.2.25502.107" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.0-rc.2.25502.107" />
+    <PackageReference Include="Npgsql" Version="8.0.3" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\Quasar.Persistence.Abstractions\Quasar.Persistence.Abstractions.csproj" />
+    <ProjectReference Include="..\Quasar.Core\Quasar.Core.csproj" />
   </ItemGroup>
 </Project>
-
