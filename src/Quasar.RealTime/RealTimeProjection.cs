@@ -5,16 +5,25 @@ using Quasar.Projections.Abstractions;
 
 namespace Quasar.RealTime;
 
+/// <summary>
+/// Maps events into time series points suitable for persistence.
+/// </summary>
 public interface ITimeSeriesEventAdapter<in TEvent>
 {
     IEnumerable<TimeSeriesPoint> Map(TEvent @event);
 }
 
+/// <summary>
+/// Maps events into payloads sent to real-time subscribers.
+/// </summary>
 public interface IRealTimePayloadAdapter<in TEvent, TPayload>
 {
     TPayload Map(TEvent @event);
 }
 
+/// <summary>
+/// Projection that persists events as time series points and broadcasts a real-time payload.
+/// </summary>
 public sealed class RealTimeProjection<TEvent, TPayload> : IProjection<TEvent>
     where TEvent : IEvent
 {
@@ -24,6 +33,9 @@ public sealed class RealTimeProjection<TEvent, TPayload> : IProjection<TEvent>
     private readonly IRealTimePayloadAdapter<TEvent, TPayload> _payloadAdapter;
     private readonly string _metric;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="RealTimeProjection{TEvent, TPayload}"/> class.
+    /// </summary>
     public RealTimeProjection(
         string metric,
         ITimeSeriesWriter writer,
@@ -38,6 +50,7 @@ public sealed class RealTimeProjection<TEvent, TPayload> : IProjection<TEvent>
         _payloadAdapter = payloadAdapter;
     }
 
+    /// <inheritdoc />
     public async Task HandleAsync(TEvent @event, CancellationToken cancellationToken = default)
     {
         var points = _seriesAdapter.Map(@event).ToArray();

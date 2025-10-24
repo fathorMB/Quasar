@@ -3,11 +3,15 @@ using Quasar.EventSourcing.Abstractions;
 
 namespace Quasar.EventSourcing.InMemory;
 
+/// <summary>
+/// Simple in-memory event store implementation intended for tests and demos.
+/// </summary>
 public sealed class InMemoryEventStore : IEventStore
 {
     private readonly ConcurrentDictionary<Guid, List<EventEnvelope>> _streams = new();
     private readonly object _gate = new();
 
+    /// <inheritdoc />
     public Task AppendAsync(Guid streamId, int expectedVersion, IEnumerable<IEvent> events, CancellationToken cancellationToken = default)
     {
         lock (_gate)
@@ -27,6 +31,7 @@ public sealed class InMemoryEventStore : IEventStore
         return Task.CompletedTask;
     }
 
+    /// <inheritdoc />
     public Task<IReadOnlyList<EventEnvelope>> ReadStreamAsync(Guid streamId, int fromVersion = 0, CancellationToken cancellationToken = default)
     {
         if (!_streams.TryGetValue(streamId, out var list))
@@ -36,4 +41,3 @@ public sealed class InMemoryEventStore : IEventStore
         return Task.FromResult<IReadOnlyList<EventEnvelope>>(result);
     }
 }
-

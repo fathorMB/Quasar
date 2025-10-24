@@ -17,9 +17,16 @@ using Quasar.Persistence.TimeSeries.Timescale;
 
 namespace Quasar.Web;
 
+/// <summary>
+/// Extension methods for wiring Quasar components into an <see cref="IServiceCollection"/>.
+/// </summary>
 public static class DependencyInjection
 {
-    // CQRS + Mediator + default behaviors
+    /// <summary>
+    /// Registers the mediator pipeline and, optionally, the default behaviors.
+    /// </summary>
+    /// <param name="services">The service collection to configure.</param>
+    /// <param name="addDefaultBehaviors">When <see langword="true"/> registers validation, transaction, and authorization behaviors.</param>
     public static IServiceCollection AddQuasarMediator(this IServiceCollection services, bool addDefaultBehaviors = true)
     {
         services.AddScoped<IMediator, Mediator>();
@@ -32,20 +39,27 @@ public static class DependencyInjection
         return services;
     }
 
-    // Event sourcing core services
+    /// <summary>
+    /// Registers event-sourcing repositories and supporting infrastructure.
+    /// </summary>
     public static IServiceCollection AddQuasarEventSourcingCore(this IServiceCollection services)
     {
         services.AddScoped(typeof(IEventSourcedRepository<>), typeof(EventSourcedRepository<>));
         return services;
     }
 
+    /// <summary>
+    /// Registers a <see cref="IEventSerializer"/> using the provided type map.
+    /// </summary>
     public static IServiceCollection AddQuasarEventSerializer(this IServiceCollection services, IEventTypeMap typeMap)
     {
         services.AddSingleton<IEventSerializer>(sp => new SystemTextJsonEventSerializer(typeMap));
         return services;
     }
 
-    // Providers
+    /// <summary>
+    /// Configures SQL Server backed event store components.
+    /// </summary>
     public static IServiceCollection UseSqlServerEventStore(this IServiceCollection services, SqlEventStoreOptions options)
     {
         services.AddSingleton(options);
@@ -54,18 +68,27 @@ public static class DependencyInjection
         return services;
     }
 
+    /// <summary>
+    /// Registers the in-memory event store implementation. Intended for development and testing scenarios.
+    /// </summary>
     public static IServiceCollection UseInMemoryEventStore(this IServiceCollection services)
     {
         services.AddSingleton<IEventStore, InMemoryEventStore>();
         return services;
     }
 
+    /// <summary>
+    /// Registers the SQL Server command transaction implementation.
+    /// </summary>
     public static IServiceCollection UseSqlServerCommandTransaction(this IServiceCollection services)
     {
         services.AddScoped<ICommandTransaction, SqlCommandTransaction>();
         return services;
     }
 
+    /// <summary>
+    /// Configures SQLite backed event store components.
+    /// </summary>
     public static IServiceCollection UseSqliteEventStore(this IServiceCollection services, SqliteEventStoreOptions options)
     {
         services.AddSingleton(options);
@@ -74,13 +97,18 @@ public static class DependencyInjection
         return services;
     }
 
+    /// <summary>
+    /// Registers the SQLite command transaction implementation.
+    /// </summary>
     public static IServiceCollection UseSqliteCommandTransaction(this IServiceCollection services)
     {
         services.AddScoped<ICommandTransaction, SqliteCommandTransaction>();
         return services;
     }
 
-    // Read models via EF Core
+    /// <summary>
+    /// Configures EF Core-backed read models using SQL Server.
+    /// </summary>
     public static IServiceCollection UseEfCoreSqlServerReadModels<TContext>(this IServiceCollection services, string connectionString, bool registerRepositories = true)
         where TContext : ReadModelContext
     {
@@ -97,6 +125,9 @@ public static class DependencyInjection
         return services;
     }
 
+    /// <summary>
+    /// Configures EF Core-backed read models using SQLite.
+    /// </summary>
     public static IServiceCollection UseEfCoreSqliteReadModels<TContext>(this IServiceCollection services, string connectionString, bool registerRepositories = true)
         where TContext : ReadModelContext
     {
@@ -113,24 +144,35 @@ public static class DependencyInjection
         return services;
     }
 
-    // Projections
+    /// <summary>
+    /// Placeholder for future projection configuration.
+    /// </summary>
     public static IServiceCollection AddProjections(this IServiceCollection services)
     {
         return services;
     }
 
+    /// <summary>
+    /// Configures SQL Server backed checkpoint storage for projections.
+    /// </summary>
     public static IServiceCollection UseSqlServerProjectionCheckpoints(this IServiceCollection services, Func<DbConnection> connectionFactory)
     {
         services.AddSingleton<ICheckpointStore>(sp => new SqlServerCheckpointStore(connectionFactory));
         return services;
     }
 
+    /// <summary>
+    /// Configures SQLite backed checkpoint storage for projections.
+    /// </summary>
     public static IServiceCollection UseSqliteProjectionCheckpoints(this IServiceCollection services, Func<DbConnection> connectionFactory)
     {
         services.AddSingleton<ICheckpointStore>(sp => new SqliteCheckpointStore(connectionFactory));
         return services;
     }
 
+    /// <summary>
+    /// Registers a background service that polls the event store and dispatches projections.
+    /// </summary>
     public static IServiceCollection AddPollingProjector(this IServiceCollection services, string projectorName, IEnumerable<Guid> streamIds, TimeSpan? interval = null)
     {
         services.AddHostedService(sp => new PollingProjector(
@@ -141,6 +183,9 @@ public static class DependencyInjection
         return services;
     }
 
+    /// <summary>
+    /// Adds TimescaleDB based time series support.
+    /// </summary>
     public static IServiceCollection UseTimescaleTimeSeries(this IServiceCollection services, Action<TimescaleOptions> configure)
     {
         TimescaleServiceCollectionExtensions.UseTimescaleTimeSeries(services, configure);

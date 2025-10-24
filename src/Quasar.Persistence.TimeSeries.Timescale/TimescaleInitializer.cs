@@ -3,8 +3,14 @@ using System.Text;
 
 namespace Quasar.Persistence.TimeSeries.Timescale;
 
+/// <summary>
+/// Handles database and schema initialization for TimescaleDB integrations.
+/// </summary>
 internal static class TimescaleInitializer
 {
+    /// <summary>
+    /// Ensures that the target database and hypertable exist for the supplied <paramref name="options"/>.
+    /// </summary>
     public static async Task EnsureSchemaAsync(TimescaleOptions options, CancellationToken cancellationToken = default)
     {
         await EnsureDatabaseExistsAsync(options, cancellationToken).ConfigureAwait(false);

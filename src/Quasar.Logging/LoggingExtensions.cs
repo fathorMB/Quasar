@@ -7,8 +7,14 @@ using System.IO;
 
 namespace Quasar.Logging;
 
+/// <summary>
+/// Helper methods for configuring Serilog for Quasar applications.
+/// </summary>
 public static class LoggingExtensions
 {
+    /// <summary>
+    /// Configures Serilog using programmatic options.
+    /// </summary>
     public static IHostBuilder UseQuasarSerilog(this IHostBuilder builder, Action<LoggingOptions>? configure = null)
     {
         var options = new LoggingOptions();
@@ -44,6 +50,9 @@ public static class LoggingExtensions
         }, writeToProviders: true);
     }
 
+    /// <summary>
+    /// Configures Serilog using configuration binding and optional overrides.
+    /// </summary>
     public static IHostBuilder UseQuasarSerilog(this IHostBuilder builder, IConfiguration configuration, string sectionName = "Logging", Action<LoggingOptions>? configure = null)
     {
         return builder.UseQuasarSerilog(options =>

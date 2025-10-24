@@ -4,29 +4,42 @@ using System.Reflection;
 
 namespace Quasar.Cqrs;
 
+/// <summary>
+/// Default mediator implementation that resolves handlers and executes behaviors from the dependency injection container.
+/// </summary>
 public sealed class Mediator : IMediator
 {
     private readonly IServiceProvider _provider;
     private readonly ILogger<Mediator> _logger;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="Mediator"/> class.
+    /// </summary>
+    /// <param name="provider">Service provider used to resolve handlers and behaviors.</param>
+    /// <param name="logger">Logger instance used for diagnostic output.</param>
     public Mediator(IServiceProvider provider, ILogger<Mediator> logger)
     {
         _provider = provider;
         _logger = logger;
     }
 
+    /// <inheritdoc />
     public Task<TResult> Send<TResult>(ICommand<TResult> command, CancellationToken cancellationToken = default)
     {
         _logger.LogDebug("Dispatching command {CommandType}", command?.GetType().Name ?? typeof(TResult).Name);
         return InvokePipeline<TResult>(command!, isCommand: true, cancellationToken);
     }
 
+    /// <inheritdoc />
     public Task<TResult> Send<TResult>(IQuery<TResult> query, CancellationToken cancellationToken = default)
     {
         _logger.LogDebug("Dispatching query {QueryType}", query?.GetType().Name ?? typeof(TResult).Name);
         return InvokePipeline<TResult>(query!, isCommand: false, cancellationToken);
     }
 
+    /// <summary>
+    /// Executes the handler pipeline for the provided <paramref name="request"/>.
+    /// </summary>
     private async Task<TResult> InvokePipeline<TResult>(object request, bool isCommand, CancellationToken ct)
     {
         if (request is null) throw new ArgumentNullException(nameof(request));
