@@ -13,10 +13,20 @@ using Microsoft.EntityFrameworkCore;
 using Quasar.Projections.Abstractions;
 using Quasar.Identity.Web;
 using Quasar.Identity.Persistence.Relational.EfCore;
+using Quasar.Logging;
+using System.IO;
 
 var builder = WebApplication.CreateBuilder(args);
 var services = builder.Services;
 var configuration = builder.Configuration;
+
+builder.Host.UseQuasarSerilog(options =>
+{
+    options.UseConsole = true;
+    options.UseFile = false;
+    options.UseSeq = false;
+    //options.FilePath = Path.Combine(AppContext.BaseDirectory, "logs", "quasar.log");
+});
 
 // CQRS + ES wiring
 services.AddQuasarMediator();
