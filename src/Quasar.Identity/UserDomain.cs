@@ -65,6 +65,7 @@ public sealed class UserAggregate : AggregateRoot
 
 public sealed record RegisterUserCommand(string Username, string Email, string Password) : ICommand<Guid>;
 public sealed record AssignRoleToUserCommand(Guid UserId, Guid RoleId) : ICommand<bool>;
+public sealed record RevokeRoleFromUserCommand(Guid UserId, Guid RoleId) : ICommand<bool>;
 
 public sealed class RoleAggregate : AggregateRoot
 {
@@ -172,6 +173,21 @@ public sealed class AssignRoleToUserHandler : ICommandHandler<AssignRoleToUserCo
         var user = await _users.GetAsync(command.UserId, cancellationToken);
         if (user.Id == Guid.Empty) return false;
         user.AssignRole(command.RoleId);
+        await _users.SaveAsync(user, cancellationToken);
+        return true;
+    }
+}
+
+public sealed class RevokeRoleFromUserHandler : ICommandHandler<RevokeRoleFromUserCommand, bool>
+{
+    private readonly IEventSourcedRepository<UserAggregate> _users;
+    public RevokeRoleFromUserHandler(IEventSourcedRepository<UserAggregate> users) => _users = users;
+
+    public async Task<bool> Handle(RevokeRoleFromUserCommand command, CancellationToken cancellationToken = default)
+    {
+        var user = await _users.GetAsync(command.UserId, cancellationToken);
+        if (user.Id == Guid.Empty) return false;
+        user.RevokeRole(command.RoleId);
         await _users.SaveAsync(user, cancellationToken);
         return true;
     }

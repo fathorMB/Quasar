@@ -10,6 +10,7 @@ public sealed class IdentityProjections :
     IProjection<UserRoleAssigned>,
     IProjection<UserRoleRevoked>,
     IProjection<RoleCreated>,
+    IProjection<RoleRenamed>,
     IProjection<RolePermissionGranted>,
     IProjection<RolePermissionRevoked>
 {
@@ -70,6 +71,16 @@ public sealed class IdentityProjections :
         if (!exists)
         {
             _db.Roles.Add(new IdentityRoleReadModel { Id = @event.RoleId, Name = @event.Name });
+            await _db.SaveChangesAsync(cancellationToken);
+        }
+    }
+
+    public async Task HandleAsync(RoleRenamed @event, CancellationToken cancellationToken = default)
+    {
+        var role = await _db.Roles.FirstOrDefaultAsync(x => x.Id == @event.RoleId, cancellationToken);
+        if (role is not null)
+        {
+            role.Name = @event.Name;
             await _db.SaveChangesAsync(cancellationToken);
         }
     }

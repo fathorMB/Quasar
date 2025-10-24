@@ -33,6 +33,7 @@ IEventTypeMap typeMap = new DictionaryEventTypeMap(new[]
     ("identity.user_role_assigned", typeof(Quasar.Identity.UserRoleAssigned)),
     ("identity.user_role_revoked", typeof(Quasar.Identity.UserRoleRevoked)),
     ("identity.role_created", typeof(Quasar.Identity.RoleCreated)),
+    ("identity.role_renamed", typeof(Quasar.Identity.RoleRenamed)),
     ("identity.role_permission_granted", typeof(Quasar.Identity.RolePermissionGranted)),
     ("identity.role_permission_revoked", typeof(Quasar.Identity.RolePermissionRevoked))
 });
