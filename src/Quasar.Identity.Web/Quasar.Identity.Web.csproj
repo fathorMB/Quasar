@@ -7,6 +7,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Quasar.Identity\Quasar.Identity.csproj" />
     <ProjectReference Include="..\Quasar.Identity.Persistence.Relational.EfCore\Quasar.Identity.Persistence.Relational.EfCore.csproj" />
+    <ProjectReference Include="..\Quasar.Security\Quasar.Security.csproj" />
   </ItemGroup>
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />

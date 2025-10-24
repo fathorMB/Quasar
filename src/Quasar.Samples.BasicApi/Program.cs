@@ -29,7 +29,12 @@ IEventTypeMap typeMap = new DictionaryEventTypeMap(new[]
     ("cart.item_added", typeof(CartItemAdded)),
     ("cart.item_removed", typeof(CartItemRemoved)),
     ("identity.user_registered", typeof(Quasar.Identity.UserRegistered)),
-    ("identity.user_password_set", typeof(Quasar.Identity.UserPasswordSet))
+    ("identity.user_password_set", typeof(Quasar.Identity.UserPasswordSet)),
+    ("identity.user_role_assigned", typeof(Quasar.Identity.UserRoleAssigned)),
+    ("identity.user_role_revoked", typeof(Quasar.Identity.UserRoleRevoked)),
+    ("identity.role_created", typeof(Quasar.Identity.RoleCreated)),
+    ("identity.role_permission_granted", typeof(Quasar.Identity.RolePermissionGranted)),
+    ("identity.role_permission_revoked", typeof(Quasar.Identity.RolePermissionRevoked))
 });
 services.AddQuasarEventSerializer(typeMap);
 
@@ -111,7 +116,6 @@ services.AddScoped<IQueryHandler<GetCartQuery, CartReadModel>, GetCartHandler>()
 services.AddScoped<IValidator<AddCartItemCommand>, AddCartItemValidator>();
 
 // Authorization service
-services.AddSingleton<Quasar.Security.IAuthorizationService, InMemoryAuthorizationService>();
 
 var app = builder.Build();
 

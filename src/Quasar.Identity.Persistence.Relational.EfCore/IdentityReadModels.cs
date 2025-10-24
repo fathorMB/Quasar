@@ -22,11 +22,32 @@ public sealed class IdentitySessionReadModel
     public DateTime? RevokedUtc { get; set; }
 }
 
+public sealed class IdentityRoleReadModel
+{
+    public Guid Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+}
+
+public sealed class IdentityRolePermissionReadModel
+{
+    public Guid RoleId { get; set; }
+    public string Permission { get; set; } = string.Empty;
+}
+
+public sealed class IdentityUserRoleReadModel
+{
+    public Guid UserId { get; set; }
+    public Guid RoleId { get; set; }
+}
+
 public sealed class IdentityReadModelContext : ReadModelContext
 {
     public IdentityReadModelContext(DbContextOptions<IdentityReadModelContext> options) : base(options) { }
     public DbSet<IdentityUserReadModel> Users => Set<IdentityUserReadModel>();
     public DbSet<IdentitySessionReadModel> Sessions => Set<IdentitySessionReadModel>();
+    public DbSet<IdentityRoleReadModel> Roles => Set<IdentityRoleReadModel>();
+    public DbSet<IdentityRolePermissionReadModel> RolePermissions => Set<IdentityRolePermissionReadModel>();
+    public DbSet<IdentityUserRoleReadModel> UserRoles => Set<IdentityUserRoleReadModel>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -41,6 +62,22 @@ public sealed class IdentityReadModelContext : ReadModelContext
         {
             e.HasKey(x => x.SessionId);
             e.ToTable("Sessions");
+        });
+        modelBuilder.Entity<IdentityRoleReadModel>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.ToTable("Roles");
+            e.Property(x => x.Name).IsRequired();
+        });
+        modelBuilder.Entity<IdentityRolePermissionReadModel>(e =>
+        {
+            e.ToTable("RolePermissions");
+            e.HasKey(x => new { x.RoleId, x.Permission });
+        });
+        modelBuilder.Entity<IdentityUserRoleReadModel>(e =>
+        {
+            e.ToTable("UserRoles");
+            e.HasKey(x => new { x.UserId, x.RoleId });
         });
     }
 }

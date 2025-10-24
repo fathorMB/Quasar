@@ -21,6 +21,20 @@ public class IdentityReadModelContextModelSnapshot : ModelSnapshot
             e.ToTable("Sessions");
             e.HasKey(x => x.SessionId);
         });
+        modelBuilder.Entity<Quasar.Identity.Persistence.Relational.EfCore.IdentityRoleReadModel>(e =>
+        {
+            e.ToTable("Roles");
+            e.HasKey(x => x.Id);
+        });
+        modelBuilder.Entity<Quasar.Identity.Persistence.Relational.EfCore.IdentityRolePermissionReadModel>(e =>
+        {
+            e.ToTable("RolePermissions");
+            e.HasKey(x => new { x.RoleId, x.Permission });
+        });
+        modelBuilder.Entity<Quasar.Identity.Persistence.Relational.EfCore.IdentityUserRoleReadModel>(e =>
+        {
+            e.ToTable("UserRoles");
+            e.HasKey(x => new { x.UserId, x.RoleId });
+        });
     }
 }
-
