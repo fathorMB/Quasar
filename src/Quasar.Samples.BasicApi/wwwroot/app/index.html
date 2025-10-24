@@ -1,0 +1,101 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Quasar Sample Console</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script defer src="app.js"></script>
+</head>
+<body>
+    <header>
+        <h1>Quasar Sample Control Panel</h1>
+        <p class="subtitle">Register/login, manage counters & carts, and stream sensor data in real time.</p>
+    </header>
+
+    <main>
+        <section>
+            <h2>Authentication</h2>
+            <div class="grid two">
+                <form id="registerForm" class="card" novalidate>
+                    <h3>Register</h3>
+                    <label>Username<input name="username" required /></label>
+                    <label>Email<input name="email" type="email" required /></label>
+                    <label>Password<input name="password" type="password" required /></label>
+                    <button type="submit">Register</button>
+                </form>
+                <form id="loginForm" class="card" novalidate>
+                    <h3>Login</h3>
+                    <label>Username<input name="username" value="swagger-demo" required /></label>
+                    <label>Password<input name="password" type="password" value="Passw0rd!" required /></label>
+                    <button type="submit">Login</button>
+                </form>
+            </div>
+            <div id="authStatus" class="status">Not authenticated</div>
+        </section>
+
+        <section>
+            <h2>Counter</h2>
+            <form id="counterForm" class="card inline" novalidate>
+                <label>Amount<input name="amount" type="number" min="1" value="1" required /></label>
+                <button type="submit">Increment</button>
+                <button type="button" id="refreshCounter">Refresh Count</button>
+            </form>
+            <pre id="counterOutput" class="output"></pre>
+        </section>
+
+        <section>
+            <h2>Shopping Cart</h2>
+            <form id="cartForm" class="card inline" novalidate>
+                <label>Product Id<input name="productId" value="00000000-0000-0000-0000-000000000001" required /></label>
+                <label>Quantity<input name="quantity" type="number" min="1" value="1" required /></label>
+                <button type="submit">Add Item</button>
+                <button type="button" id="refreshCart">Refresh Cart</button>
+            </form>
+            <pre id="cartOutput" class="output"></pre>
+        </section>
+
+        <section>
+            <h2>Sensor Readings</h2>
+            <div class="grid two">
+                <form id="sensorIngestForm" class="card" novalidate>
+                    <h3>Ingest Reading</h3>
+                    <label>Device Id<input name="deviceId" value="11111111-2222-3333-4444-555555555555" required /></label>
+                    <label>Sensor Type<input name="sensorType" value="temperature" required /></label>
+                    <label>Value<input name="value" type="number" step="0.01" value="21.5" required /></label>
+                    <label>Timestamp (UTC)<input name="timestampUtc" type="datetime-local" /></label>
+                    <button type="submit">Send Reading</button>
+                </form>
+                <form id="sensorQueryForm" class="card" novalidate>
+                    <h3>Query History</h3>
+                    <label>Device Id<input name="deviceId" value="11111111-2222-3333-4444-555555555555" required /></label>
+                    <label>From UTC<input name="fromUtc" type="datetime-local" /></label>
+                    <label>To UTC<input name="toUtc" type="datetime-local" /></label>
+                    <button type="submit">Fetch Readings</button>
+                </form>
+            </div>
+            <details open>
+                <summary>Real-Time Stream</summary>
+                <div class="card">
+                    <div class="toolbar">
+                        <button type="button" id="connectHub">Connect</button>
+                        <button type="button" id="disconnectHub">Disconnect</button>
+                        <span id="hubStatus" class="status">Disconnected</span>
+                    </div>
+                    <pre id="sensorLiveOutput" class="output"></pre>
+                </div>
+            </details>
+            <pre id="sensorQueryOutput" class="output"></pre>
+        </section>
+
+        <section>
+            <h2>Logs</h2>
+            <div class="toolbar">
+                <button type="button" id="clearLogs">Clear</button>
+            </div>
+            <pre id="log" class="output log"></pre>
+        </section>
+    </main>
+</body>
+</html>

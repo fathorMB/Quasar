@@ -85,6 +85,7 @@ services.AddIdentityDataSeeding(options =>
         Name = SampleConfig.DemoRoleName
     };
     demoRole.Permissions.Add(SampleConfig.CartAddPermission);
+    demoRole.Permissions.Add("counter.increment");
     demoRole.Permissions.Add("sensor.ingest");
     sampleSet.Roles.Add(demoRole);
 
@@ -101,11 +102,15 @@ services.AddIdentityDataSeeding(options =>
     options.Sets.Add(sampleSet);
 });
 
-var timescaleConnString = configuration.GetConnectionString("QuasarTimescale")
-    ?? throw new InvalidOperationException("Connection string 'QuasarTimescale' is required for timeseries support.");
+var timescaleSection = configuration.GetSection("Timescale");
+var timescaleConnString = timescaleSection.GetValue<string>("ConnectionString")
+    ?? configuration.GetConnectionString("QuasarTimescale")
+    ?? "Host=localhost;Port=5432;Username=postgres;Password=mypassword;Database=quasar";
+var timescaleDatabase = timescaleSection.GetValue<string>("Database");
 services.UseTimescaleTimeSeries(options =>
 {
     options.ConnectionString = timescaleConnString;
+    options.Database = timescaleDatabase;
     options.MetricsTable = SensorConstants.MetricName;
     options.Schema = "public";
     options.WriteBatchSize = 500;
@@ -202,6 +207,8 @@ await app.SeedDataAsync();
 
 // Identity endpoints
 app.MapQuasarIdentityEndpoints();
+
+app.UseStaticFiles();
 
 app.UseSwagger();
 app.UseSwaggerUI(options =>
