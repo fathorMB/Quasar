@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Quasar.Core\Quasar.Core.csproj" />
+    <ProjectReference Include="..\Quasar.Domain\Quasar.Domain.csproj" />
+    <ProjectReference Include="..\Quasar.EventSourcing.Abstractions\Quasar.EventSourcing.Abstractions.csproj" />
+  </ItemGroup>
+</Project>
+

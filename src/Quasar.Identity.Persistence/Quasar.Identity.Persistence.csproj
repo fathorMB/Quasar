@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Quasar.Identity\Quasar.Identity.csproj" />
+    <ProjectReference Include="..\Quasar.Persistence.Abstractions\Quasar.Persistence.Abstractions.csproj" />
+  </ItemGroup>
+</Project>
+
