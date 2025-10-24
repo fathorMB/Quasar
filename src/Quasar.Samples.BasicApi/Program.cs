@@ -18,7 +18,11 @@ using Quasar.Logging;
 using Quasar.Seeding;
 using Serilog.Events;
 using System.IO;
+using System.Linq;
 using Quasar.Samples.BasicApi.Swagger;
+using Quasar.Samples.BasicApi.RealTime;
+using Quasar.RealTime;
+using Quasar.RealTime.SignalR;
 
 var builder = WebApplication.CreateBuilder(args);
 var services = builder.Services;
@@ -51,9 +55,12 @@ IEventTypeMap typeMap = new DictionaryEventTypeMap(new[]
     ("identity.role_created", typeof(Quasar.Identity.RoleCreated)),
     ("identity.role_renamed", typeof(Quasar.Identity.RoleRenamed)),
     ("identity.role_permission_granted", typeof(Quasar.Identity.RolePermissionGranted)),
-    ("identity.role_permission_revoked", typeof(Quasar.Identity.RolePermissionRevoked))
+    ("identity.role_permission_revoked", typeof(Quasar.Identity.RolePermissionRevoked)),
+    ("sensor.reading_recorded", typeof(SensorReadingRecorded))
 });
 services.AddQuasarEventSerializer(typeMap);
+
+services.AddQuasarSignalR();
 
 // Swagger
 services.AddEndpointsApiExplorer();
@@ -78,6 +85,7 @@ services.AddIdentityDataSeeding(options =>
         Name = SampleConfig.DemoRoleName
     };
     demoRole.Permissions.Add(SampleConfig.CartAddPermission);
+    demoRole.Permissions.Add("sensor.ingest");
     sampleSet.Roles.Add(demoRole);
 
     var demoUser = new IdentityUserSeed
@@ -92,6 +100,20 @@ services.AddIdentityDataSeeding(options =>
 
     options.Sets.Add(sampleSet);
 });
+
+var timescaleConnString = configuration.GetConnectionString("QuasarTimescale")
+    ?? throw new InvalidOperationException("Connection string 'QuasarTimescale' is required for timeseries support.");
+services.UseTimescaleTimeSeries(options =>
+{
+    options.ConnectionString = timescaleConnString;
+    options.MetricsTable = SensorConstants.MetricName;
+    options.Schema = "public";
+    options.WriteBatchSize = 500;
+});
+
+services.AddSingleton<SensorTimeSeriesAdapter>();
+services.AddSingleton<SensorPayloadAdapter>();
+services.AddSignalRNotifier<SensorHub, ISensorClient, SensorReadingPayload, SensorDispatcher>();
 
 var storeMode = configuration["Quasar:Store"]?.ToLowerInvariant() ?? "inmemory";
 switch (storeMode)
@@ -112,7 +134,8 @@ switch (storeMode)
         services.AddScoped<object, CounterProjection>();
         services.AddScoped<object, ShoppingCartProjection>();
         services.AddScoped<object, Quasar.Identity.Persistence.Relational.EfCore.IdentityProjections>();
-        services.AddPollingProjector("MainProjector", new[] { SampleConfig.CounterStreamId, SampleConfig.CartStreamId }, TimeSpan.FromMilliseconds(500));
+        services.AddScoped<object, SensorRealTimeProjection>();
+        services.AddPollingProjector("MainProjector", new[] { SampleConfig.CounterStreamId, SampleConfig.CartStreamId, SampleConfig.SensorStreamId }, TimeSpan.FromMilliseconds(500));
         // Identity read models
         services.UseEfCoreSqlServerReadModels<IdentityReadModelContext>(sqlConnString, registerRepositories: false);
         break;
@@ -131,7 +154,8 @@ switch (storeMode)
         services.AddScoped<object, CounterProjection>();
         services.AddScoped<object, ShoppingCartProjection>();
         services.AddScoped<object, Quasar.Identity.Persistence.Relational.EfCore.IdentityProjections>();
-        services.AddPollingProjector("MainProjector", new[] { SampleConfig.CounterStreamId, SampleConfig.CartStreamId }, TimeSpan.FromMilliseconds(500));
+        services.AddScoped<object, SensorRealTimeProjection>();
+        services.AddPollingProjector("MainProjector", new[] { SampleConfig.CounterStreamId, SampleConfig.CartStreamId, SampleConfig.SensorStreamId }, TimeSpan.FromMilliseconds(500));
         // Identity read models
         services.UseEfCoreSqliteReadModels<IdentityReadModelContext>(sqliteConnString, registerRepositories: false);
         break;
@@ -145,7 +169,8 @@ switch (storeMode)
         services.AddScoped<object, CounterProjection>();
         services.AddScoped<object, ShoppingCartProjection>();
         services.AddScoped<object, Quasar.Identity.Persistence.Relational.EfCore.IdentityProjections>();
-        services.AddPollingProjector("MainProjector", new[] { SampleConfig.CounterStreamId, SampleConfig.CartStreamId }, TimeSpan.FromMilliseconds(500));
+        services.AddScoped<object, SensorRealTimeProjection>();
+        services.AddPollingProjector("MainProjector", new[] { SampleConfig.CounterStreamId, SampleConfig.CartStreamId, SampleConfig.SensorStreamId }, TimeSpan.FromMilliseconds(500));
         // Identity read models
         services.UseEfCoreSqliteReadModels<IdentityReadModelContext>(demoSqlite, registerRepositories: false);
         break;
@@ -158,8 +183,9 @@ services.AddScoped<IValidator<IncrementCounterCommand>, IncrementCounterValidato
 services.AddScoped<ICommandHandler<AddCartItemCommand, int>, AddCartItemHandler>();
 services.AddScoped<IQueryHandler<GetCartQuery, CartReadModel>, GetCartHandler>();
 services.AddScoped<IValidator<AddCartItemCommand>, AddCartItemValidator>();
-
-// Authorization service
+services.AddScoped<ICommandHandler<IngestSensorReadingCommand, bool>, IngestSensorReadingHandler>();
+services.AddScoped<IValidator<IngestSensorReadingCommand>, SensorIngestValidator>();
+services.AddScoped<IQueryHandler<SensorReadingsQuery, IReadOnlyList<TimeSeriesPoint>>, SensorReadingsHandler>();
 
 var app = builder.Build();
 
@@ -183,6 +209,8 @@ app.UseSwaggerUI(options =>
     options.SwaggerEndpoint("/swagger/v1/swagger.json", "Quasar Sample API v1");
     options.RoutePrefix = string.Empty; // expose at root
 });
+
+app.MapRealTimeHub<SensorHub>("/hubs/sensors");
 
 // Endpoints
 app.MapPost("/counter/increment", async (IMediator mediator, int amount, HttpRequest req) =>
@@ -216,6 +244,31 @@ app.MapGet("/cart", async (IMediator mediator) =>
     return Results.Ok(cart);
 }).WithName("GetCart").WithTags("Cart");
 
+app.MapPost("/sensors/ingest", async (IMediator mediator, SensorIngestRequest request, HttpRequest httpRequest) =>
+{
+    if (request is null) return Results.BadRequest("Payload required");
+    var subject = httpRequest.Headers.TryGetValue("X-Subject", out var s) && Guid.TryParse(s, out var sid) ? sid : SampleConfig.DemoUserId;
+    var timestamp = request.TimestampUtc ?? DateTime.UtcNow;
+    await mediator.Send(new IngestSensorReadingCommand(subject, request.DeviceId, request.SensorType, request.Value, timestamp));
+    return Results.Accepted($"/sensors/{request.DeviceId}/readings");
+}).WithName("IngestSensorReading").WithTags("Sensors");
+
+app.MapGet("/sensors/{deviceId:guid}/readings", async (IMediator mediator, Guid deviceId, DateTime? fromUtc, DateTime? toUtc) =>
+{
+    if (deviceId == Guid.Empty) return Results.BadRequest("deviceId is required");
+    var to = toUtc ?? DateTime.UtcNow;
+    var from = fromUtc ?? to.AddMinutes(-30);
+    if (from > to) return Results.BadRequest("fromUtc must be <= toUtc");
+
+    var points = await mediator.Send(new SensorReadingsQuery(deviceId, from, to));
+    var payload = points.Select(p => new SensorReadingResponse(
+        p.Timestamp,
+        p.Fields.TryGetValue("value", out var value) ? value : double.NaN,
+        p.Tags.TryGetValue("sensorType", out var sensorType) ? sensorType : string.Empty)).ToArray();
+
+    return Results.Ok(payload);
+}).WithName("GetSensorReadings").WithTags("Sensors");
+
 // Debug endpoints
 app.MapGet("/debug/carts", async (IReadRepository<CartReadModel> repo) =>
 {
@@ -233,9 +286,11 @@ app.MapGet("/debug/checkpoints", async (ICheckpointStore cps) =>
 {
     var counterKey = $"MainProjector:{SampleConfig.CounterStreamId}";
     var cartKey = $"MainProjector:{SampleConfig.CartStreamId}";
+    var sensorKey = $"MainProjector:{SampleConfig.SensorStreamId}";
     var counter = await cps.GetCheckpointAsync(counterKey);
     var cart = await cps.GetCheckpointAsync(cartKey);
-    return Results.Ok(new { counterKey, counter, cartKey, cart });
+    var sensor = await cps.GetCheckpointAsync(sensorKey);
+    return Results.Ok(new { counterKey, counter, cartKey, cart, sensorKey, sensor });
 }).WithName("DebugCheckpoints").WithTags("Debug");
 
 app.MapPost("/debug/rebuild/cart", async (IServiceProvider sp) =>
@@ -278,3 +333,5 @@ app.MapPost("/debug/rebuild/cart", async (IServiceProvider sp) =>
 
 app.Run();
 
+public sealed record SensorIngestRequest(Guid DeviceId, string SensorType, double Value, DateTime? TimestampUtc);
+public sealed record SensorReadingResponse(DateTime TimestampUtc, double Value, string SensorType);

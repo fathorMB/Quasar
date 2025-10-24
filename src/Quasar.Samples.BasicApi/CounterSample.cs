@@ -181,6 +181,7 @@ internal static class SampleConfig
 {
     public static readonly Guid CounterStreamId = Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee");
     public static readonly Guid CartStreamId = Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-ffffffffffff");
+    public static readonly Guid SensorStreamId = Guid.Parse("bbbbbbbb-cccc-dddd-eeee-ffffffffffff");
     public static readonly Guid DemoUserId = Guid.Parse("a01c4be3-17f8-4cb9-a379-4c597a5e0714");
     public static readonly Guid DemoRoleId = Guid.Parse("b01c4be3-17f8-4cb9-a379-4c597a5e0714");
     public const string DemoRoleName = "CartAdmin";
