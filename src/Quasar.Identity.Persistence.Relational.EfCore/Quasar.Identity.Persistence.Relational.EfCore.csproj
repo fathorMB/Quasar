@@ -8,6 +8,6 @@
     <ProjectReference Include="..\Quasar.Identity.Persistence\Quasar.Identity.Persistence.csproj" />
     <ProjectReference Include="..\Quasar.Persistence.Relational.EfCore\Quasar.Persistence.Relational.EfCore.csproj" />
     <ProjectReference Include="..\Quasar.Projections.Abstractions\Quasar.Projections.Abstractions.csproj" />
+    <ProjectReference Include="..\Quasar.Seeding\Quasar.Seeding.csproj" />
   </ItemGroup>
 </Project>
-

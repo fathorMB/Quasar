@@ -13,7 +13,9 @@ using Microsoft.EntityFrameworkCore;
 using Quasar.Projections.Abstractions;
 using Quasar.Identity.Web;
 using Quasar.Identity.Persistence.Relational.EfCore;
+using Quasar.Identity.Persistence.Relational.EfCore.Seeding;
 using Quasar.Logging;
+using Quasar.Seeding;
 using Serilog.Events;
 using System.IO;
 
@@ -61,6 +63,30 @@ services.AddQuasarIdentity(o =>
 {
     o.Key = "sample-super-secret-key-should-be-long";
     o.Issuer = "quasar"; o.Audience = "quasar";
+});
+services.AddIdentityDataSeeding(options =>
+{
+    var sampleSet = new IdentitySeedSet { Name = "Sample ACL" };
+
+    var demoRole = new IdentityRoleSeed
+    {
+        Id = SampleConfig.DemoRoleId,
+        Name = SampleConfig.DemoRoleName
+    };
+    demoRole.Permissions.Add(SampleConfig.CartAddPermission);
+    sampleSet.Roles.Add(demoRole);
+
+    var demoUser = new IdentityUserSeed
+    {
+        Id = SampleConfig.DemoUserId,
+        Username = "swagger-demo",
+        Email = "swagger-demo@example.com",
+        Password = "Passw0rd!"
+    };
+    demoUser.Roles.Add(SampleConfig.DemoRoleId);
+    sampleSet.Users.Add(demoUser);
+
+    options.Sets.Add(sampleSet);
 });
 
 var storeMode = configuration["Quasar:Store"]?.ToLowerInvariant() ?? "inmemory";
@@ -142,7 +168,7 @@ using (var scope = app.Services.CreateScope())
     if (idDb is not null) await idDb.Database.MigrateAsync();
 }
 
-await SeedDemoAclAsync(app.Services);
+await app.SeedDataAsync();
 
 // Identity endpoints
 app.MapQuasarIdentityEndpoints();
@@ -247,52 +273,4 @@ app.MapPost("/debug/rebuild/cart", async (IServiceProvider sp) =>
 }).WithName("DebugRebuildCart").WithTags("Debug");
 
 app.Run();
-
-
-static async Task SeedDemoAclAsync(IServiceProvider services)
-{
-    using var scope = services.CreateScope();
-    var db = scope.ServiceProvider.GetService<IdentityReadModelContext>();
-    if (db is null) return;
-    var userId = SampleConfig.DemoUserId;
-    var user = await db.Users.FirstOrDefaultAsync(u => u.Id == userId);
-    if (user is null)
-    {
-        user = new IdentityUserReadModel
-        {
-            Id = userId,
-            Username = "swagger-demo",
-            Email = "swagger-demo@example.com"
-        };
-        db.Users.Add(user);
-    }
-
-    var role = await db.Roles.FirstOrDefaultAsync(r => r.Name == SampleConfig.DemoRoleName);
-    Guid roleId;
-    if (role is null)
-    {
-        roleId = SampleConfig.DemoRoleId;
-        db.Roles.Add(new IdentityRoleReadModel { Id = roleId, Name = SampleConfig.DemoRoleName });
-    }
-    else
-    {
-        roleId = role.Id;
-    }
-
-    if (!await db.RolePermissions.AnyAsync(rp => rp.RoleId == roleId && rp.Permission == SampleConfig.CartAddPermission))
-    {
-        db.RolePermissions.Add(new IdentityRolePermissionReadModel { RoleId = roleId, Permission = SampleConfig.CartAddPermission });
-    }
-
-    if (!await db.UserRoles.AnyAsync(ur => ur.UserId == userId && ur.RoleId == roleId))
-    {
-        db.UserRoles.Add(new IdentityUserRoleReadModel { UserId = userId, RoleId = roleId });
-    }
-
-    await db.SaveChangesAsync();
-}
-
-
-
-
 
