@@ -47,6 +47,7 @@ public class MediatorTests
         services.AddScoped<IMediator, Mediator>();
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(TransactionBehavior<,>));
+        services.AddLogging();
         services.AddScoped<IQueryHandler<Ping, string>, PingHandler>();
         var sp = services.BuildServiceProvider();
 
@@ -62,6 +63,7 @@ public class MediatorTests
         services.AddScoped<IMediator, Mediator>();
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(TransactionBehavior<,>));
+        services.AddLogging();
         services.AddScoped<ICommandHandler<Add, int>, AddHandler>();
         services.AddScoped<IValidator<Add>, ThrowingValidator>();
         var tx = new FlagTransaction();
@@ -76,4 +78,3 @@ public class MediatorTests
         Assert.True(tx.Executed);
     }
 }
-
