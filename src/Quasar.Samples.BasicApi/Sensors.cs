@@ -4,12 +4,14 @@ using Quasar.Domain;
 using Quasar.EventSourcing.Abstractions;
 using Quasar.Persistence.Abstractions;
 using Quasar.Security;
+using Quasar.Core;
+using System.Collections.Generic;
 
 namespace Quasar.Samples.BasicApi;
 
 public sealed record SensorReadingRecorded(Guid DeviceId, string SensorType, double Value, DateTime TimestampUtc) : IEvent;
 
-public sealed record IngestSensorReadingCommand(Guid SubjectId, Guid DeviceId, string SensorType, double Value, DateTime TimestampUtc) : ICommand<bool>, IAuthorizableRequest
+public sealed record IngestSensorReadingCommand(Guid SubjectId, Guid DeviceId, string SensorType, double Value, DateTime TimestampUtc) : ICommand<Result<bool>>, IAuthorizableRequest
 {
     public string Action => "sensor.ingest";
     public string Resource => $"sensor:{DeviceId}";
@@ -24,14 +26,13 @@ public sealed class SensorStreamAggregate : AggregateRoot
         ApplyChange(new SensorReadingRecorded(deviceId, sensorType, value, timestampUtc));
     }
 
-    protected override void When(IDomainEvent @event)
+    private void When(SensorReadingRecorded e)
     {
-        if (@event is SensorReadingRecorded)
-            Id = SampleConfig.SensorStreamId;
+        Id = SampleConfig.SensorStreamId;
     }
 }
 
-public sealed class IngestSensorReadingHandler : ICommandHandler<IngestSensorReadingCommand, bool>
+public sealed class IngestSensorReadingHandler : ICommandHandler<IngestSensorReadingCommand, Result<bool>>
 {
     private readonly IEventSourcedRepository<SensorStreamAggregate> _repo;
 
@@ -40,7 +41,7 @@ public sealed class IngestSensorReadingHandler : ICommandHandler<IngestSensorRea
         _repo = repo;
     }
 
-    public async Task<bool> Handle(IngestSensorReadingCommand command, CancellationToken cancellationToken = default)
+    public async Task<Result<bool>> Handle(IngestSensorReadingCommand command, CancellationToken cancellationToken = default)
     {
         var aggregate = await _repo.GetAsync(SampleConfig.SensorStreamId, cancellationToken);
         if (aggregate.Id == Guid.Empty)
@@ -50,17 +51,24 @@ public sealed class IngestSensorReadingHandler : ICommandHandler<IngestSensorRea
         aggregate.Record(command.DeviceId, command.SensorType, command.Value, command.TimestampUtc);
         await _repo.SaveAsync(aggregate, cancellationToken);
 
-        return true;
+        return Result<bool>.Success(true);
     }
 }
 
 public sealed class SensorIngestValidator : IValidator<IngestSensorReadingCommand>
 {
-    public Task ValidateAsync(IngestSensorReadingCommand instance, CancellationToken cancellationToken = default)
+    public Task<List<Error>> ValidateAsync(IngestSensorReadingCommand instance, CancellationToken cancellationToken = default)
     {
-        if (instance.DeviceId == Guid.Empty) throw new ValidationException("DeviceId required");
-        if (string.IsNullOrWhiteSpace(instance.SensorType)) throw new ValidationException("SensorType required");
-        return Task.CompletedTask;
+        var errors = new List<Error>();
+        if (instance.DeviceId == Guid.Empty)
+        {
+            errors.Add(new Error("validation.device_id", "DeviceId required"));
+        }
+        if (string.IsNullOrWhiteSpace(instance.SensorType))
+        {
+            errors.Add(new Error("validation.sensor_type", "SensorType required"));
+        }
+        return Task.FromResult(errors);
     }
 }
 

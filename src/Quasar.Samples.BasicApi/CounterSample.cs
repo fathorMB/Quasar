@@ -1,8 +1,10 @@
+using Quasar.Core;
 using Quasar.Cqrs;
 using Quasar.Domain;
 using Quasar.EventSourcing.Abstractions;
 using Quasar.Persistence.Abstractions;
 using Quasar.Security;
+using System.Collections.Generic;
 
 namespace Quasar.Samples.BasicApi;
 
@@ -25,10 +27,9 @@ public sealed class CounterAggregate : AggregateRoot
         ApplyChange(new CounterIncremented(amount));
     }
 
-    protected override void When(IDomainEvent @event)
+    private void When(CounterIncremented e)
     {
-        if (@event is CounterIncremented e)
-            Count += e.Amount;
+        Count += e.Amount;
     }
 }
 
@@ -51,26 +52,23 @@ public sealed class ShoppingCartAggregate : AggregateRoot
         ApplyChange(new CartItemRemoved(productId, qty));
     }
 
-    protected override void When(IDomainEvent @event)
+    private void When(CartItemAdded a)
     {
-        switch (@event)
+        _lines[a.ProductId] = _lines.TryGetValue(a.ProductId, out var q) ? q + a.Quantity : a.Quantity;
+    }
+
+    private void When(CartItemRemoved r)
+    {
+        if (_lines.TryGetValue(r.ProductId, out var curr))
         {
-            case CartItemAdded a:
-                _lines[a.ProductId] = _lines.TryGetValue(a.ProductId, out var q) ? q + a.Quantity : a.Quantity;
-                break;
-            case CartItemRemoved r:
-                if (_lines.TryGetValue(r.ProductId, out var curr))
-                {
-                    var next = Math.Max(0, curr - r.Quantity);
-                    if (next == 0) _lines.Remove(r.ProductId);
-                    else _lines[r.ProductId] = next;
-                }
-                break;
+            var next = Math.Max(0, curr - r.Quantity);
+            if (next == 0) _lines.Remove(r.ProductId);
+            else _lines[r.ProductId] = next;
         }
     }
 }
 // Command
-public sealed record IncrementCounterCommand(Guid SubjectId, int Amount) : ICommand<int>, IAuthorizableRequest
+public sealed record IncrementCounterCommand(Guid SubjectId, int Amount) : ICommand<Result<int>>, IAuthorizableRequest
 {
     public string Action => "counter.increment";
     public string Resource => $"counter:{SampleConfig.CounterStreamId}";
@@ -79,7 +77,7 @@ public sealed record IncrementCounterCommand(Guid SubjectId, int Amount) : IComm
 // Query
 public sealed record GetCounterQuery() : IQuery<int>;
 
-public sealed record AddCartItemCommand(Guid SubjectId, Guid ProductId, int Quantity) : ICommand<int>, IAuthorizableRequest
+public sealed record AddCartItemCommand(Guid SubjectId, Guid ProductId, int Quantity) : ICommand<Result<int>>, IAuthorizableRequest
 {
     public string Action => "cart.add";
     public string Resource => $"cart:{SampleConfig.CartStreamId}";
@@ -90,27 +88,30 @@ public sealed record GetCartQuery() : IQuery<CartReadModel>;
 // Validator
 public sealed class IncrementCounterValidator : IValidator<IncrementCounterCommand>
 {
-    public Task ValidateAsync(IncrementCounterCommand instance, CancellationToken cancellationToken = default)
+    public Task<List<Error>> ValidateAsync(IncrementCounterCommand instance, CancellationToken cancellationToken = default)
     {
+        var errors = new List<Error>();
         if (instance.Amount <= 0)
-            throw new ValidationException("Amount must be > 0");
-        return Task.CompletedTask;
+        {
+            errors.Add(new Error("validation.amount", "Amount must be > 0"));
+        }
+        return Task.FromResult(errors);
     }
 }
 
 // Handlers
-public sealed class IncrementCounterHandler : ICommandHandler<IncrementCounterCommand, int>
+public sealed class IncrementCounterHandler : ICommandHandler<IncrementCounterCommand, Result<int>>
 {
     private readonly IEventSourcedRepository<CounterAggregate> _repo;
     public IncrementCounterHandler(IEventSourcedRepository<CounterAggregate> repo) => _repo = repo;
 
-    public async Task<int> Handle(IncrementCounterCommand command, CancellationToken cancellationToken = default)
+    public async Task<Result<int>> Handle(IncrementCounterCommand command, CancellationToken cancellationToken = default)
     {
         var agg = await _repo.GetAsync(SampleConfig.CounterStreamId, cancellationToken);
         if (agg.Id == Guid.Empty) agg = new CounterAggregate();
         agg.Increment(command.Amount);
         await _repo.SaveAsync(agg, cancellationToken);
-        return agg.Count;
+        return Result<int>.Success(agg.Count);
     }
 }
 
@@ -130,26 +131,33 @@ public sealed class GetCounterHandler : IQueryHandler<GetCounterQuery, int>
 
 public sealed class AddCartItemValidator : IValidator<AddCartItemCommand>
 {
-    public Task ValidateAsync(AddCartItemCommand instance, CancellationToken cancellationToken = default)
+    public Task<List<Error>> ValidateAsync(AddCartItemCommand instance, CancellationToken cancellationToken = default)
     {
-        if (instance.Quantity <= 0) throw new ValidationException("Quantity must be > 0");
-        if (instance.ProductId == Guid.Empty) throw new ValidationException("ProductId required");
-        return Task.CompletedTask;
+        var errors = new List<Error>();
+        if (instance.Quantity <= 0)
+        {
+            errors.Add(new Error("validation.quantity", "Quantity must be > 0"));
+        }
+        if (instance.ProductId == Guid.Empty)
+        {
+            errors.Add(new Error("validation.product_id", "ProductId required"));
+        }
+        return Task.FromResult(errors);
     }
 }
 
-public sealed class AddCartItemHandler : ICommandHandler<AddCartItemCommand, int>
+public sealed class AddCartItemHandler : ICommandHandler<AddCartItemCommand, Result<int>>
 {
     private readonly IEventSourcedRepository<ShoppingCartAggregate> _repo;
     public AddCartItemHandler(IEventSourcedRepository<ShoppingCartAggregate> repo) => _repo = repo;
 
-    public async Task<int> Handle(AddCartItemCommand command, CancellationToken cancellationToken = default)
+    public async Task<Result<int>> Handle(AddCartItemCommand command, CancellationToken cancellationToken = default)
     {
         var agg = await _repo.GetAsync(SampleConfig.CartStreamId, cancellationToken);
         if (agg.Id == Guid.Empty) agg = new ShoppingCartAggregate();
         agg.Add(command.ProductId, command.Quantity);
         await _repo.SaveAsync(agg, cancellationToken);
-        return agg.TotalItems;
+        return Result<int>.Success(agg.TotalItems);
     }
 }
 

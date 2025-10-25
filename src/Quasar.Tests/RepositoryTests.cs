@@ -14,9 +14,9 @@ public class RepositoryTests
         public int Sum { get; private set; }
         public Counter() { Id = Guid.NewGuid(); }
         public void Inc(int x) => ApplyChange(new Incremented(x));
-        protected override void When(IDomainEvent @event)
+        private void When(Incremented i)
         {
-            if (@event is Incremented i) Sum += i.Amount;
+            Sum += i.Amount;
         }
     }
 

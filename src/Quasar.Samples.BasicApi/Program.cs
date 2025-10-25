@@ -20,6 +20,7 @@ using Quasar.Seeding;
 using Serilog.Events;
 using System.IO;
 using System.Linq;
+using Quasar.Core;
 using Quasar.Samples.BasicApi.Swagger;
 using Quasar.Samples.BasicApi.RealTime;
 using Quasar.RealTime;
@@ -230,13 +231,13 @@ services.AddQuartzScheduler(options =>
 });
 
 // Handlers and validators
-services.AddScoped<ICommandHandler<IncrementCounterCommand, int>, IncrementCounterHandler>();
+services.AddScoped<ICommandHandler<IncrementCounterCommand, Result<int>>, IncrementCounterHandler>();
 services.AddScoped<IQueryHandler<GetCounterQuery, int>, GetCounterHandler>();
 services.AddScoped<IValidator<IncrementCounterCommand>, IncrementCounterValidator>();
-services.AddScoped<ICommandHandler<AddCartItemCommand, int>, AddCartItemHandler>();
+services.AddScoped<ICommandHandler<AddCartItemCommand, Result<int>>, AddCartItemHandler>();
 services.AddScoped<IQueryHandler<GetCartQuery, CartReadModel>, GetCartHandler>();
 services.AddScoped<IValidator<AddCartItemCommand>, AddCartItemValidator>();
-services.AddScoped<ICommandHandler<IngestSensorReadingCommand, bool>, IngestSensorReadingHandler>();
+services.AddScoped<ICommandHandler<IngestSensorReadingCommand, Result<bool>>, IngestSensorReadingHandler>();
 services.AddScoped<IValidator<IngestSensorReadingCommand>, SensorIngestValidator>();
 services.AddScoped<IQueryHandler<SensorReadingsQuery, IReadOnlyList<TimeSeriesPoint>>, SensorReadingsHandler>();
 
@@ -275,7 +276,7 @@ app.MapPost("/counter/increment", async (IMediator mediator, int amount, HttpReq
     if (amount <= 0) return Results.BadRequest("amount is required");
     var subject = req.Headers.TryGetValue("X-Subject", out var s) && Guid.TryParse(s, out var sid) ? sid : SampleConfig.DemoUserId;
     var result = await mediator.Send(new IncrementCounterCommand(subject, amount));
-    return Results.Ok(new { count = result });
+    return result.IsSuccess ? Results.Ok(new { count = result.Value }) : Results.BadRequest(result.Error);
 }).WithName("IncrementCounter")
   .WithTags("Counter");
 
@@ -291,8 +292,8 @@ app.MapPost("/cart/add", async (IMediator mediator, Guid productId, int quantity
 {
     if (productId == Guid.Empty || quantity <= 0) return Results.BadRequest("productId and quantity are required");
     var subject = req.Headers.TryGetValue("X-Subject", out var s) && Guid.TryParse(s, out var sid) ? sid : SampleConfig.DemoUserId;
-    var total = await mediator.Send(new AddCartItemCommand(subject, productId, quantity));
-    return Results.Ok(new { totalItems = total });
+    var result = await mediator.Send(new AddCartItemCommand(subject, productId, quantity));
+    return result.IsSuccess ? Results.Ok(new { totalItems = result.Value }) : Results.BadRequest(result.Error);
 }).WithName("AddCartItem").WithTags("Cart");
 
 app.MapGet("/cart", async (IMediator mediator) =>
@@ -306,8 +307,8 @@ app.MapPost("/sensors/ingest", async (IMediator mediator, SensorIngestRequest re
     if (request is null) return Results.BadRequest("Payload required");
     var subject = httpRequest.Headers.TryGetValue("X-Subject", out var s) && Guid.TryParse(s, out var sid) ? sid : SampleConfig.DemoUserId;
     var timestamp = request.TimestampUtc ?? DateTime.UtcNow;
-    await mediator.Send(new IngestSensorReadingCommand(subject, request.DeviceId, request.SensorType, request.Value, timestamp));
-    return Results.Accepted($"/sensors/{request.DeviceId}/readings");
+    var result = await mediator.Send(new IngestSensorReadingCommand(subject, request.DeviceId, request.SensorType, request.Value, timestamp));
+    return result.IsSuccess ? Results.Accepted($"/sensors/{request.DeviceId}/readings") : Results.BadRequest(result.Error);
 }).WithName("IngestSensorReading").WithTags("Sensors");
 
 app.MapGet("/sensors/{deviceId:guid}/readings", async (IMediator mediator, Guid deviceId, DateTime? fromUtc, DateTime? toUtc) =>

@@ -1,5 +1,10 @@
 using Microsoft.Extensions.Logging;
+using Quasar.Core;
+using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace Quasar.Cqrs;
 
@@ -10,22 +15,12 @@ namespace Quasar.Cqrs;
 public interface IValidator<in T>
 {
     /// <summary>
-    /// Validates the specified <paramref name="instance"/> and throws when validation fails.
+    /// Validates the specified <paramref name="instance"/>.
     /// </summary>
     /// <param name="instance">The object to validate.</param>
     /// <param name="cancellationToken">Token used to cancel the validation work.</param>
-    Task ValidateAsync(T instance, CancellationToken cancellationToken = default);
-}
-
-/// <summary>
-/// Exception thrown when a validation rule fails.
-/// </summary>
-public sealed class ValidationException : Exception
-{
-    /// <summary>
-    /// Initializes a new instance of the <see cref="ValidationException"/> class with the provided message.
-    /// </summary>
-    public ValidationException(string message) : base(message) { }
+    /// <returns>A list of validation errors; returns an empty list if validation is successful.</returns>
+    Task<List<Error>> ValidateAsync(T instance, CancellationToken cancellationToken = default);
 }
 
 /// <summary>
@@ -54,12 +49,60 @@ public sealed class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<
             return await next().ConfigureAwait(false);
         }
 
-        foreach (var v in _validators)
+        var errorTasks = _validators.Select(v =>
         {
             _logger.LogTrace("Running validator {Validator} for {RequestType}", v.GetType().Name, typeof(TRequest).Name);
-            await v.ValidateAsync(request, cancellationToken).ConfigureAwait(false);
+            return v.ValidateAsync(request, cancellationToken);
+        });
+
+        var errors = (await Task.WhenAll(errorTasks).ConfigureAwait(false))
+            .SelectMany(e => e)
+            .ToList();
+
+        if (errors.Count == 0)
+        {
+            _logger.LogDebug("Validation completed for {RequestType}", typeof(TRequest).Name);
+            return await next().ConfigureAwait(false);
         }
-        _logger.LogDebug("Validation completed for {RequestType}", typeof(TRequest).Name);
-        return await next().ConfigureAwait(false);
+
+        _logger.LogWarning("Validation failed for {RequestType} with {ErrorCount} errors", typeof(TRequest).Name, errors.Count);
+        return (TResponse)CreateFailureResult(errors);
+    }
+
+    private static object CreateFailureResult(List<Error> errors)
+    {
+        var error = new Error("Validation.Failed", AggregateMessages(errors));
+
+        var responseType = typeof(TResponse);
+
+        if (responseType.IsGenericType && responseType.GetGenericTypeDefinition() == typeof(Result<>))
+        {
+            var resultType = responseType.GetGenericArguments()[0];
+            var failureMethod = typeof(Result<>)
+                .MakeGenericType(resultType)
+                .GetMethod(nameof(Result<object>.Failure), BindingFlags.Public | BindingFlags.Static)
+                ?? throw new InvalidOperationException("Could not find the 'Failure' method on the Result type.");
+
+            return failureMethod.Invoke(null, new object[] { error })!;
+        }
+
+        if (responseType == typeof(Result))
+        {
+            return Result.Failure(error);
+        }
+
+        throw new InvalidOperationException(
+            $"ValidationBehavior is configured for request {typeof(TRequest).Name} but the response {responseType.Name} is not a Result or Result<T> type.");
+    }
+
+    private static string AggregateMessages(List<Error> errors)
+    {
+        var builder = new StringBuilder();
+        foreach (var error in errors)
+        {
+            builder.AppendLine(error.Message);
+        }
+
+        return builder.ToString();
     }
 }

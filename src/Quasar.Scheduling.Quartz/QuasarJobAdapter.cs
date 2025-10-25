@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Quartz;
 
@@ -9,17 +10,20 @@ namespace Quasar.Scheduling.Quartz;
 
 internal sealed class QuasarJobAdapter<TJob> : IJob where TJob : class, IQuasarJob
 {
-    private readonly TJob _job;
+    private readonly IServiceProvider _provider;
     private readonly ILogger<QuasarJobAdapter<TJob>> _logger;
 
-    public QuasarJobAdapter(TJob job, ILogger<QuasarJobAdapter<TJob>> logger)
+    public QuasarJobAdapter(IServiceProvider provider, ILogger<QuasarJobAdapter<TJob>> logger)
     {
-        _job = job;
+        _provider = provider;
         _logger = logger;
     }
 
     public async Task Execute(IJobExecutionContext context)
     {
+        using var scope = _provider.CreateScope();
+        var job = scope.ServiceProvider.GetRequiredService<TJob>();
+        
         var jobContext = CreateContext(context);
         using (_logger.BeginScope(new Dictionary<string, object?>
         {
@@ -33,7 +37,7 @@ internal sealed class QuasarJobAdapter<TJob> : IJob where TJob : class, IQuasarJ
             _logger.LogInformation("Starting scheduled job {Job}/{Trigger}", jobContext.JobKey(), jobContext.TriggerKey());
             try
             {
-                await _job.ExecuteAsync(jobContext, context.CancellationToken).ConfigureAwait(false);
+                await job.ExecuteAsync(jobContext, context.CancellationToken).ConfigureAwait(false);
                 _logger.LogInformation("Completed scheduled job {Job}/{Trigger}", jobContext.JobKey(), jobContext.TriggerKey());
             }
             catch (Exception ex)

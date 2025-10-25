@@ -19,14 +19,9 @@ public class EventSourcing_SampleTests
             ApplyChange(new CounterIncremented(amount));
         }
 
-        protected override void When(IDomainEvent @event)
+        private void When(CounterIncremented e)
         {
-            switch (@event)
-            {
-                case CounterIncremented e:
-                    Count += e.Amount;
-                    break;
-            }
+            Count += e.Amount;
         }
     }
 

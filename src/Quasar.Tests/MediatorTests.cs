@@ -1,6 +1,8 @@
 using Microsoft.Extensions.DependencyInjection;
+using Quasar.Core;
 using Quasar.Cqrs;
 using Quasar.Security;
+using System.Collections.Generic;
 using Xunit;
 
 namespace Quasar.Tests;
@@ -14,19 +16,23 @@ public class MediatorTests
             => Task.FromResult($"pong:{query.Message}");
     }
 
-    private sealed record Add(int A, int B) : ICommand<int>;
-    private sealed class AddHandler : ICommandHandler<Add, int>
+    private sealed record Add(int A, int B) : ICommand<Result<int>>;
+    private sealed class AddHandler : ICommandHandler<Add, Result<int>>
     {
-        public Task<int> Handle(Add command, CancellationToken cancellationToken = default)
-            => Task.FromResult(command.A + command.B);
+        public Task<Result<int>> Handle(Add command, CancellationToken cancellationToken = default)
+            => Task.FromResult(Result<int>.Success(command.A + command.B));
     }
 
-    private sealed class ThrowingValidator : IValidator<Add>
+    private sealed class NegativeValidator : IValidator<Add>
     {
-        public Task ValidateAsync(Add instance, CancellationToken cancellationToken = default)
+        public Task<List<Error>> ValidateAsync(Add instance, CancellationToken cancellationToken = default)
         {
-            if (instance.A < 0) throw new ValidationException("A must be >= 0");
-            return Task.CompletedTask;
+            var errors = new List<Error>();
+            if (instance.A < 0)
+            {
+                errors.Add(new Error("test.validation", "A must be >= 0"));
+            }
+            return Task.FromResult(errors);
         }
     }
 
@@ -64,17 +70,20 @@ public class MediatorTests
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(TransactionBehavior<,>));
         services.AddLogging();
-        services.AddScoped<ICommandHandler<Add, int>, AddHandler>();
-        services.AddScoped<IValidator<Add>, ThrowingValidator>();
+        services.AddScoped<ICommandHandler<Add, Result<int>>, AddHandler>();
+        services.AddScoped<IValidator<Add>, NegativeValidator>();
         var tx = new FlagTransaction();
         services.AddSingleton<ICommandTransaction>(tx);
         var sp = services.BuildServiceProvider();
 
         var mediator = sp.GetRequiredService<IMediator>();
-        await Assert.ThrowsAsync<ValidationException>(() => mediator.Send(new Add(-1, 2)));
+        var failedResult = await mediator.Send(new Add(-1, 2));
+        Assert.True(failedResult.IsFailure);
+        Assert.Equal("Validation.Failed", failedResult.Error!.Value.Code);
 
-        var ok = await mediator.Send(new Add(1, 2));
-        Assert.Equal(3, ok);
+        var okResult = await mediator.Send(new Add(1, 2));
+        Assert.True(okResult.IsSuccess);
+        Assert.Equal(3, okResult.Value);
         Assert.True(tx.Executed);
     }
 }

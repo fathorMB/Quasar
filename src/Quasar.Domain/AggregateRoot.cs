@@ -1,4 +1,6 @@
 using Quasar.Core;
+using System.Collections.Concurrent;
+using System.Reflection;
 
 namespace Quasar.Domain;
 
@@ -12,6 +14,8 @@ public interface IDomainEvent { }
 /// </summary>
 public abstract class AggregateRoot
 {
+    private static readonly ConcurrentDictionary<Type, MethodInfo?> WhenCache = new();
+    
     private readonly List<IDomainEvent> _uncommitted = new();
 
     /// <summary>
@@ -49,9 +53,18 @@ public abstract class AggregateRoot
     }
 
     /// <summary>
-    /// Applies the effects of <paramref name="event"/> to the aggregate state.
+    /// Applies the effects of <paramref name="event"/> to the aggregate state by invoking the conventional "When" method.
     /// </summary>
-    protected abstract void When(IDomainEvent @event);
+    protected virtual void When(IDomainEvent @event)
+    {
+        var eventType = @event.GetType();
+
+        var when = WhenCache.GetOrAdd(eventType, eType =>
+            GetType().GetMethod("When", BindingFlags.Instance | BindingFlags.NonPublic, new[] { eType })
+        );
+
+        when?.Invoke(this, new object[] { @event });
+    }
 
     /// <summary>
     /// Dequeues all uncommitted domain events and clears the internal buffer.

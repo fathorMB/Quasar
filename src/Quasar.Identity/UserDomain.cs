@@ -44,22 +44,23 @@ public sealed class UserAggregate : AggregateRoot
             ApplyChange(new UserRoleRevoked(Id, roleId));
     }
 
-    protected override void When(IDomainEvent @event)
+    private void When(UserRegistered e)
     {
-        switch (@event)
-        {
-            case UserRegistered e:
-                Id = e.UserId;
-                Username = e.Username;
-                Email = e.Email;
-                break;
-            case UserRoleAssigned e:
-                _roles.Add(e.RoleId);
-                break;
-            case UserRoleRevoked e:
-                _roles.Remove(e.RoleId);
-                break;
-        }
+        Id = e.UserId;
+        Username = e.Username;
+        Email = e.Email;
+    }
+
+    private void When(UserPasswordSet e) { }
+
+    private void When(UserRoleAssigned e)
+    {
+        _roles.Add(e.RoleId);
+    }
+
+    private void When(UserRoleRevoked e)
+    {
+        _roles.Remove(e.RoleId);
     }
 }
 
@@ -96,24 +97,25 @@ public sealed class RoleAggregate : AggregateRoot
             ApplyChange(new RolePermissionRevoked(Id, permission));
     }
 
-    protected override void When(IDomainEvent @event)
+    private void When(RoleCreated e)
     {
-        switch (@event)
-        {
-            case RoleCreated e:
-                Id = e.RoleId;
-                Name = e.Name;
-                break;
-            case RoleRenamed e:
-                Name = e.Name;
-                break;
-            case RolePermissionGranted e:
-                _permissions.Add(e.Permission);
-                break;
-            case RolePermissionRevoked e:
-                _permissions.Remove(e.Permission);
-                break;
-        }
+        Id = e.RoleId;
+        Name = e.Name;
+    }
+
+    private void When(RoleRenamed e)
+    {
+        Name = e.Name;
+    }
+
+    private void When(RolePermissionGranted e)
+    {
+        _permissions.Add(e.Permission);
+    }
+
+    private void When(RolePermissionRevoked e)
+    {
+        _permissions.Remove(e.Permission);
     }
 }
 
