@@ -1,0 +1,25 @@
+﻿<Project>
+  <PropertyGroup>
+    <Authors>Quasar Framework</Authors>
+    <Company>Quasar</Company>
+    <Description Condition="'$(Description)' == ''">Quasar micro-framework component: $(AssemblyName).</Description>
+    <RepositoryUrl>https://github.com/fathorMB/Quasar</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/fathorMB/Quasar</PackageProjectUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageTags>quasar;microframework;cqrs;eventsourcing</PackageTags>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
+  </ItemGroup>
+
+  <PropertyGroup Condition="'$(IsPackable)' == ''">
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+</Project>
