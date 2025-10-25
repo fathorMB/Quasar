@@ -1,6 +1,6 @@
-# Quasar Micro-Framework
+﻿# Quasar Micro-Framework
 
-Quasar is an opinionated .NET 8 micro-framework for building data-centric, CQRS and event-sourced APIs. It combines mediator-driven command/query handling, a pluggable event store, relational/document read models, identity & ACL, logging, and optional real-time streaming over SignalR with TimescaleDB time-series persistence.
+Quasar is a .NET 8 micro-framework for building CQRS and event-sourced APIs. It combines a mediator, pluggable event storage, rich read-model projections, identity & ACL, logging, and optional real-time streaming.
 
 ## Table of Contents
 
@@ -20,7 +20,8 @@ Quasar is an opinionated .NET 8 micro-framework for building data-centric, CQRS 
   - [Quasar.Logging](#quasarlogging)
   - [Quasar.RealTime](#quasarrealtime)
 - [Identity & ACL](#identity--acl)
-- [Time-Series & SignalR Streaming](#time-series--signalr-streaming)\n- [Quartz Scheduling](#quartz-scheduling)
+- [Time-Series & SignalR Streaming](#time-series--signalr-streaming)
+- [Quartz Scheduling](#quartz-scheduling)
 - [Sample Web UI](#sample-web-ui)
 - [Extending Quasar](#extending-quasar)
 - [Testing](#testing)
@@ -30,41 +31,39 @@ Quasar is an opinionated .NET 8 micro-framework for building data-centric, CQRS 
 
 - **Mediator-centric CQRS** with pipeline behaviors for validation, transactions, and authorization.
 - **Event-sourced aggregates** with pluggable stores (SQL Server, SQLite, in-memory).
-- **Relational read models** powered by EF Core and optional document/time-series abstractions.
+- **Relational read models** powered by EF Core plus optional document & time-series abstractions.
 - **Identity & ACL** with JWT issuance, refresh tokens, and dynamic role/permission management.
-- **Serilog logging** helpers for console, file, and Seq sinks.
-- **Real-time streaming** via SignalR with automatic TimescaleDB persistence.
-- **Fully wired sample API & Web UI** to experiment with all features (counter/cart commands, sensor telemetry).
+- **Logging helpers** via Serilog (console, file, Seq, in-memory buffer).
+- **Real-time streaming** via SignalR with TimescaleDB-backed time-series persistence.
+- **End-to-end sample** demonstrating counter/cart flows, sensor telemetry, and real-time dashboards.
 
 ## Architecture Overview
 
 ```
-┌────────────────┐    ┌──────────────┐
-│  API Endpoints │───▶│   Mediator   │──┐
-└────────────────┘    └──────────────┘  │
-                                         │
-                                 ┌───────▼────────┐
-                                 │  Pipeline      │
-                                 │  Behaviors     │
-                                 │ (Validation,   │
-                                 │  Transaction,  │
-                                 │  Authorization)│
-                                 └───────┬────────┘
-                                         │
-                              ┌──────────▼─────────┐
-                              │ Command/Query      │
-                              │ Handlers           │
-                              └──────────┬─────────┘
-                                         │
-                  ┌──────────────────────▼──────────────────────┐
-                  │   Event Sourcing & Persistence Layer        │
-                  │  (Event Store, Snapshots, Read Models, etc.)│
-                  └──────────────────────┬──────────────────────┘
-                                         │
-                           ┌─────────────▼─────────────┐
-                           │ Projections & Real-Time   │
-                           │  (TimeSeries + SignalR)   │
-                           └───────────────────────────┘
++--------------------+    +--------------+
+|  API Endpoints     | -> |   Mediator   | --+
++--------------------+    +--------------+   |
+                                            |
+                               +---------------------------+
+                               |   Pipeline Behaviors      |
+                               | (Validation, Transaction, |
+                               |  Authorization, etc.)     |
+                               +------------+--------------+
+                                            |
+                              +-------------v--------------+
+                              |   Command / Query          |
+                              |         Handlers           |
+                              +-------------+--------------+
+                                            |
++------------------------------v---------------------------+
+|   Event Sourcing & Persistence Layer                     |
+|   (Event Store, Snapshots, Read Models, ACL, Logging)    |
++------------------------------+---------------------------+
+                               |
+                    +----------v-----------+
+                    | Projections &        |
+                    | Real-Time Streaming  |
+                    +----------------------+
 ```
 
 ## Getting Started
@@ -72,8 +71,8 @@ Quasar is an opinionated .NET 8 micro-framework for building data-centric, CQRS 
 ### Prerequisites
 
 - .NET SDK 8.0 (preview tolerated by the repo).
-- PostgreSQL with TimescaleDB extension (optional, used for sensor streaming).
-- SQL Server or SQLite (depending on selected persistence mode).
+- SQL Server or SQLite (depending on the selected persistence mode).
+- PostgreSQL with TimescaleDB (optional; only required for sensor telemetry demo).
 
 ### Clone & Build
 
@@ -90,12 +89,12 @@ dotnet test Quasar.Tests/Quasar.Tests.csproj
 dotnet run --project Quasar.Samples.BasicApi
 ```
 
-Navigate to:
+Browse to:
 
-- **Swagger UI:** `http://localhost:<port>/` (root serving swagger because web UI served from `/app`).  
+- **Swagger UI:** `http://localhost:<port>/swagger`
 - **Sample Web Console:** `http://localhost:<port>/app/index.html`
 
-Use the seeded credentials to login via the console:
+Seeded credentials for the console:
 
 - Username: `swagger-demo`
 - Password: `Passw0rd!`
@@ -104,95 +103,61 @@ Use the seeded credentials to login via the console:
 
 ### Quasar.Core
 
-Lightweight primitives shared across the framework.
-
-- `IClock`, `SystemClock` – time abstraction for deterministic testing.
-- `GuidIds` – helper for GUID-based identifiers.
-- `Result` / `Result<T>` / `Error` – value types for expressing service outcomes.
+Shared primitives such as `IClock`, strongly-typed identifiers, and `Result`/`Error` value types.
 
 ### Quasar.Cqrs
 
-Mediator-powered command/query dispatch.
-
-- Marker interfaces: `ICommand<TResult>`, `IQuery<TResult>`.
-- Handler interfaces and mediator pipeline behaviors (`ValidationBehavior`, `TransactionBehavior`, `AuthorizationBehavior`).
-- Default `Mediator` implementation using DI.
+Mediator, command/query abstractions, and pipeline behaviors (validation, transactions, authorization).
 
 ### Quasar.Domain
 
-Domain-driven building blocks.
-
-- `AggregateRoot` – base class supporting event sourcing and domain events.
-- `ValueObject` – structural equality for immutable value types.
-- `IDomainEvent` – marker interface for domain events.
+Event-sourced aggregate support (`AggregateRoot`), value objects, and domain event plumbing.
 
 ### Quasar.EventSourcing
 
-Abstractions (`IEvent`, `EventEnvelope`, `IEventStore`, `ISnapshotStore`) and repository support.
-
-Implementations provided:
-
-- **In-memory store** for testing.
-- **SQLite store** with `SqliteEventStore`, `SqliteSnapshotStore`, `SqliteCommandTransaction`.
-- **SQL Server store** (via `SqlEventStore`, `SqlSnapshotStore`, `SqlCommandTransaction`).
+Abstractions plus implementations for in-memory, SQLite, and SQL Server event stores and snapshots.
 
 ### Quasar.Persistence
 
-Read model abstractions (`IReadRepository<T>`, `IDocumentCollection<TDocument>`, `ITimeSeriesWriter/Reader`). EF Core-based repositories live in `Quasar.Persistence.Relational.EfCore`.
+Read model abstractions (`IReadRepository<T>`, `IDocumentCollection<TDocument>`, `ITimeSeriesWriter/Reader`) with EF Core integrations.
 
 ### Quasar.Security
 
-Authorization infrastructure.
-
-- `AclEntry`, `AclEffect`, `IAuthorizationService`, `ITokenService`.
-- `AuthorizationBehavior` for mediator pipeline.
+Identity & ACL primitives, authorization behaviors, and JWT token services.
 
 ### Quasar.Logging
 
-Serilog integration helpers via `UseQuasarSerilog` and `LoggingOptions` (console, file, Seq sinks).
+Serilog configuration extensions (`UseQuasarSerilog`) with console/file/Seq/in-memory buffering options.
 
 ### Quasar.RealTime
 
-Bridges events to time-series persistence + real-time notifications.
-
-- `RealTimeProjection<TEvent, TPayload>` persists incoming events via `ITimeSeriesWriter` and pushes payloads through an `IRealTimeNotifier` implementation.
-- Delegate adapters simplify mapping from event types to time-series points or SignalR payloads.
-
-`Quasar.RealTime.SignalR` adds strongly typed hubs, dispatchers, and DI helpers for SignalR-based broadcasting.
+Adapters for bridging events to time-series persistence and SignalR hubs.
 
 ## Identity & ACL
 
-`Quasar.Identity` + `Quasar.Identity.Persistence.Relational.EfCore` provide event-sourced users, roles, permissions and EF Core projections. The sample seeds a demo user/role granting:
+`Quasar.Identity` and `Quasar.Identity.Persistence.Relational.EfCore` provide event-sourced users, roles, and permissions. The sample seeds:
 
-- `counter.increment`
-- `cart.add`
-- `sensor.ingest`
+- Role granting `counter.increment`, `cart.add`, and `sensor.ingest` permissions.
+- Demo user (`swagger-demo`) assigned to the role.
 
-Identity endpoints exposed in the sample API (`/auth/register`, `/auth/login`, `/auth/roles`, `/auth/acl`, etc.) demonstrate registration, JWT issuance with refresh tokens, role/permission management, and ACL evaluation inside the mediator pipeline.
+Endpoints under `/auth` demonstrate registration, login, role administration, and ACL checks.
 
 ## Time-Series & SignalR Streaming
 
-`Quasar.Persistence.TimeSeries.Timescale` integrates with TimescaleDB:
-
-- Creates the database (if missing) and ensures the hypertable schema.
-- Implements `ITimeSeriesWriter` / `ITimeSeriesReader` for efficient ingestion and querying.
-
-`Quasar.RealTime` ties events to SignalR:
-
-- `SensorRealTimeProjection` in the sample transforms sensor events into Timescale points and broadcasts payloads via `SensorHub`.
-- `SignalRServiceCollectionExtensions.AddSignalRNotifier` registers typed dispatchers + notifiers.
+`Quasar.Persistence.TimeSeries.Timescale` configures TimescaleDB and exposes writers/readers.
+`Quasar.RealTime` projects sensor readings into Timescale and broadcasts them via a typed SignalR hub.
 
 ## Quartz Scheduling
 
-Quasar ships with a Quartz.NET integration that allows you to register jobs using dependency injection while exposing REST endpoints for operations.
+Quartz integration is built into the framework:
 
-`csharp
+```csharp
 services.AddQuartzScheduler(options =>
 {
     options.SchedulerName = "SampleScheduler";
     options.Configure = builder =>
     {
-        builder.ScheduleJob<IncrementCounterJob>(
+        builder.ScheduleQuasarJob<IncrementCounterJob>(
             job => job.WithIdentity("counter", "demo"),
             trigger => trigger
                 .WithIdentity("counter-trigger", "demo")
@@ -201,58 +166,43 @@ services.AddQuartzScheduler(options =>
     };
 });
 
-app.MapQuartzEndpoints(); // exposes /quartz management endpoints
-`
+app.MapQuartzEndpoints();
+```
 
-Endpoints exposed when you call MapQuartzEndpoints():
+When configured with SQL Server or SQLite, Quasar automatically creates the Quartz schema during startup and exposes management endpoints:
 
-- GET /quartz/jobs � lists registered jobs and trigger metadata.
-- POST /quartz/jobs/{group}/{name}/trigger � triggers a job immediately.
-- POST /quartz/jobs/{group}/{name}/pause � pauses a job.
-- POST /quartz/jobs/{group}/{name}/resume � resumes a previously paused job.
+- `GET /quartz/jobs`
+- `POST /quartz/jobs/{group}/{name}/trigger`
+- `POST /quartz/jobs/{group}/{name}/pause`
+- `POST /quartz/jobs/{group}/{name}/resume`
 
-Jobs can take dependencies through their constructor; the scheduler uses the application service provider for activation.
 ## Sample Web UI
 
-Located under `Quasar.Samples.BasicApi/wwwroot/app`.
+Located in `Quasar.Samples.BasicApi/wwwroot/app`, the console allows you to:
 
-Features:
-
-- Register & login with JWT tokens (credentials prefilled).
-+- Counter and Cart demo endpoints.
-− Sensor ingestion & history querying (requires TimescaleDB connection).
-− Real-time feed of sensor readings via SignalR.
-− Live logging pane for API responses.
+- Register and log in (with pre-filled demo credentials).
+- Increment the counter and manage cart items.
+- Ingest and query sensor readings.
+- View real-time sensor broadcasts over SignalR.
+- Inspect server-side logs (including background job output) via a live polling pane.
 
 ## Extending Quasar
 
-1. **Add a new aggregate**
-   - Derive from `AggregateRoot`, define events + handlers.
-   - Create command/query handlers wired via DI in `Program.cs`.
-2. **Create projections**
-   - Implement `IProjection<TEvent>` to translate events into read models.
-   - Register as `services.AddScoped<object, YourProjection>();` to be picked up by the polling projector.
-3. **Secure requests**
-   - Implement `IAuthorizableRequest` on commands/queries.
-   - Provide authorization logic through `IAuthorizationService` (EF Core-backed sample included).
-4. **Add real-time broadcasts**
-   - Map events to `TimeSeriesPoint` and payloads via adapters.
-   - Create a typed `RealTimeProjection` and register it together with a SignalR hub.
+1. **Add a new aggregate** – derive from `AggregateRoot`, define events and handlers, wire commands/queries in DI.
+2. **Create projections** – implement `IProjection<TEvent>` and register it to participate in polling projectors.
+3. **Secure requests** – implement `IAuthorizableRequest`, add ACL checks via `IAuthorizationService`.
+4. **Broadcast in real time** – map events to `TimeSeriesPoint` and typed hub payloads using real-time adapters.
 
 ## Testing
 
-Run unit tests:
+Run unit tests with:
 
 ```bash
 dotnet test Quasar.Tests/Quasar.Tests.csproj
 ```
 
-Tests cover mediator behavior, in-memory event store, and utility types. Extend the suite to cover new aggregates or projections. For integration tests, you can spin up SQL/Timescale containers using Docker.
+The suite covers mediator behaviors, event store logic, and scheduling infrastructure. Extend it as you add domain features.
 
 ## License
 
-This project is provided under the MIT License. See [LICENSE](LICENSE) for details.
-
-
-
-
+Released under the MIT License. See [LICENSE](LICENSE) for details.
