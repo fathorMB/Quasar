@@ -35,6 +35,8 @@ public sealed class QuartzSchedulerBuilder
             var jobBuilder = configureJob(JobBuilder.Create<TJob>());
             var job = jobBuilder.Build();
 
+            if (await scheduler.CheckExists(job.Key, cancellationToken).ConfigureAwait(false)) return;
+
             var triggerBuilder = configureTrigger(TriggerBuilder.Create().ForJob(job));
             var trigger = triggerBuilder.Build();
 
@@ -55,6 +57,8 @@ public sealed class QuartzSchedulerBuilder
         {
             var jobBuilder = configureJob(JobBuilder.Create<QuasarJobAdapter<TJob>>());
             var job = jobBuilder.Build();
+
+            if (await scheduler.CheckExists(job.Key, cancellationToken).ConfigureAwait(false)) return;
 
             var triggerBuilder = configureTrigger(TriggerBuilder.Create().ForJob(job));
             var trigger = triggerBuilder.Build();

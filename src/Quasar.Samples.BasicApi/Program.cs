@@ -29,6 +29,7 @@ using Quasar.Scheduling.Quartz;
 using Quartz;
 using Quasar.Telemetry;
 using OpenTelemetry.Trace;
+using Quasar.Auditing;
 
 var builder = WebApplication.CreateBuilder(args);
 var services = builder.Services;
@@ -54,6 +55,7 @@ services.AddQuasarTelemetry(builder =>
     builder.AddConsoleExporter();
     // In a real app, you would configure other exporters like Jaeger, OTLP, etc.
 });
+services.AddQuasarAuditing();
 services.AddQuasarEventSourcingCore();
 
 // Event serializer mapping

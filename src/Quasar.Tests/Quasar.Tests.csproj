@@ -35,6 +35,7 @@
     <ProjectReference Include="..\Quasar.Cqrs\Quasar.Cqrs.csproj" />
     <ProjectReference Include="..\Quasar.Security\Quasar.Security.csproj" />
     <ProjectReference Include="..\Quasar.Scheduling.Quartz\Quasar.Scheduling.Quartz.csproj" />
+    <ProjectReference Include="..\Quasar.Auditing\Quasar.Auditing.csproj" />
   </ItemGroup>
 
 </Project>

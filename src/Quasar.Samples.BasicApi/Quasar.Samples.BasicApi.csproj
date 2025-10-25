@@ -20,6 +20,7 @@
     <ProjectReference Include="..\Quasar.RealTime.SignalR\Quasar.RealTime.SignalR.csproj" />
     <ProjectReference Include="..\Quasar.Scheduling.Quartz\Quasar.Scheduling.Quartz.csproj" />
     <ProjectReference Include="..\Quasar.Telemetry\Quasar.Telemetry.csproj" />
+    <ProjectReference Include="..\Quasar.Auditing\Quasar.Auditing.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Data.SqlClient" Version="7.0.0-preview2.25289.6" />
@@ -30,4 +31,3 @@
     <PackageReference Include="OpenTelemetry.Exporter.Console" Version="1.9.0" />
   </ItemGroup>
 </Project>
-
