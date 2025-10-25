@@ -1,3 +1,4 @@
+using System;
 using Microsoft.Data.SqlClient;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.DependencyInjection;
@@ -23,6 +24,8 @@ using Quasar.Samples.BasicApi.Swagger;
 using Quasar.Samples.BasicApi.RealTime;
 using Quasar.RealTime;
 using Quasar.RealTime.SignalR;
+using Quasar.Scheduling.Quartz;
+using Quartz;
 
 var builder = WebApplication.CreateBuilder(args);
 var services = builder.Services;
@@ -119,6 +122,20 @@ services.UseTimescaleTimeSeries(options =>
 services.AddSingleton<SensorTimeSeriesAdapter>();
 services.AddSingleton<SensorPayloadAdapter>();
 services.AddSignalRNotifier<SensorHub, ISensorClient, SensorReadingPayload, SensorDispatcher>();
+services.AddTransient<IncrementCounterJob>();
+services.AddQuartzScheduler(options =>
+{
+    options.SchedulerName = "SampleScheduler";
+    options.Configure = builder =>
+    {
+        builder.ScheduleJob<IncrementCounterJob>(
+            job => job.WithIdentity("counter", "demo"),
+            trigger => trigger
+                .WithIdentity("counter-trigger", "demo")
+                .WithSimpleSchedule(s => s.WithInterval(TimeSpan.FromMinutes(1)).RepeatForever())
+                .StartNow());
+    };
+});
 
 var storeMode = configuration["Quasar:Store"]?.ToLowerInvariant() ?? "inmemory";
 switch (storeMode)
@@ -216,6 +233,8 @@ app.UseSwaggerUI(options =>
     options.SwaggerEndpoint("/swagger/v1/swagger.json", "Quasar Sample API v1");
     options.RoutePrefix = string.Empty; // expose at root
 });
+
+app.MapQuartzEndpoints();
 
 app.MapRealTimeHub<SensorHub>("/hubs/sensors");
 
@@ -342,3 +361,8 @@ app.Run();
 
 public sealed record SensorIngestRequest(Guid DeviceId, string SensorType, double Value, DateTime? TimestampUtc);
 public sealed record SensorReadingResponse(DateTime TimestampUtc, double Value, string SensorType);
+
+
+
+
+

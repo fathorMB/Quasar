@@ -32,6 +32,7 @@
     <ProjectReference Include="..\Quasar.EventSourcing.InMemory\Quasar.EventSourcing.InMemory.csproj" />
     <ProjectReference Include="..\Quasar.Cqrs\Quasar.Cqrs.csproj" />
     <ProjectReference Include="..\Quasar.Security\Quasar.Security.csproj" />
+    <ProjectReference Include="..\Quasar.Scheduling.Quartz\Quasar.Scheduling.Quartz.csproj" />
   </ItemGroup>
 
 </Project>

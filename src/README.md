@@ -20,7 +20,7 @@ Quasar is an opinionated .NET 8 micro-framework for building data-centric, CQRS 
   - [Quasar.Logging](#quasarlogging)
   - [Quasar.RealTime](#quasarrealtime)
 - [Identity & ACL](#identity--acl)
-- [Time-Series & SignalR Streaming](#time-series--signalr-streaming)
+- [Time-Series & SignalR Streaming](#time-series--signalr-streaming)\n- [Quartz Scheduling](#quartz-scheduling)
 - [Sample Web UI](#sample-web-ui)
 - [Extending Quasar](#extending-quasar)
 - [Testing](#testing)
@@ -182,6 +182,36 @@ Identity endpoints exposed in the sample API (`/auth/register`, `/auth/login`, `
 - `SensorRealTimeProjection` in the sample transforms sensor events into Timescale points and broadcasts payloads via `SensorHub`.
 - `SignalRServiceCollectionExtensions.AddSignalRNotifier` registers typed dispatchers + notifiers.
 
+## Quartz Scheduling
+
+Quasar ships with a Quartz.NET integration that allows you to register jobs using dependency injection while exposing REST endpoints for operations.
+
+`csharp
+services.AddQuartzScheduler(options =>
+{
+    options.SchedulerName = "SampleScheduler";
+    options.Configure = builder =>
+    {
+        builder.ScheduleJob<IncrementCounterJob>(
+            job => job.WithIdentity("counter", "demo"),
+            trigger => trigger
+                .WithIdentity("counter-trigger", "demo")
+                .WithSimpleSchedule(s => s.WithInterval(TimeSpan.FromMinutes(1)).RepeatForever())
+                .StartNow());
+    };
+});
+
+app.MapQuartzEndpoints(); // exposes /quartz management endpoints
+`
+
+Endpoints exposed when you call MapQuartzEndpoints():
+
+- GET /quartz/jobs – lists registered jobs and trigger metadata.
+- POST /quartz/jobs/{group}/{name}/trigger – triggers a job immediately.
+- POST /quartz/jobs/{group}/{name}/pause – pauses a job.
+- POST /quartz/jobs/{group}/{name}/resume – resumes a previously paused job.
+
+Jobs can take dependencies through their constructor; the scheduler uses the application service provider for activation.
 ## Sample Web UI
 
 Located under `Quasar.Samples.BasicApi/wwwroot/app`.
@@ -222,3 +252,7 @@ Tests cover mediator behavior, in-memory event store, and utility types. Extend 
 ## License
 
 This project is provided under the MIT License. See [LICENSE](LICENSE) for details.
+
+
+
+
