@@ -1,0 +1,95 @@
+﻿name: Publish NuGet Packages
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'version.json'
+      - '.github/workflows/publish-packages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish:
+    name: Pack and Publish
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.100-rc.2.25502.107
+          include-prerelease: true
+
+      - name: Read version specification
+        id: version
+        run: |
+          VERSION_FILE=version.json
+          if [ ! -f "$VERSION_FILE" ]; then
+            echo "Version file '$VERSION_FILE' not found." >&2
+            exit 1
+          fi
+          MAJOR=$(jq -r '.major' "$VERSION_FILE")
+          MINOR=$(jq -r '.minor' "$VERSION_FILE")
+          PATCH=$(jq -r '.patch' "$VERSION_FILE")
+          PREVIEW=$(jq -r '.preview' "$VERSION_FILE")
+
+          if [ -z "$MAJOR" ] || [ -z "$MINOR" ] || [ -z "$PATCH" ]; then
+            echo "Version file is missing one of the required numeric fields." >&2
+            exit 1
+          fi
+
+          if [ "$PREVIEW" = "true" ] || [ "$PREVIEW" = "True" ]; then
+            VERSION="$MAJOR.$MINOR.$PATCH-preview.${GITHUB_RUN_NUMBER}"
+          else
+            VERSION="$MAJOR.$MINOR.$PATCH"
+          fi
+
+          echo "Resolved package version: $VERSION"
+          echo "PACKAGE_VERSION=$VERSION" >> $GITHUB_ENV
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Restore dependencies
+        run: dotnet restore src/Quasar.sln
+
+      - name: Build solution
+        run: dotnet build src/Quasar.sln --configuration Release --no-restore
+
+      - name: Pack library projects
+        run: |
+          mkdir -p artifacts
+          find src -name '*.csproj' \
+            ! -path '*/Samples/*' \
+            ! -path '*/Tests/*' \
+            -print0 | while IFS= read -r -d '' project; do
+              echo "Packing $project"
+              dotnet pack "$project" --configuration Release --no-build \
+                -p:PackageVersion=$PACKAGE_VERSION \
+                -p:ContinuousIntegrationBuild=true \
+                -p:IncludeSymbols=false \
+                -o artifacts
+            done
+
+      - name: Publish packages to GitHub Packages
+        env:
+          NUGET_SOURCE: https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json
+          NUGET_API_KEY: ${{ secrets.GH_PACKAGES_TOKEN }}
+        run: |
+          if [ -z "$NUGET_API_KEY" ]; then
+            echo 'Missing GH_PACKAGES_TOKEN secret.' >&2
+            exit 1
+          fi
+          shopt -s nullglob
+          for package in artifacts/*.nupkg; do
+            echo "Publishing $package"
+            dotnet nuget push "$package" --api-key "$NUGET_API_KEY" --source "$NUGET_SOURCE" --skip-duplicate
+          done
