@@ -67,17 +67,14 @@ jobs:
       - name: Pack library projects
         run: |
           mkdir -p artifacts
-          find src -name '*.csproj' \
-            ! -path '*/Samples/*' \
-            ! -path '*/Tests/*' \
-            -print0 | while IFS= read -r -d '' project; do
-              echo "Packing $project"
-              dotnet pack "$project" --configuration Release --no-build \
-                -p:PackageVersion=$PACKAGE_VERSION \
-                -p:ContinuousIntegrationBuild=true \
-                -p:IncludeSymbols=false \
-                -o artifacts
-            done
+          dotnet pack src/Quasar.sln --configuration Release --no-build \
+            -p:PackageVersion=$PACKAGE_VERSION \
+            -p:ContinuousIntegrationBuild=true \
+            -p:IncludeSymbols=false \
+            -o artifacts
+
+      - name: List generated packages
+        run: ls -1 artifacts
 
       - name: Publish packages to GitHub Packages
         env:
