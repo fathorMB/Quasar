@@ -2,8 +2,38 @@
 
 Quasar is a modular .NET micro-framework for CQRS, event sourcing, identity, scheduling, logging, and real-time streaming. It bundles a mediator-centric command pipeline, pluggable event stores, EF Core read models, ACL/Identity, Quartz-based scheduling, and SignalR time-series streaming.
 
+[![Build Status](https://github.com/fathorMB/Quasar/actions/workflows/publish-packages.yml/badge.svg)](https://github.com/fathorMB/Quasar/actions/workflows/publish-packages.yml)
+
+## Package Badges
+
+| Package | Status |
+| --- | --- |
+| Quasar.Core | [![Quasar.Core](https://img.shields.io/badge/GitHub%20Packages-Quasar.Core-24292e?logo=github)](https://github.com/users/fathorMB/packages/nuget/quasar.core) |
+| Quasar.Cqrs | [![Quasar.Cqrs](https://img.shields.io/badge/GitHub%20Packages-Quasar.Cqrs-24292e?logo=github)](https://github.com/users/fathorMB/packages/nuget/quasar.cqrs) |
+| Quasar.Domain | [![Quasar.Domain](https://img.shields.io/badge/GitHub%20Packages-Quasar.Domain-24292e?logo=github)](https://github.com/users/fathorMB/packages/nuget/quasar.domain) |
+| Quasar.EventSourcing.Abstractions | [![Quasar.EventSourcing.Abstractions](https://img.shields.io/badge/GitHub%20Packages-Quasar.EventSourcing.Abstractions-24292e?logo=github)](https://github.com/users/fathorMB/packages/nuget/quasar.eventsourcing.abstractions) |
+| Quasar.EventSourcing.InMemory | [![Quasar.EventSourcing.InMemory](https://img.shields.io/badge/GitHub%20Packages-Quasar.EventSourcing.InMemory-24292e?logo=github)](https://github.com/users/fathorMB/packages/nuget/quasar.eventsourcing.inmemory) |
+| Quasar.EventSourcing.Sqlite | [![Quasar.EventSourcing.Sqlite](https://img.shields.io/badge/GitHub%20Packages-Quasar.EventSourcing.Sqlite-24292e?logo=github)](https://github.com/users/fathorMB/packages/nuget/quasar.eventsourcing.sqlite) |
+| Quasar.EventSourcing.SqlServer | [![Quasar.EventSourcing.SqlServer](https://img.shields.io/badge/GitHub%20Packages-Quasar.EventSourcing.SqlServer-24292e?logo=github)](https://github.com/users/fathorMB/packages/nuget/quasar.eventsourcing.sqlserver) |
+| Quasar.Persistence.Abstractions | [![Quasar.Persistence.Abstractions](https://img.shields.io/badge/GitHub%20Packages-Quasar.Persistence.Abstractions-24292e?logo=github)](https://github.com/users/fathorMB/packages/nuget/quasar.persistence.abstractions) |
+| Quasar.Persistence.Relational.EfCore | [![Quasar.Persistence.Relational.EfCore](https://img.shields.io/badge/GitHub%20Packages-Quasar.Persistence.Relational.EfCore-24292e?logo=github)](https://github.com/users/fathorMB/packages/nuget/quasar.persistence.relational.efcore) |
+| Quasar.Persistence.TimeSeries.Timescale | [![Quasar.Persistence.TimeSeries.Timescale](https://img.shields.io/badge/GitHub%20Packages-Quasar.Persistence.TimeSeries.Timescale-24292e?logo=github)](https://github.com/users/fathorMB/packages/nuget/quasar.persistence.timeseries.timescale) |
+| Quasar.Projections.Abstractions | [![Quasar.Projections.Abstractions](https://img.shields.io/badge/GitHub%20Packages-Quasar.Projections.Abstractions-24292e?logo=github)](https://github.com/users/fathorMB/packages/nuget/quasar.projections.abstractions) |
+| Quasar.Projections.Sqlite | [![Quasar.Projections.Sqlite](https://img.shields.io/badge/GitHub%20Packages-Quasar.Projections.Sqlite-24292e?logo=github)](https://github.com/users/fathorMB/packages/nuget/quasar.projections.sqlite) |
+| Quasar.Projections.SqlServer | [![Quasar.Projections.SqlServer](https://img.shields.io/badge/GitHub%20Packages-Quasar.Projections.SqlServer-24292e?logo=github)](https://github.com/users/fathorMB/packages/nuget/quasar.projections.sqlserver) |
+| Quasar.RealTime | [![Quasar.RealTime](https://img.shields.io/badge/GitHub%20Packages-Quasar.RealTime-24292e?logo=github)](https://github.com/users/fathorMB/packages/nuget/quasar.realtime) |
+| Quasar.RealTime.SignalR | [![Quasar.RealTime.SignalR](https://img.shields.io/badge/GitHub%20Packages-Quasar.RealTime.SignalR-24292e?logo=github)](https://github.com/users/fathorMB/packages/nuget/quasar.realtime.signalr) |
+| Quasar.Scheduling.Quartz | [![Quasar.Scheduling.Quartz](https://img.shields.io/badge/GitHub%20Packages-Quasar.Scheduling.Quartz-24292e?logo=github)](https://github.com/users/fathorMB/packages/nuget/quasar.scheduling.quartz) |
+| Quasar.Identity | [![Quasar.Identity](https://img.shields.io/badge/GitHub%20Packages-Quasar.Identity-24292e?logo=github)](https://github.com/users/fathorMB/packages/nuget/quasar.identity) |
+| Quasar.Identity.Persistence.Relational.EfCore | [![Quasar.Identity.Persistence.Relational.EfCore](https://img.shields.io/badge/GitHub%20Packages-Quasar.Identity.Persistence.Relational.EfCore-24292e?logo=github)](https://github.com/users/fathorMB/packages/nuget/quasar.identity.persistence.relational.efcore) |
+| Quasar.Identity.Web | [![Quasar.Identity.Web](https://img.shields.io/badge/GitHub%20Packages-Quasar.Identity.Web-24292e?logo=github)](https://github.com/users/fathorMB/packages/nuget/quasar.identity.web) |
+| Quasar.Logging | [![Quasar.Logging](https://img.shields.io/badge/GitHub%20Packages-Quasar.Logging-24292e?logo=github)](https://github.com/users/fathorMB/packages/nuget/quasar.logging) |
+| Quasar.Security | [![Quasar.Security](https://img.shields.io/badge/GitHub%20Packages-Quasar.Security-24292e?logo=github)](https://github.com/users/fathorMB/packages/nuget/quasar.security) |
+| Quasar.Web | [![Quasar.Web](https://img.shields.io/badge/GitHub%20Packages-Quasar.Web-24292e?logo=github)](https://github.com/users/fathorMB/packages/nuget/quasar.web) |
+
 ## Table of Contents
 
+- [Package Badges](#package-badges)
 - [Highlights](#highlights)
 - [Architecture Overview](#architecture-overview)
 - [Getting Started](#getting-started)
