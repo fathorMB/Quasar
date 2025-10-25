@@ -41,4 +41,25 @@ public sealed class QuartzSchedulerBuilder
             await scheduler.ScheduleJob(job, trigger, cancellationToken).ConfigureAwait(false);
         });
     }
+
+    /// <summary>
+    /// Convenience helper to schedule a Quasar job that does not take an explicit dependency on Quartz abstractions.
+    /// </summary>
+    public QuartzSchedulerBuilder ScheduleQuasarJob<TJob>(Func<JobBuilder, JobBuilder> configureJob, Func<TriggerBuilder, TriggerBuilder> configureTrigger)
+        where TJob : class, IQuasarJob
+    {
+        ArgumentNullException.ThrowIfNull(configureJob);
+        ArgumentNullException.ThrowIfNull(configureTrigger);
+
+        return Schedule(async (scheduler, services, cancellationToken) =>
+        {
+            var jobBuilder = configureJob(JobBuilder.Create<QuasarJobAdapter<TJob>>());
+            var job = jobBuilder.Build();
+
+            var triggerBuilder = configureTrigger(TriggerBuilder.Create().ForJob(job));
+            var trigger = triggerBuilder.Build();
+
+            await scheduler.ScheduleJob(job, trigger, cancellationToken).ConfigureAwait(false);
+        });
+    }
 }

@@ -34,6 +34,8 @@ internal sealed class QuartzSchedulerHostedService : IHostedService
             ["quartz.scheduler.instanceName"] = _options.SchedulerName
         };
 
+        await QuartzSchemaInitializer.EnsureSchemaAsync(properties, _logger, cancellationToken).ConfigureAwait(false);
+
         var factory = new StdSchedulerFactory(properties);
         _scheduler = await factory.GetScheduler(cancellationToken).ConfigureAwait(false);
         _scheduler.JobFactory = new ServiceProviderJobFactory(_services);

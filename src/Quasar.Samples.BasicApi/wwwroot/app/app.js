@@ -2,7 +2,9 @@
     accessToken: null,
     refreshToken: null,
     subjectId: null,
-    hubConnection: null
+    hubConnection: null,
+    serverLogCursor: 0,
+    serverLogErrorNotified: false
 };
 
 const log = (message, data) => {
@@ -65,7 +67,7 @@ const handleForm = (formId, handler) => {
         try {
             await handler(payload, form);
         } catch (err) {
-            log(`❌ ${formId}: ${err.message}`);
+            log(`ui:${formId} error: ${err.message}`);
         }
     });
 };
@@ -79,7 +81,7 @@ handleForm('registerForm', async payload => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
     });
-    log('✅ Registered user', result);
+    log('ui:registered user', result);
 });
 
 handleForm('loginForm', async payload => {
@@ -93,23 +95,23 @@ handleForm('loginForm', async payload => {
     const token = parseJwt(result.accessToken);
     state.subjectId = token.sub;
     setStatus();
-    log('✅ Logged in', result);
+    log('ui:logged in', result);
 });
 
 handleForm('counterForm', async payload => {
     const amount = Number(payload.amount || 1);
     const result = await apiFetch(`/counter/increment?amount=${amount}`, { method: 'POST' });
     document.getElementById('counterOutput').textContent = JSON.stringify(result, null, 2);
-    log('🔁 Counter incremented', result);
+    log('ui:counter incremented', result);
 });
 
 document.getElementById('refreshCounter').addEventListener('click', async () => {
     try {
         const result = await apiFetch('/counter');
         document.getElementById('counterOutput').textContent = JSON.stringify(result, null, 2);
-        log('ℹ️ Counter fetched', result);
+        log('ui:counter fetched', result);
     } catch (err) {
-        log(`❌ Counter fetch: ${err.message}`);
+        log(`ui:counter fetch error: ${err.message}`);
     }
 });
 
@@ -120,16 +122,16 @@ handleForm('cartForm', async payload => {
     });
     const result = await apiFetch(`/cart/add?${params.toString()}`, { method: 'POST' });
     document.getElementById('cartOutput').textContent = JSON.stringify(result, null, 2);
-    log('🛒 Item added to cart', result);
+    log('ui:item added to cart', result);
 });
 
 document.getElementById('refreshCart').addEventListener('click', async () => {
     try {
         const result = await apiFetch('/cart');
         document.getElementById('cartOutput').textContent = JSON.stringify(result, null, 2);
-        log('ℹ️ Cart fetched', result);
+        log('ui:cart fetched', result);
     } catch (err) {
-        log(`❌ Cart fetch: ${err.message}`);
+        log(`ui:cart fetch error: ${err.message}`);
     }
 });
 
@@ -145,7 +147,7 @@ handleForm('sensorIngestForm', async payload => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
     });
-    log('📡 Sensor reading ingested', result);
+    log('ui:sensor reading ingested', result);
 });
 
 handleForm('sensorQueryForm', async payload => {
@@ -154,7 +156,7 @@ handleForm('sensorQueryForm', async payload => {
     if (payload.toUtc) params.append('toUtc', new Date(payload.toUtc).toISOString());
     const result = await apiFetch(`/sensors/${payload.deviceId}/readings?${params.toString()}`);
     document.getElementById('sensorQueryOutput').textContent = JSON.stringify(result, null, 2);
-    log('📈 Sensor history fetched', result);
+    log('ui:sensor history fetched', result);
 });
 
 const hubStatus = document.getElementById('hubStatus');
@@ -175,11 +177,11 @@ const connectHub = async () => {
     try {
         await state.hubConnection.start();
         updateHubStatus(true);
-        log('🔌 SignalR connected');
+        log('ui:signalR connected');
     } catch (err) {
         state.hubConnection = null;
         updateHubStatus(false);
-        log(`❌ SignalR connect: ${err.message}`);
+        log(`ui:signalR connect error: ${err.message}`);
     }
 };
 
@@ -188,7 +190,25 @@ const disconnectHub = async () => {
     await state.hubConnection.stop();
     state.hubConnection = null;
     updateHubStatus(false);
-    log('🔌 SignalR disconnected');
+    log('ui:signalR disconnected');
+};
+
+const pollServerLogs = async () => {
+    try {
+        const result = await apiFetch(`/debug/logs/recent?since=${state.serverLogCursor}`);
+        if (Array.isArray(result) && result.length) {
+            result.forEach(entry => {
+                log(`server:${entry.level} ${entry.message}`, entry);
+            });
+            state.serverLogCursor = result[result.length - 1].sequence;
+        }
+        state.serverLogErrorNotified = false;
+    } catch (err) {
+        if (!state.serverLogErrorNotified) {
+            log(`server log stream error: ${err.message}`);
+            state.serverLogErrorNotified = true;
+        }
+    }
 };
 
 document.getElementById('connectHub').addEventListener('click', connectHub);
@@ -198,4 +218,6 @@ document.getElementById('clearLogs').addEventListener('click', () => {
     document.getElementById('log').textContent = '';
 });
 
+setInterval(pollServerLogs, 4000);
+pollServerLogs();
 setStatus();

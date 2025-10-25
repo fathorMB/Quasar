@@ -1,4 +1,5 @@
-using Microsoft.Extensions.Configuration;
+﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
 using Serilog.Events;
@@ -26,6 +27,18 @@ public static class LoggingExtensions
             foreach (var kv in options.LevelOverrides)
             {
                 configuration.MinimumLevel.Override(kv.Key, kv.Value);
+            }
+            if (options.UseInMemoryBuffer)
+            {
+                var buffer = services.GetService<InMemoryLogBuffer>();
+                if (buffer is not null)
+                {
+                    if (options.InMemoryBufferCapacity > 0 && buffer.Capacity != options.InMemoryBufferCapacity)
+                    {
+                        buffer.Resize(options.InMemoryBufferCapacity);
+                    }
+                    configuration.WriteTo.Sink(new InMemoryLogSink(buffer));
+                }
             }
             if (options.UseConsole)
             {
@@ -62,3 +75,7 @@ public static class LoggingExtensions
         });
     }
 }
+
+
+
+

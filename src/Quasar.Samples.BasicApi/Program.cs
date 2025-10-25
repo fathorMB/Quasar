@@ -31,11 +31,14 @@ var builder = WebApplication.CreateBuilder(args);
 var services = builder.Services;
 var configuration = builder.Configuration;
 
+services.AddSingleton<InMemoryLogBuffer>();
+
 builder.Host.UseQuasarSerilog(configuration, "Logging", options =>
 {
     options.UseConsole = true;
     options.UseFile = true;
     options.FilePath = Path.Combine(AppContext.BaseDirectory, "logs", "quasar.log");
+    options.InMemoryBufferCapacity = 1024;
     options.LevelOverrides["Microsoft"] = LogEventLevel.Warning;
     options.LevelOverrides["Microsoft.EntityFrameworkCore"] = LogEventLevel.Warning;
     options.LevelOverrides["Quasar"] = LogEventLevel.Debug;
@@ -123,21 +126,11 @@ services.AddSingleton<SensorTimeSeriesAdapter>();
 services.AddSingleton<SensorPayloadAdapter>();
 services.AddSignalRNotifier<SensorHub, ISensorClient, SensorReadingPayload, SensorDispatcher>();
 services.AddTransient<IncrementCounterJob>();
-services.AddQuartzScheduler(options =>
-{
-    options.SchedulerName = "SampleScheduler";
-    options.Configure = builder =>
-    {
-        builder.ScheduleJob<IncrementCounterJob>(
-            job => job.WithIdentity("counter", "demo"),
-            trigger => trigger
-                .WithIdentity("counter-trigger", "demo")
-                .WithSimpleSchedule(s => s.WithInterval(TimeSpan.FromMinutes(1)).RepeatForever())
-                .StartNow());
-    };
-});
 
 var storeMode = configuration["Quasar:Store"]?.ToLowerInvariant() ?? "inmemory";
+string? quartzConnectionString = null;
+string? quartzProvider = null;
+string? quartzDelegateType = null;
 switch (storeMode)
 {
     case "sqlserver":
@@ -160,6 +153,9 @@ switch (storeMode)
         services.AddPollingProjector("MainProjector", new[] { SampleConfig.CounterStreamId, SampleConfig.CartStreamId, SampleConfig.SensorStreamId }, TimeSpan.FromMilliseconds(500));
         // Identity read models
         services.UseEfCoreSqlServerReadModels<IdentityReadModelContext>(sqlConnString, registerRepositories: false);
+        quartzConnectionString = sqlConnString;
+        quartzProvider = "SqlServer";
+        quartzDelegateType = "Quartz.Impl.AdoJobStore.SqlServerDelegate, Quartz";
         break;
     case "sqlite":
         var sqliteConnString = configuration.GetConnectionString("QuasarSqlite") ?? "Data Source=quasar.db";
@@ -180,6 +176,9 @@ switch (storeMode)
         services.AddPollingProjector("MainProjector", new[] { SampleConfig.CounterStreamId, SampleConfig.CartStreamId, SampleConfig.SensorStreamId }, TimeSpan.FromMilliseconds(500));
         // Identity read models
         services.UseEfCoreSqliteReadModels<IdentityReadModelContext>(sqliteConnString, registerRepositories: false);
+        quartzConnectionString = sqliteConnString;
+        quartzProvider = "SQLite-Microsoft";
+        quartzDelegateType = "Quartz.Impl.AdoJobStore.SQLiteDelegate, Quartz";
         break;
     default:
         services.UseInMemoryEventStore();
@@ -195,8 +194,40 @@ switch (storeMode)
         services.AddPollingProjector("MainProjector", new[] { SampleConfig.CounterStreamId, SampleConfig.CartStreamId, SampleConfig.SensorStreamId }, TimeSpan.FromMilliseconds(500));
         // Identity read models
         services.UseEfCoreSqliteReadModels<IdentityReadModelContext>(demoSqlite, registerRepositories: false);
+        quartzConnectionString = demoSqlite;
+        quartzProvider = "SQLite-Microsoft";
+        quartzDelegateType = "Quartz.Impl.AdoJobStore.SQLiteDelegate, Quartz";
         break;
 }
+
+services.AddQuartzScheduler(options =>
+{
+    options.SchedulerName = "SampleScheduler";
+    if (!string.IsNullOrWhiteSpace(quartzConnectionString)
+        && !string.IsNullOrWhiteSpace(quartzProvider)
+        && !string.IsNullOrWhiteSpace(quartzDelegateType))
+    {
+        options.FactoryProperties["quartz.jobStore.type"] = "Quartz.Impl.AdoJobStore.JobStoreTX, Quartz";
+        options.FactoryProperties["quartz.jobStore.useProperties"] = "true";
+        options.FactoryProperties["quartz.jobStore.dataSource"] = "default";
+        options.FactoryProperties["quartz.jobStore.tablePrefix"] = "QRTZ_";
+        options.FactoryProperties["quartz.jobStore.clustered"] = "false";
+        options.FactoryProperties["quartz.jobStore.driverDelegateType"] = quartzDelegateType;
+        options.FactoryProperties["quartz.dataSource.default.provider"] = quartzProvider;
+        options.FactoryProperties["quartz.dataSource.default.connectionString"] = quartzConnectionString;
+        options.FactoryProperties["quartz.serializer.type"] = "Quartz.Simpl.BinaryObjectSerializer, Quartz";
+    }
+
+    options.Configure = builder =>
+    {
+        builder.ScheduleQuasarJob<IncrementCounterJob>(
+            job => job.WithIdentity("counter", "demo"),
+            trigger => trigger
+                .WithIdentity("counter-trigger", "demo")
+                .WithSimpleSchedule(s => s.WithInterval(TimeSpan.FromSeconds(1)).RepeatForever())
+                .StartNow());
+    };
+});
 
 // Handlers and validators
 services.AddScoped<ICommandHandler<IncrementCounterCommand, int>, IncrementCounterHandler>();
@@ -296,6 +327,12 @@ app.MapGet("/sensors/{deviceId:guid}/readings", async (IMediator mediator, Guid 
 }).WithName("GetSensorReadings").WithTags("Sensors");
 
 // Debug endpoints
+app.MapGet("/debug/logs/recent", (InMemoryLogBuffer buffer, long? since) =>
+{
+    var entries = buffer.GetEntries(since);
+    return Results.Ok(entries);
+}).WithName("DebugRecentLogs").WithTags("Debug");
+
 app.MapGet("/debug/carts", async (IReadRepository<CartReadModel> repo) =>
 {
     var items = await repo.ListAsync();

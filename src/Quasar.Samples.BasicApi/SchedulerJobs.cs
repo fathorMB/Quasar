@@ -1,12 +1,12 @@
-using Quartz;
 using Quasar.Cqrs;
+using Quasar.Scheduling.Quartz;
 
 namespace Quasar.Samples.BasicApi;
 
 /// <summary>
 /// Demonstrates executing framework commands from a Quartz job.
 /// </summary>
-public sealed class IncrementCounterJob : IJob
+public sealed class IncrementCounterJob : IQuasarJob
 {
     private readonly IMediator _mediator;
 
@@ -15,8 +15,8 @@ public sealed class IncrementCounterJob : IJob
         _mediator = mediator;
     }
 
-    public async Task Execute(IJobExecutionContext context)
+    public async Task ExecuteAsync(QuasarJobContext context, CancellationToken cancellationToken)
     {
-        await _mediator.Send(new IncrementCounterCommand(SampleConfig.DemoUserId, 1), context.CancellationToken);
+        await _mediator.Send(new IncrementCounterCommand(SampleConfig.DemoUserId, 1), cancellationToken);
     }
 }

@@ -19,6 +19,16 @@ public sealed class LoggingOptions
     public bool UseConsole { get; set; } = true;
 
     /// <summary>
+    /// Gets or sets a value indicating whether logs should be buffered in-memory for diagnostics.
+    /// </summary>
+    public bool UseInMemoryBuffer { get; set; } = true;
+
+    /// <summary>
+    /// Gets or sets the maximum number of log entries retained in-memory.
+    /// </summary>
+    public int InMemoryBufferCapacity { get; set; } = 512;
+
+    /// <summary>
     /// Gets or sets a value indicating whether logs should be written to a file sink.
     /// </summary>
     public bool UseFile { get; set; }
