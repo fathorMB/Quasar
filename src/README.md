@@ -133,6 +133,163 @@ Serilog configuration extensions (`UseQuasarSerilog`) with console/file/Seq/in-m
 
 Adapters for bridging events to time-series persistence and SignalR hubs.
 
+## Practical Modelling Examples
+
+The snippets below illustrate how you can compose the building blocks provided by Quasar when modelling your own bounded contexts.
+
+### Aggregate & Commands
+
+```csharp
+// Domain event definitions
+public sealed record CartCreated(Guid CartId) : IDomainEvent;
+public sealed record CartItemAdded(Guid CartId, Guid ProductId, int Quantity) : IDomainEvent;
+
+// Aggregate rooted in Quasar.Domain.AggregateRoot
+public sealed class CartAggregate : AggregateRoot
+{
+    private readonly List<CartLine> _lines = new();
+
+    private CartAggregate() { }
+
+    public static CartAggregate Create(Guid cartId)
+    {
+        var cart = new CartAggregate();
+        cart.ApplyChange(new CartCreated(cartId));
+        return cart;
+    }
+
+    public void AddItem(Guid productId, int quantity)
+    {
+        if (quantity <= 0) throw new InvalidOperationException("Quantity must be positive.");
+        ApplyChange(new CartItemAdded(Id, productId, quantity));
+    }
+
+    protected override void When(IDomainEvent domainEvent)
+    {
+        switch (domainEvent)
+        {
+            case CartCreated created:
+                Id = created.CartId;
+                break;
+            case CartItemAdded added:
+                _lines.Add(new CartLine(added.ProductId, added.Quantity));
+                break;
+        }
+    }
+
+    private sealed record CartLine(Guid ProductId, int Quantity);
+}
+
+// Command definition
+public sealed record AddCartItem(Guid CartId, Guid ProductId, int Quantity) : ICommand<int>;
+
+// Command handler using the Quasar.Cqrs infrastructure
+public sealed class AddCartItemHandler : ICommandHandler<AddCartItem, int>
+{
+    private readonly IEventSourcedRepository<CartAggregate> _repository;
+
+    public AddCartItemHandler(IEventSourcedRepository<CartAggregate> repository)
+        => _repository = repository;
+
+    public async Task<int> Handle(AddCartItem request, CancellationToken cancellationToken)
+    {
+        var cart = await _repository.GetAsync(request.CartId, cancellationToken);
+        if (cart.Id == Guid.Empty)
+        {
+            cart = CartAggregate.Create(request.CartId);
+        }
+
+        cart.AddItem(request.ProductId, request.Quantity);
+        await _repository.SaveAsync(cart, cancellationToken);
+
+        return cart.Version;
+    }
+}
+
+// FluentValidation-based validator wired into the pipeline
+public sealed class AddCartItemValidator : AbstractValidator<AddCartItem>
+{
+    public AddCartItemValidator()
+    {
+        RuleFor(c => c.CartId).NotEmpty();
+        RuleFor(c => c.ProductId).NotEmpty();
+        RuleFor(c => c.Quantity).GreaterThan(0);
+    }
+}
+```
+
+### Projection & Read Model Wiring
+
+```csharp
+public sealed class CartReadModel
+{
+    public Guid Id { get; set; }
+    public List<CartLineDto> Lines { get; } = new();
+}
+
+public sealed record CartLineDto(Guid ProductId, int Quantity);
+
+public sealed class CartProjection : IProjection<CartItemAdded>
+{
+    private readonly IReadRepository<CartReadModel> _repository;
+
+    public CartProjection(IReadRepository<CartReadModel> repository)
+        => _repository = repository;
+
+    public async Task HandleAsync(CartItemAdded domainEvent, CancellationToken cancellationToken)
+    {
+        var cart = await _repository.GetByIdAsync(domainEvent.CartId, cancellationToken);
+        if (cart is null)
+        {
+            cart = new CartReadModel { Id = domainEvent.CartId };
+            cart.Lines.Add(new CartLineDto(domainEvent.ProductId, domainEvent.Quantity));
+            await _repository.AddAsync(cart, cancellationToken);
+            return;
+        }
+
+        cart.Lines.Add(new CartLineDto(domainEvent.ProductId, domainEvent.Quantity));
+        await _repository.UpdateAsync(cart, cancellationToken);
+    }
+}
+```
+
+Register projections (and validators/handlers) in `Program.cs` so the polling projector picks them up automatically:
+
+```csharp
+services.AddScoped<ICommandHandler<AddCartItem, int>, AddCartItemHandler>();
+services.AddScoped<IValidator<AddCartItem>, AddCartItemValidator>();
+services.AddScoped<object, CartProjection>(); // discovered by AddPollingProjector
+```
+
+### Real-Time & Scheduling
+
+```csharp
+// Job implementing Quasar's IQuasarJob abstraction
+public sealed class RebuildProjectionsJob : IQuasarJob
+{
+    private readonly IMediator _mediator;
+
+    public RebuildProjectionsJob(IMediator mediator) => _mediator = mediator;
+
+    public Task ExecuteAsync(QuasarJobContext context, CancellationToken cancellationToken)
+        => _mediator.Send(new TriggerRebuildCommand(), cancellationToken);
+}
+
+// Scheduler registration
+services.AddQuartzScheduler(options =>
+{
+    options.SchedulerName = "Maintenance";
+    options.Configure = builder =>
+    {
+        builder.ScheduleQuasarJob<RebuildProjectionsJob>(
+            job => job.WithIdentity("rebuild", "maintenance"),
+            trigger => trigger
+                .WithIdentity("rebuild-nightly", "maintenance")
+                .WithCronSchedule("0 0 3 * * ?")); // 3AM daily
+    };
+});
+```
+
 ## Identity & ACL
 
 `Quasar.Identity` and `Quasar.Identity.Persistence.Relational.EfCore` provide event-sourced users, roles, and permissions. The sample seeds:
