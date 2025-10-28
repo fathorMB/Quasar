@@ -9,6 +9,7 @@
     <ProjectReference Include="..\Quasar.Cqrs\Quasar.Cqrs.csproj" />
     <ProjectReference Include="..\Quasar.Security\Quasar.Security.csproj" />
     <ProjectReference Include="..\Quasar.EventSourcing.Abstractions\Quasar.EventSourcing.Abstractions.csproj" />
+    <ProjectReference Include="..\Quasar.EventSourcing.Outbox\Quasar.EventSourcing.Outbox.csproj" />
     <ProjectReference Include="..\Quasar.Persistence.Abstractions\Quasar.Persistence.Abstractions.csproj" />
     <ProjectReference Include="..\Quasar.EventSourcing.SqlServer\Quasar.EventSourcing.SqlServer.csproj" />
     <ProjectReference Include="..\Quasar.EventSourcing.InMemory\Quasar.EventSourcing.InMemory.csproj" />

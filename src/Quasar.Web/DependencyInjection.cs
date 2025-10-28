@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Quasar.Cqrs;
 using Quasar.EventSourcing.Abstractions;
 using Quasar.EventSourcing.InMemory;
+using Quasar.EventSourcing.Outbox;
 using Quasar.EventSourcing.SqlServer;
 using Quasar.EventSourcing.Sqlite;
 using Quasar.Persistence.Relational.EfCore;
@@ -44,6 +45,7 @@ public static class DependencyInjection
     /// </summary>
     public static IServiceCollection AddQuasarEventSourcingCore(this IServiceCollection services)
     {
+        services.AddQuasarOutboxCore();
         services.AddScoped(typeof(IEventSourcedRepository<>), typeof(EventSourcedRepository<>));
         return services;
     }

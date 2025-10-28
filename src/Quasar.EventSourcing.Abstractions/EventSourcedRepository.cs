@@ -11,14 +11,20 @@ public sealed class EventSourcedRepository<TAggregate> : IEventSourcedRepository
     where TAggregate : AggregateRoot, new()
 {
     private readonly IEventStore _store;
+    private readonly IOutboxStore? _outboxStore;
+    private readonly IOutboxMessageFactory? _messageFactory;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="EventSourcedRepository{TAggregate}"/> class.
     /// </summary>
     /// <param name="store">The event store used for persistence.</param>
-    public EventSourcedRepository(IEventStore store)
+    /// <param name="outboxStore">Optional outbox store used to capture integration messages.</param>
+    /// <param name="messageFactory">Optional factory used to transform events into outbox messages.</param>
+    public EventSourcedRepository(IEventStore store, IOutboxStore? outboxStore = null, IOutboxMessageFactory? messageFactory = null)
     {
         _store = store;
+        _outboxStore = outboxStore;
+        _messageFactory = messageFactory;
     }
 
     /// <inheritdoc />
@@ -40,7 +46,18 @@ public sealed class EventSourcedRepository<TAggregate> : IEventSourcedRepository
         if (uncommitted.Count == 0) return;
 
         var expectedVersion = aggregate.Version - uncommitted.Count;
-        await _store.AppendAsync(aggregate.Id, expectedVersion, uncommitted.Cast<IEvent>(), cancellationToken)
+        var events = uncommitted.Cast<IEvent>().ToList();
+
+        await _store.AppendAsync(aggregate.Id, expectedVersion, events, cancellationToken)
             .ConfigureAwait(false);
+
+        if (_outboxStore is not null && _messageFactory is not null)
+        {
+            var messages = _messageFactory.Create(aggregate.Id, expectedVersion, uncommitted);
+            if (messages.Count > 0)
+            {
+                await _outboxStore.EnqueueAsync(messages, cancellationToken).ConfigureAwait(false);
+            }
+        }
     }
 }

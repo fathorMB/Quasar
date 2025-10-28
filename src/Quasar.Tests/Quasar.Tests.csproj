@@ -26,12 +26,15 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.0-rc.2.25502.107" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.0-rc.2.25502.107" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.0-rc.2.25502.107" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="10.0.0-rc.2.25502.107" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Quasar.Domain\Quasar.Domain.csproj" />
     <ProjectReference Include="..\Quasar.EventSourcing.Abstractions\Quasar.EventSourcing.Abstractions.csproj" />
     <ProjectReference Include="..\Quasar.EventSourcing.InMemory\Quasar.EventSourcing.InMemory.csproj" />
+    <ProjectReference Include="..\Quasar.EventSourcing.Outbox\Quasar.EventSourcing.Outbox.csproj" />
+    <ProjectReference Include="..\Quasar.EventSourcing.Outbox.EfCore\Quasar.EventSourcing.Outbox.EfCore.csproj" />
     <ProjectReference Include="..\Quasar.Cqrs\Quasar.Cqrs.csproj" />
     <ProjectReference Include="..\Quasar.Security\Quasar.Security.csproj" />
     <ProjectReference Include="..\Quasar.Scheduling.Quartz\Quasar.Scheduling.Quartz.csproj" />
