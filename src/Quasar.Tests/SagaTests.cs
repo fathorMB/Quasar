@@ -1,10 +1,11 @@
+using System;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
-using Quasar.Sagas.Persistence.Relational.EfCore;
 using Microsoft.Extensions.DependencyInjection;
 using Quasar.Cqrs;
 using Quasar.Sagas;
 using Quasar.Sagas.Persistence;
+using Quasar.Sagas.Persistence.Relational.EfCore;
 using Quasar.Sagas.Registration;
 using Quasar.Web;
 
@@ -16,7 +17,7 @@ public sealed class SagaTests
     public async Task Saga_pipeline_creates_state_on_start_message()
     {
         var services = CreateServiceCollection();
-        using var provider = services.BuildServiceProvider();
+        await using var provider = services.BuildServiceProvider();
         var mediator = provider.GetRequiredService<IMediator>();
         var repository = provider.GetRequiredService<ISagaRepository<TestSagaState>>();
 
@@ -31,10 +32,10 @@ public sealed class SagaTests
     }
 
     [Fact]
-    public async Task Saga_pipeline_removes_state_when_completed()
+    public async Task Saga_pipeline_marks_state_completed()
     {
         var services = CreateServiceCollection();
-        using var provider = services.BuildServiceProvider();
+        await using var provider = services.BuildServiceProvider();
         var mediator = provider.GetRequiredService<IMediator>();
         var repository = provider.GetRequiredService<ISagaRepository<TestSagaState>>();
 
@@ -44,7 +45,8 @@ public sealed class SagaTests
         await mediator.Send(new ProgressSagaCommand(sagaId, true));
 
         var state = await repository.FindAsync(sagaId);
-        Assert.Null(state);
+        Assert.NotNull(state);
+        Assert.True(state!.IsCompleted);
     }
 
     [Fact]
@@ -56,7 +58,7 @@ public sealed class SagaTests
         var services = CreateServiceCollection(builder =>
             builder.UseSagaDbContext((_, options) => options.UseSqlite(connection)));
 
-        using var provider = services.BuildServiceProvider();
+        await using var provider = services.BuildServiceProvider();
         var mediator = provider.GetRequiredService<IMediator>();
         var repository = provider.GetRequiredService<ISagaRepository<TestSagaState>>();
 
@@ -67,8 +69,9 @@ public sealed class SagaTests
         Assert.NotNull(state);
 
         await mediator.Send(new ProgressSagaCommand(sagaId, true));
-        var deleted = await repository.FindAsync(sagaId);
-        Assert.Null(deleted);
+        var persisted = await repository.FindAsync(sagaId);
+        Assert.NotNull(persisted);
+        Assert.True(persisted!.IsCompleted);
     }
 
     private static IServiceCollection CreateServiceCollection(Action<ISagaPersistenceBuilder>? persistence = null)
@@ -153,8 +156,10 @@ public sealed class SagaTests
         public Guid CorrelationId { get; set; }
         public int StepCount { get; set; }
     }
+
     private sealed class AllowAllAuthorizationService : Quasar.Security.IAuthorizationService
     {
         public Task<bool> AuthorizeAsync(Guid subjectId, string action, string resource, CancellationToken cancellationToken = default) => Task.FromResult(true);
     }
 }
+

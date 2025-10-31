@@ -21,7 +21,14 @@ internal sealed class SagaPersistenceBuilder : ISagaPersistenceBuilder
         _configure = services =>
         {
             services.RemoveAll(typeof(ISagaRepository<>));
-            services.AddScoped(typeof(ISagaRepository<>), openGenericRepositoryType);
+            if (openGenericRepositoryType == typeof(InMemorySagaRepository<>))
+            {
+                services.AddSingleton(typeof(ISagaRepository<>), openGenericRepositoryType);
+            }
+            else
+            {
+                services.AddScoped(typeof(ISagaRepository<>), openGenericRepositoryType);
+            }
         };
     }
 

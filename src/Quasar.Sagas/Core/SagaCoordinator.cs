@@ -15,7 +15,6 @@ internal sealed class SagaCoordinator : ISagaCoordinator
 {
     private static readonly MethodInfo FindStateMethod = typeof(SagaCoordinator).GetMethod(nameof(FindStateAsyncCore), BindingFlags.NonPublic | BindingFlags.Static)!;
     private static readonly MethodInfo SaveStateMethod = typeof(SagaCoordinator).GetMethod(nameof(SaveStateAsyncCore), BindingFlags.NonPublic | BindingFlags.Static)!;
-    private static readonly MethodInfo DeleteStateMethod = typeof(SagaCoordinator).GetMethod(nameof(DeleteStateAsyncCore), BindingFlags.NonPublic | BindingFlags.Static)!;
 
     private readonly IServiceProvider _provider;
     private readonly IMediator _mediator;
@@ -123,12 +122,9 @@ internal sealed class SagaCoordinator : ISagaCoordinator
             {
                 _logger.LogInformation("Saga {SagaType}:{SagaId} completed after handling {MessageType}.", descriptor.SagaType.Name, sagaId, descriptor.MessageType.Name);
                 state.IsCompleted = true;
-                await InvokeDeleteAsync(descriptor.StateType, repository, sagaId, cancellationToken).ConfigureAwait(false);
             }
-            else
-            {
-                await InvokeSaveAsync(descriptor.StateType, repository, state!, cancellationToken).ConfigureAwait(false);
-            }
+
+            await InvokeSaveAsync(descriptor.StateType, repository, state!, cancellationToken).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
@@ -149,12 +145,6 @@ internal sealed class SagaCoordinator : ISagaCoordinator
         return (Task)method.Invoke(null, new object?[] { repository, state, cancellationToken })!;
     }
 
-    private static Task InvokeDeleteAsync(Type stateType, object repository, Guid sagaId, CancellationToken cancellationToken)
-    {
-        var method = DeleteStateMethod.MakeGenericMethod(stateType);
-        return (Task)method.Invoke(null, new object?[] { repository, sagaId, cancellationToken })!;
-    }
-
     private static async Task<ISagaState?> FindStateAsyncCore<TState>(ISagaRepository<TState> repository, Guid sagaId, CancellationToken cancellationToken)
         where TState : class, ISagaState, new()
     {
@@ -170,11 +160,5 @@ internal sealed class SagaCoordinator : ISagaCoordinator
         }
 
         return repository.SaveAsync(typedState, cancellationToken);
-    }
-
-    private static Task DeleteStateAsyncCore<TState>(ISagaRepository<TState> repository, Guid sagaId, CancellationToken cancellationToken)
-        where TState : class, ISagaState, new()
-    {
-        return repository.DeleteAsync(sagaId, cancellationToken);
     }
 }

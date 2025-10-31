@@ -1,5 +1,7 @@
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Quasar.EventSourcing.Sqlite;
 using Quasar.Sagas.Persistence;
 
 namespace Quasar.Sagas.Persistence.Relational.EfCore;
@@ -13,7 +15,16 @@ public static class SagaRelationalPersistenceBuilderExtensions
         if (builder is null) throw new ArgumentNullException(nameof(builder));
         if (configure is null) throw new ArgumentNullException(nameof(configure));
 
-        builder.Services.AddDbContext<SagaDbContext>(configure);
+        builder.Services.AddDbContext<SagaDbContext>((sp, options) =>
+        {
+            configure(sp, options);
+
+            if (SqliteAmbientContextAccessor.TryGet(out var sqliteConnection, out _))
+            {
+                options.UseSqlite(sqliteConnection);
+            }
+        });
+        builder.Services.AddHostedService<SagaDbContextInitializerHostedService>();
         builder.UseRepository(typeof(EfSagaRepository<>));
         return builder;
     }

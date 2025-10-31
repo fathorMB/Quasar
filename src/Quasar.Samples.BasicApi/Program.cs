@@ -2,6 +2,7 @@ using System;
 using Microsoft.Data.SqlClient;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Configuration;
 using Quasar.Cqrs;
 using Quasar.EventSourcing.Abstractions;
 using Quasar.EventSourcing.InMemory;
@@ -179,7 +180,7 @@ switch (storeMode)
         quartzDelegateType = "Quartz.Impl.AdoJobStore.SqlServerDelegate, Quartz";
         break;
     case "sqlite":
-        var sqliteConnString = configuration.GetConnectionString("QuasarSqlite") ?? "Data Source=quasar.db";
+        var sqliteConnString = GetSqliteConnectionString(configuration);
         sagaPersistenceConfigurator = builder => builder.UseSqliteSagaStore(sqliteConnString);
         var sqliteOptions = new SqliteEventStoreOptions
         {
@@ -206,7 +207,7 @@ switch (storeMode)
         services.UseInMemoryEventStore();
         services.AddScoped<ICommandTransaction, NoopCommandTransaction>();
         // use sqlite for read models while using in-memory event store for demo
-        var demoSqlite = configuration.GetConnectionString("QuasarSqlite") ?? "Data Source=quasar.db";
+        var demoSqlite = GetSqliteConnectionString(configuration);
         sagaPersistenceConfigurator = builder => builder.UseSqliteSagaStore(demoSqlite);
         services.UseEfCoreSqliteReadModels<SampleReadModelStore>(demoSqlite);
         services.UseSqliteProjectionCheckpoints(() => new SqliteConnection(demoSqlite));
@@ -223,6 +224,7 @@ switch (storeMode)
         break;
 }
 
+Console.WriteLine($"Saga persistence configured: {sagaPersistenceConfigurator != null}");
 services.AddQuasarSagas(cfg =>
 {
     cfg.AddSaga<CheckoutSaga, CheckoutSagaState>(builder =>
@@ -583,6 +585,40 @@ static async Task<CheckoutStatusResponse?> ResolveCheckoutSnapshotAsync(
     }
 
     return snapshot;
+}
+
+static string GetSqliteConnectionString(IConfiguration configuration)
+{
+    var configured = configuration.GetConnectionString("QuasarSqlite");
+    if (!string.IsNullOrWhiteSpace(configured))
+    {
+        return configured!;
+    }
+
+    var databasePath = configuration["Quasar:Persistence:Sqlite:DatabasePath"];
+    if (string.IsNullOrWhiteSpace(databasePath))
+    {
+        databasePath = "quasar.db";
+    }
+
+    if (databasePath.Contains("Data Source=", StringComparison.OrdinalIgnoreCase))
+    {
+        return databasePath;
+    }
+
+    if (!Path.IsPathRooted(databasePath))
+    {
+        databasePath = Path.Combine(AppContext.BaseDirectory, databasePath);
+    }
+
+    databasePath = Path.GetFullPath(databasePath);
+    var directory = Path.GetDirectoryName(databasePath);
+    if (!string.IsNullOrWhiteSpace(directory))
+    {
+        Directory.CreateDirectory(directory);
+    }
+
+    return $"Data Source={databasePath}";
 }
 
 app.Run();

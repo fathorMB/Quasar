@@ -54,7 +54,6 @@ internal sealed class SagaConfigurator : ISagaConfigurator
         if (configure is null) throw new ArgumentNullException(nameof(configure));
 
         _services.TryAddScoped<TSaga>();
-        _services.TryAddSingleton(typeof(ISagaRepository<TState>), typeof(InMemorySagaRepository<TState>));
 
         var builder = new SagaRegistrationBuilder<TSaga, TState>();
         configure(builder);
