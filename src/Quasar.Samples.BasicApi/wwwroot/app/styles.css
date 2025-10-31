@@ -47,6 +47,12 @@ section h2 {
     gap: 1rem;
 }
 
+.grid.three {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1rem;
+}
+
 .card {
     padding: 1rem;
     border: 1px solid #e2e8f0;
@@ -116,6 +122,10 @@ button[type="button"] {
 .status {
     font-size: 0.9rem;
     color: #475569;
+}
+
+.status.ok {
+    color: #16a34a;
 }
 
 .toolbar {

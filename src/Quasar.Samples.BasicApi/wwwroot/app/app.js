@@ -4,7 +4,8 @@
     subjectId: null,
     hubConnection: null,
     serverLogCursor: 0,
-    serverLogErrorNotified: false
+    serverLogErrorNotified: false,
+    checkoutId: null
 };
 
 const log = (message, data) => {
@@ -23,6 +24,53 @@ const setStatus = () => {
         authEl.textContent = 'Not authenticated';
         authEl.classList.remove('ok');
     }
+};
+
+const checkoutIdInputs = () => Array.from(document.querySelectorAll('.checkout-id-input'));
+
+const updateCheckoutHint = (id, status) => {
+    const el = document.getElementById('checkoutSelected');
+    if (!el) return;
+    if (id) {
+        const statusSuffix = status ? ` (${status})` : '';
+        el.textContent = `Active checkout: ${id}${statusSuffix}`;
+        el.classList.add('ok');
+    } else {
+        el.textContent = 'No checkout selected';
+        el.classList.remove('ok');
+    }
+};
+
+const setCheckoutSelection = (id, status) => {
+    const normalized = id && id.trim ? id.trim() : null;
+    state.checkoutId = normalized;
+    checkoutIdInputs().forEach(input => {
+        if (!input) return;
+        input.value = normalized ?? '';
+    });
+    updateCheckoutHint(normalized, status);
+};
+
+const resolveCheckoutId = provided => {
+    const trimmed = provided && provided.trim ? provided.trim() : '';
+    const id = trimmed || state.checkoutId;
+    if (!id) throw new Error('Checkout id required. Start a checkout first.');
+    return id;
+};
+
+const updateCheckoutOutput = data => {
+    const output = document.getElementById('checkoutOutput');
+    if (!output) return;
+    output.textContent = data ? JSON.stringify(data, null, 2) : '';
+};
+
+const fetchCheckoutStatus = async checkoutId => {
+    const result = await apiFetch(`/checkout/${checkoutId}`);
+    updateCheckoutOutput(result);
+    const status = result?.status ?? result?.Status ?? null;
+    setCheckoutSelection(checkoutId, status);
+    log('ui:checkout status fetched', result);
+    return result;
 };
 
 const parseJwt = token => {
@@ -135,6 +183,74 @@ document.getElementById('refreshCart').addEventListener('click', async () => {
     }
 });
 
+handleForm('checkoutStartForm', async payload => {
+    const totalAmount = Number(payload.totalAmount);
+    if (!Number.isFinite(totalAmount) || totalAmount <= 0) {
+        throw new Error('Total amount must be greater than zero.');
+    }
+
+    const body = { totalAmount };
+    if (payload.checkoutId && payload.checkoutId.trim()) body.checkoutId = payload.checkoutId.trim();
+    if (payload.cartId && payload.cartId.trim()) body.cartId = payload.cartId.trim();
+
+    const result = await apiFetch('/checkout/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+    });
+
+    setCheckoutSelection(result.checkoutId);
+    log('ui:checkout started', result);
+
+    try {
+        await fetchCheckoutStatus(result.checkoutId);
+    } catch (err) {
+        log(`ui:checkout status fetch error: ${err.message}`);
+        updateCheckoutOutput(result);
+    }
+});
+
+handleForm('checkoutPaymentForm', async payload => {
+    const checkoutId = resolveCheckoutId(payload.checkoutId);
+    const paymentReference = payload.paymentReference ? payload.paymentReference.trim() : '';
+    if (!paymentReference) {
+        throw new Error('Payment reference is required.');
+    }
+
+    const result = await apiFetch(`/checkout/${checkoutId}/payment`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paymentReference })
+    });
+
+    setCheckoutSelection(checkoutId);
+    log('ui:checkout payment confirmed', result);
+    await fetchCheckoutStatus(checkoutId);
+});
+
+handleForm('checkoutFulfillmentForm', async payload => {
+    const checkoutId = resolveCheckoutId(payload.checkoutId);
+    const trackingNumber = payload.trackingNumber && payload.trackingNumber.trim()
+        ? payload.trackingNumber.trim()
+        : null;
+
+    const result = await apiFetch(`/checkout/${checkoutId}/fulfillment`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ trackingNumber })
+    });
+
+    setCheckoutSelection(checkoutId);
+    log('ui:checkout fulfillment requested', result);
+    await fetchCheckoutStatus(checkoutId);
+});
+
+handleForm('checkoutStatusForm', async payload => {
+    const checkoutId = resolveCheckoutId(payload.checkoutId);
+    setCheckoutSelection(checkoutId);
+    await fetchCheckoutStatus(checkoutId);
+});
+
 handleForm('sensorIngestForm', async payload => {
     const body = {
         deviceId: payload.deviceId,
@@ -221,3 +337,4 @@ document.getElementById('clearLogs').addEventListener('click', () => {
 setInterval(pollServerLogs, 4000);
 pollServerLogs();
 setStatus();
+setCheckoutSelection(null);

@@ -313,6 +313,35 @@ The Quartz integration auto-provisions the job-store schema (SQL Server/SQLite),
 - `POST /quartz/jobs/{group}/{name}/pause`
 - `POST /quartz/jobs/{group}/{name}/resume`
 
+## Saga Orchestration Sample
+
+The `Quasar.Samples.BasicApi` project now ships with a checkout saga that demonstrates the framework-level orchestration primitives. The saga coordinates three commands and persists its state via the default in-memory saga repository.
+
+1. Start a checkout and capture the saga id (omit `checkoutId` to auto-generate):
+   ```bash
+   curl -X POST http://localhost:5236/checkout/start \
+        -H "Content-Type: application/json" \
+        -d '{"totalAmount": 125.50}'
+   ```
+2. Confirm payment using the identifier returned from step 1:
+   ```bash
+   curl -X POST http://localhost:5236/checkout/{checkoutId}/payment \
+        -H "Content-Type: application/json" \
+        -d '{"paymentReference":"PAY-12345"}'
+   ```
+3. Request fulfillment (optionally include a tracking number):
+   ```bash
+   curl -X POST http://localhost:5236/checkout/{checkoutId}/fulfillment \
+        -H "Content-Type: application/json" \
+        -d '{"trackingNumber":"TRACK-7890"}'
+   ```
+4. Inspect the live saga state:
+   ```bash
+   curl http://localhost:5236/checkout/{checkoutId}
+   ```
+
+All endpoints accept the optional `X-Subject` header to simulate authenticated subjects; when omitted, the seeded demo user is used.
+
 ## Sample Web UI
 
 `Quasar.Samples.BasicApi/wwwroot/app` provides a control panel to:

@@ -7,6 +7,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Quasar.Identity.Web\Quasar.Identity.Web.csproj" />
+    <ProjectReference Include="..\Quasar.Sagas\Quasar.Sagas.csproj" />
     <ProjectReference Include="..\Quasar.Web\Quasar.Web.csproj" />
     <ProjectReference Include="..\Quasar.Domain\Quasar.Domain.csproj" />
     <ProjectReference Include="..\Quasar.Cqrs\Quasar.Cqrs.csproj" />

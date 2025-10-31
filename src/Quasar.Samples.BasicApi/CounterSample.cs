@@ -177,10 +177,11 @@ public sealed class InMemoryAuthorizationService : IAuthorizationService
 {
     public Task<bool> AuthorizeAsync(Guid subjectId, string action, string resource, CancellationToken cancellationToken = default)
     {
-        // Demo policy: allow if subject is present and action is for counter or cart
+        // Demo policy: allow if subject is present and action targets counter, cart, or checkout flows
         var allowed = subjectId != Guid.Empty &&
                       (action.StartsWith("counter", StringComparison.Ordinal) ||
-                       action.StartsWith("cart", StringComparison.Ordinal));
+                       action.StartsWith("cart", StringComparison.Ordinal) ||
+                       action.StartsWith("checkout", StringComparison.Ordinal));
         return Task.FromResult(allowed);
     }
 }

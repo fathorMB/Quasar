@@ -31,12 +31,15 @@ using Quartz;
 using Quasar.Telemetry;
 using OpenTelemetry.Trace;
 using Quasar.Auditing;
+using Quasar.Sagas;
+using Quasar.Sagas.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
 var services = builder.Services;
 var configuration = builder.Configuration;
 
 services.AddSingleton<InMemoryLogBuffer>();
+services.AddSingleton<CheckoutSagaMonitor>();
 
 builder.Host.UseQuasarSerilog(configuration, "Logging", options =>
 {
@@ -51,6 +54,16 @@ builder.Host.UseQuasarSerilog(configuration, "Logging", options =>
 
 // CQRS + ES wiring
 services.AddQuasarMediator();
+services.AddQuasarSagas(cfg =>
+{
+    cfg.AddSaga<CheckoutSaga, CheckoutSagaState>(builder =>
+    {
+        builder.StartsWith<BeginCheckoutCommand>(cmd => cmd.CheckoutId);
+        builder.Handles<ConfirmCheckoutPaymentCommand>(cmd => cmd.CheckoutId);
+        builder.Handles<MarkCheckoutFulfilledCommand>(cmd => cmd.CheckoutId);
+    });
+});
+services.AddScoped<CheckoutSaga>();
 services.AddQuasarTelemetry(builder =>
 {
     builder.AddConsoleExporter();
@@ -105,6 +118,9 @@ services.AddIdentityDataSeeding(options =>
     demoRole.Permissions.Add(SampleConfig.CartAddPermission);
     demoRole.Permissions.Add("counter.increment");
     demoRole.Permissions.Add("sensor.ingest");
+    demoRole.Permissions.Add("checkout.start");
+    demoRole.Permissions.Add("checkout.confirm");
+    demoRole.Permissions.Add("checkout.fulfill");
     sampleSet.Roles.Add(demoRole);
 
     var demoUser = new IdentityUserSeed
@@ -236,7 +252,7 @@ services.AddQuartzScheduler(options =>
             job => job.WithIdentity("counter", "demo"),
             trigger => trigger
                 .WithIdentity("counter-trigger", "demo")
-                .WithSimpleSchedule(s => s.WithInterval(TimeSpan.FromSeconds(1)).RepeatForever())
+                .WithSimpleSchedule(s => s.WithInterval(TimeSpan.FromMinutes(1)).RepeatForever())
                 .StartNow());
     };
 });
@@ -248,6 +264,9 @@ services.AddScoped<IValidator<IncrementCounterCommand>, IncrementCounterValidato
 services.AddScoped<ICommandHandler<AddCartItemCommand, Result<int>>, AddCartItemHandler>();
 services.AddScoped<IQueryHandler<GetCartQuery, CartReadModel>, GetCartHandler>();
 services.AddScoped<IValidator<AddCartItemCommand>, AddCartItemValidator>();
+services.AddScoped<ICommandHandler<BeginCheckoutCommand, Result<Guid>>, BeginCheckoutHandler>();
+services.AddScoped<ICommandHandler<ConfirmCheckoutPaymentCommand, Result>, ConfirmCheckoutPaymentHandler>();
+services.AddScoped<ICommandHandler<MarkCheckoutFulfilledCommand, Result>, MarkCheckoutFulfilledHandler>();
 services.AddScoped<ICommandHandler<IngestSensorReadingCommand, Result<bool>>, IngestSensorReadingHandler>();
 services.AddScoped<IValidator<IngestSensorReadingCommand>, SensorIngestValidator>();
 services.AddScoped<IQueryHandler<SensorReadingsQuery, IReadOnlyList<TimeSeriesPoint>>, SensorReadingsHandler>();
@@ -313,6 +332,131 @@ app.MapGet("/cart", async (IMediator mediator) =>
     var cart = await mediator.Send(new GetCartQuery());
     return Results.Ok(cart);
 }).WithName("GetCart").WithTags("Cart");
+
+app.MapPost("/checkout/start", async (
+    IMediator mediator,
+    CheckoutSagaMonitor monitor,
+    ISagaRepository<CheckoutSagaState> repository,
+    StartCheckoutRequest request,
+    HttpRequest httpRequest) =>
+{
+    if (request is null) return Results.BadRequest("Payload required");
+    if (request.TotalAmount <= 0) return Results.BadRequest("totalAmount must be greater than zero");
+
+    var checkoutId = request.CheckoutId ?? Guid.NewGuid();
+    var cartId = request.CartId ?? SampleConfig.CartStreamId;
+    var subject = httpRequest.Headers.TryGetValue("X-Subject", out var s) && Guid.TryParse(s, out var sid) ? sid : SampleConfig.DemoUserId;
+
+    var result = await mediator.Send(new BeginCheckoutCommand(subject, checkoutId, cartId, request.TotalAmount));
+    if (result.IsFailure) return Results.BadRequest(result.Error);
+
+    var snapshot = await ResolveCheckoutSnapshotAsync(
+        checkoutId,
+        monitor,
+        repository,
+        () => new CheckoutStatusResponse(
+            checkoutId,
+            cartId,
+            request.TotalAmount,
+            false,
+            null,
+            null,
+            false,
+            null,
+            DateTimeOffset.UtcNow,
+            null,
+            false,
+            DateTimeOffset.UtcNow,
+            "PaymentPending"));
+
+    return Results.Created($"/checkout/{checkoutId}", snapshot);
+}).WithName("StartCheckout").WithTags("Checkout");
+
+app.MapPost("/checkout/{checkoutId:guid}/payment", async (
+    IMediator mediator,
+    CheckoutSagaMonitor monitor,
+    ISagaRepository<CheckoutSagaState> repository,
+    Guid checkoutId,
+    ConfirmCheckoutPaymentRequest request,
+    HttpRequest httpRequest) =>
+{
+    if (request is null || string.IsNullOrWhiteSpace(request.PaymentReference)) return Results.BadRequest("paymentReference is required");
+
+    var subject = httpRequest.Headers.TryGetValue("X-Subject", out var s) && Guid.TryParse(s, out var sid) ? sid : SampleConfig.DemoUserId;
+    var result = await mediator.Send(new ConfirmCheckoutPaymentCommand(subject, checkoutId, request.PaymentReference));
+    if (result.IsFailure) return Results.BadRequest(result.Error);
+
+    var snapshot = await ResolveCheckoutSnapshotAsync(
+        checkoutId,
+        monitor,
+        repository,
+        () => new CheckoutStatusResponse(
+            checkoutId,
+            Guid.Empty,
+            0,
+            true,
+            request.PaymentReference,
+            DateTimeOffset.UtcNow,
+            false,
+            null,
+            null,
+            null,
+            false,
+            DateTimeOffset.UtcNow,
+            "PaymentConfirmed"));
+
+    return Results.Ok(snapshot);
+}).WithName("ConfirmCheckoutPayment").WithTags("Checkout");
+
+app.MapPost("/checkout/{checkoutId:guid}/fulfillment", async (
+    IMediator mediator,
+    CheckoutSagaMonitor monitor,
+    ISagaRepository<CheckoutSagaState> repository,
+    Guid checkoutId,
+    FulfillCheckoutRequest request,
+    HttpRequest httpRequest) =>
+{
+    var subject = httpRequest.Headers.TryGetValue("X-Subject", out var s) && Guid.TryParse(s, out var sid) ? sid : SampleConfig.DemoUserId;
+    var result = await mediator.Send(new MarkCheckoutFulfilledCommand(subject, checkoutId, request?.TrackingNumber));
+    if (result.IsFailure) return Results.BadRequest(result.Error);
+
+    var snapshot = await ResolveCheckoutSnapshotAsync(
+        checkoutId,
+        monitor,
+        repository,
+        () => new CheckoutStatusResponse(
+            checkoutId,
+            Guid.Empty,
+            0,
+            true,
+            null,
+            null,
+            true,
+            request?.TrackingNumber,
+            null,
+            DateTimeOffset.UtcNow,
+            false,
+            DateTimeOffset.UtcNow,
+            "FulfillmentRequested"));
+
+    return Results.Ok(snapshot);
+}).WithName("RequestCheckoutFulfillment").WithTags("Checkout");
+
+app.MapGet("/checkout/{checkoutId:guid}", async (
+    ISagaRepository<CheckoutSagaState> repository,
+    CheckoutSagaMonitor monitor,
+    Guid checkoutId) =>
+{
+    var snapshot = await ResolveCheckoutSnapshotAsync(
+        checkoutId,
+        monitor,
+        repository,
+        () => default);
+
+    return snapshot is not null
+        ? Results.Ok(snapshot)
+        : Results.NotFound();
+}).WithName("GetCheckoutStatus").WithTags("Checkout");
 
 app.MapPost("/sensors/ingest", async (IMediator mediator, SensorIngestRequest request, HttpRequest httpRequest) =>
 {
@@ -407,10 +551,83 @@ app.MapPost("/debug/rebuild/cart", async (IServiceProvider sp) =>
     return Results.Ok(new { rebuilt = events.Count });
 }).WithName("DebugRebuildCart").WithTags("Debug");
 
+static async Task<CheckoutStatusResponse?> ResolveCheckoutSnapshotAsync(
+    Guid checkoutId,
+    CheckoutSagaMonitor monitor,
+    ISagaRepository<CheckoutSagaState> repository,
+    Func<CheckoutStatusResponse?> fallbackFactory)
+{
+    if (checkoutId == Guid.Empty) return null;
+
+    var state = await repository.FindAsync(checkoutId);
+    CheckoutStatusResponse? snapshot;
+    if (state is not null)
+    {
+        snapshot = CheckoutStatusResponse.FromState(state);
+    }
+    else
+    {
+        snapshot = monitor.TryGet(checkoutId)
+                   ?? fallbackFactory();
+    }
+
+    if (snapshot is not null)
+    {
+        monitor.RecordSnapshot(snapshot);
+    }
+
+    return snapshot;
+}
+
 app.Run();
 
 public sealed record SensorIngestRequest(Guid DeviceId, string SensorType, double Value, DateTime? TimestampUtc);
 public sealed record SensorReadingResponse(DateTime TimestampUtc, double Value, string SensorType);
+public sealed record StartCheckoutRequest(Guid? CheckoutId, Guid? CartId, decimal TotalAmount);
+public sealed record ConfirmCheckoutPaymentRequest(string PaymentReference);
+public sealed record FulfillCheckoutRequest(string? TrackingNumber);
+public sealed record CheckoutStatusResponse(
+    Guid CheckoutId,
+    Guid CartId,
+    decimal TotalAmount,
+    bool PaymentConfirmed,
+    string? PaymentReference,
+    DateTimeOffset? PaymentConfirmedAtUtc,
+    bool FulfillmentRequested,
+    string? TrackingNumber,
+    DateTimeOffset? StartedAtUtc,
+    DateTimeOffset? CompletedAtUtc,
+    bool IsCompleted,
+    DateTimeOffset UpdatedUtc,
+    string Status)
+{
+    public static CheckoutStatusResponse FromState(CheckoutSagaState state)
+    {
+        if (state is null) throw new ArgumentNullException(nameof(state));
+        return new CheckoutStatusResponse(
+            state.Id,
+            state.CartId,
+            state.TotalAmount,
+            state.PaymentConfirmed,
+            state.PaymentReference,
+            state.PaymentConfirmedAtUtc,
+            state.FulfillmentRequested,
+            state.TrackingNumber,
+            state.StartedAtUtc,
+            state.CompletedAtUtc,
+            state.IsCompleted,
+            state.UpdatedUtc,
+            ComputeStatus(state));
+    }
+
+    private static string ComputeStatus(CheckoutSagaState state)
+    {
+        if (state.IsCompleted) return "Completed";
+        if (state.FulfillmentRequested) return "FulfillmentRequested";
+        if (state.PaymentConfirmed) return "PaymentConfirmed";
+        return "PaymentPending";
+    }
+}
 
 
 

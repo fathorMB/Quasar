@@ -57,6 +57,37 @@
         </section>
 
         <section>
+            <h2>Checkout Saga</h2>
+            <div class="grid three">
+                <form id="checkoutStartForm" class="card" novalidate>
+                    <h3>Start Checkout</h3>
+                    <label>Checkout Id (optional)<input name="checkoutId" class="checkout-id-input" placeholder="Auto-generate when empty" /></label>
+                    <label>Cart Id<input name="cartId" class="checkout-cart-input" value="aaaaaaaa-bbbb-cccc-dddd-ffffffffffff" required /></label>
+                    <label>Total Amount<input name="totalAmount" type="number" step="0.01" min="0.01" value="125.50" required /></label>
+                    <button type="submit">Start</button>
+                </form>
+                <form id="checkoutPaymentForm" class="card" novalidate>
+                    <h3>Confirm Payment</h3>
+                    <label>Checkout Id<input name="checkoutId" class="checkout-id-input" placeholder="Use active checkout" /></label>
+                    <label>Payment Reference<input name="paymentReference" value="PAY-12345" required /></label>
+                    <button type="submit">Confirm Payment</button>
+                </form>
+                <form id="checkoutFulfillmentForm" class="card" novalidate>
+                    <h3>Request Fulfillment</h3>
+                    <label>Checkout Id<input name="checkoutId" class="checkout-id-input" placeholder="Use active checkout" /></label>
+                    <label>Tracking Number<input name="trackingNumber" placeholder="Optional" /></label>
+                    <button type="submit">Request Fulfillment</button>
+                </form>
+            </div>
+            <form id="checkoutStatusForm" class="card inline" novalidate>
+                <label>Checkout Id<input name="checkoutId" class="checkout-id-input" placeholder="Provide or reuse active id" required /></label>
+                <button type="submit">Fetch Status</button>
+            </form>
+            <div id="checkoutSelected" class="status">No checkout selected</div>
+            <pre id="checkoutOutput" class="output"></pre>
+        </section>
+
+        <section>
             <h2>Sensor Readings</h2>
             <div class="grid two">
                 <form id="sensorIngestForm" class="card" novalidate>
