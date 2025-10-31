@@ -6,6 +6,7 @@ using Quasar.EventSourcing.Abstractions;
 using Quasar.Identity;
 using Quasar.Seeding;
 using Quasar.Identity.Persistence.Relational.EfCore;
+using Quasar.Persistence.Relational.EfCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -35,7 +36,7 @@ public sealed class IdentityDataSeed : IOrderedDataSeed
             return;
         }
 
-        var db = services.GetService<IdentityReadModelContext>();
+        var db = services.GetService<ReadModelContext<IdentityReadModelStore>>();
         if (db is null)
         {
             _logger.LogDebug("Identity read model context not available. Skipping identity seeding.");
@@ -46,7 +47,7 @@ public sealed class IdentityDataSeed : IOrderedDataSeed
         var userRepo = services.GetRequiredService<IEventSourcedRepository<UserAggregate>>();
         var hasher = services.GetRequiredService<IPasswordHasher>();
 
-        var roleLookup = (await db.Roles.AsNoTracking().ToListAsync(cancellationToken))
+        var roleLookup = (await db.Set<IdentityRoleReadModel>().AsNoTracking().ToListAsync(cancellationToken))
             .ToDictionary(r => r.Name, r => r.Id, StringComparer.OrdinalIgnoreCase);
 
         foreach (var set in _options.Sets)
@@ -81,11 +82,14 @@ public sealed class IdentityDataSeed : IOrderedDataSeed
 
     private async Task EnsureRoleAsync(
         IEventSourcedRepository<RoleAggregate> repo,
-        IdentityReadModelContext db,
+        ReadModelContext<IdentityReadModelStore> db,
         IdentityRoleSeed seed,
         Guid roleId,
         CancellationToken cancellationToken)
     {
+        var roles = db.Set<IdentityRoleReadModel>();
+        var rolePermissions = db.Set<IdentityRolePermissionReadModel>();
+
         var aggregate = await repo.GetAsync(roleId, cancellationToken).ConfigureAwait(false);
         var isNew = aggregate.Id == Guid.Empty;
 
@@ -107,20 +111,20 @@ public sealed class IdentityDataSeed : IOrderedDataSeed
 
         await repo.SaveAsync(aggregate, cancellationToken).ConfigureAwait(false);
 
-        var roleModel = await db.Roles.FirstOrDefaultAsync(r => r.Id == roleId, cancellationToken).ConfigureAwait(false);
+        var roleModel = await roles.FirstOrDefaultAsync(r => r.Id == roleId, cancellationToken).ConfigureAwait(false);
         if (roleModel is null)
         {
             roleModel = new IdentityRoleReadModel { Id = roleId };
-            db.Roles.Add(roleModel);
+            await roles.AddAsync(roleModel, cancellationToken).ConfigureAwait(false);
         }
         roleModel.Name = seed.Name;
 
         foreach (var permission in seed.Permissions.Where(p => !string.IsNullOrWhiteSpace(p)).Distinct(StringComparer.OrdinalIgnoreCase))
         {
-            if (!db.RolePermissions.Local.Any(rp => rp.RoleId == roleId && string.Equals(rp.Permission, permission, StringComparison.OrdinalIgnoreCase)) &&
-                !await db.RolePermissions.AnyAsync(rp => rp.RoleId == roleId && rp.Permission == permission, cancellationToken).ConfigureAwait(false))
+            if (!rolePermissions.Local.Any(rp => rp.RoleId == roleId && string.Equals(rp.Permission, permission, StringComparison.OrdinalIgnoreCase)) &&
+                !await rolePermissions.AnyAsync(rp => rp.RoleId == roleId && rp.Permission == permission, cancellationToken).ConfigureAwait(false))
             {
-                db.RolePermissions.Add(new IdentityRolePermissionReadModel { RoleId = roleId, Permission = permission });
+                await rolePermissions.AddAsync(new IdentityRolePermissionReadModel { RoleId = roleId, Permission = permission }, cancellationToken).ConfigureAwait(false);
             }
         }
     }
@@ -128,9 +132,10 @@ public sealed class IdentityDataSeed : IOrderedDataSeed
     private static async Task<IReadOnlyCollection<Guid>> ResolveRoleIdsAsync(
         IdentityUserSeed seed,
         IDictionary<string, Guid> roleLookup,
-        IdentityReadModelContext db,
+        ReadModelContext<IdentityReadModelStore> db,
         CancellationToken cancellationToken)
     {
+        var roles = db.Set<IdentityRoleReadModel>();
         var ids = new HashSet<Guid>(seed.Roles.Where(r => r != Guid.Empty));
 
         foreach (var roleName in seed.RoleNames)
@@ -141,7 +146,7 @@ public sealed class IdentityDataSeed : IOrderedDataSeed
                 continue;
             }
 
-            var existing = await db.Roles.AsNoTracking()
+            var existing = await roles.AsNoTracking()
                 .FirstOrDefaultAsync(r => r.Name == roleName, cancellationToken)
                 .ConfigureAwait(false);
 
@@ -158,11 +163,14 @@ public sealed class IdentityDataSeed : IOrderedDataSeed
     private async Task EnsureUserAsync(
         IEventSourcedRepository<UserAggregate> repo,
         IPasswordHasher hasher,
-        IdentityReadModelContext db,
+        ReadModelContext<IdentityReadModelStore> db,
         IdentityUserSeed seed,
         IReadOnlyCollection<Guid> roleIds,
         CancellationToken cancellationToken)
     {
+        var users = db.Set<IdentityUserReadModel>();
+        var userRoles = db.Set<IdentityUserRoleReadModel>();
+
         var userId = seed.Id != Guid.Empty ? seed.Id : Guid.NewGuid();
         var aggregate = await repo.GetAsync(userId, cancellationToken).ConfigureAwait(false);
         var isNew = aggregate.Id == Guid.Empty;
@@ -173,11 +181,11 @@ public sealed class IdentityDataSeed : IOrderedDataSeed
             _logger.LogDebug("Registered user {Username} ({UserId})", seed.Username, userId);
         }
 
-        var userModel = await db.Users.FirstOrDefaultAsync(u => u.Id == userId, cancellationToken).ConfigureAwait(false);
+        var userModel = await users.FirstOrDefaultAsync(u => u.Id == userId, cancellationToken).ConfigureAwait(false);
         if (userModel is null)
         {
             userModel = new IdentityUserReadModel { Id = userId };
-            db.Users.Add(userModel);
+            await users.AddAsync(userModel, cancellationToken).ConfigureAwait(false);
         }
 
         userModel.Username = seed.Username;
@@ -196,10 +204,10 @@ public sealed class IdentityDataSeed : IOrderedDataSeed
             if (roleId == Guid.Empty) continue;
             aggregate.AssignRole(roleId);
 
-            if (!db.UserRoles.Local.Any(ur => ur.UserId == userId && ur.RoleId == roleId) &&
-                !await db.UserRoles.AnyAsync(ur => ur.UserId == userId && ur.RoleId == roleId, cancellationToken).ConfigureAwait(false))
+            if (!userRoles.Local.Any(ur => ur.UserId == userId && ur.RoleId == roleId) &&
+                !await userRoles.AnyAsync(ur => ur.UserId == userId && ur.RoleId == roleId, cancellationToken).ConfigureAwait(false))
             {
-                db.UserRoles.Add(new IdentityUserRoleReadModel { UserId = userId, RoleId = roleId });
+                await userRoles.AddAsync(new IdentityUserRoleReadModel { UserId = userId, RoleId = roleId }, cancellationToken).ConfigureAwait(false);
             }
         }
 

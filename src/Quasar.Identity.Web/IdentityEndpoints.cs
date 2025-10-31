@@ -7,6 +7,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Quasar.Cqrs;
 using Quasar.Identity.Persistence.Relational.EfCore;
+using Quasar.Persistence.Relational.EfCore;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
@@ -72,6 +73,20 @@ public sealed class JwtTokenService : IJwtTokenService
 
 public static class IdentityEndpoints
 {
+    private static IdentityDbSets GetSets(ReadModelContext<IdentityReadModelStore> db) => new(
+        db.Set<IdentityUserReadModel>(),
+        db.Set<IdentityRoleReadModel>(),
+        db.Set<IdentityRolePermissionReadModel>(),
+        db.Set<IdentityUserRoleReadModel>(),
+        db.Set<IdentitySessionReadModel>());
+
+    private sealed record IdentityDbSets(
+        DbSet<IdentityUserReadModel> Users,
+        DbSet<IdentityRoleReadModel> Roles,
+        DbSet<IdentityRolePermissionReadModel> RolePermissions,
+        DbSet<IdentityUserRoleReadModel> UserRoles,
+        DbSet<IdentitySessionReadModel> Sessions);
+
     private static bool TryComputeRefreshHash(string token, out string hash)
     {
         hash = string.Empty;
@@ -89,6 +104,7 @@ public static class IdentityEndpoints
 
     public static IServiceCollection AddQuasarIdentity(this IServiceCollection services, Action<JwtOptions>? configure = null)
     {
+        services.AddReadModelDefinition<IdentityReadModelDefinition>();
         services.AddScoped<IPasswordHasher, Pbkdf2PasswordHasher>();
         services.AddScoped<ICommandHandler<RegisterUserCommand, Guid>, RegisterUserHandler>();
         services.AddScoped<ICommandHandler<CreateRoleCommand, Guid>, CreateRoleHandler>();
@@ -106,195 +122,232 @@ public static class IdentityEndpoints
 
     public static IEndpointRouteBuilder MapQuasarIdentityEndpoints(this IEndpointRouteBuilder app)
     {
-        app.MapPost("/auth/register", async (IMediator mediator, IPasswordHasher hasher, IdentityReadModelContext db, RegisterDto dto) =>
+        app.MapPost("/auth/register", async (IMediator mediator, IPasswordHasher hasher, ReadModelContext<IdentityReadModelStore> db, RegisterDto dto) =>
         {
+            var sets = GetSets(db);
+            var users = sets.Users;
+
             // Basic uniqueness check (read model side)
-            if (await db.Users.AnyAsync(u => u.Username == dto.Username))
+            if (await users.AnyAsync(u => u.Username == dto.Username).ConfigureAwait(false))
                 return Results.Conflict("Username already exists");
 
-            var id = await mediator.Send(new RegisterUserCommand(dto.Username, dto.Email, dto.Password));
+            var id = await mediator.Send(new RegisterUserCommand(dto.Username, dto.Email, dto.Password)).ConfigureAwait(false);
+
             // Ensure read model is immediately usable for login (projection may be async)
-            var user = await db.Users.FirstOrDefaultAsync(u => u.Id == id);
+            var user = await users.FirstOrDefaultAsync(u => u.Id == id).ConfigureAwait(false);
             if (user is null)
             {
                 user = new IdentityUserReadModel { Id = id, Username = dto.Username, Email = dto.Email };
-                db.Users.Add(user);
+                await users.AddAsync(user).ConfigureAwait(false);
             }
+
             var (hash, salt) = hasher.Hash(dto.Password);
             user.PasswordHash = hash;
             user.PasswordSalt = salt;
-            await db.SaveChangesAsync();
+            await db.SaveChangesAsync().ConfigureAwait(false);
             return Results.Ok(new { userId = id });
         });
 
-        app.MapPost("/auth/login", async (IJwtTokenService tokens, IPasswordHasher hasher, IdentityReadModelContext db, IOptions<JwtOptions> optAccessor, LoginDto dto) =>
+        app.MapPost("/auth/login", async (IJwtTokenService tokens, IPasswordHasher hasher, ReadModelContext<IdentityReadModelStore> db, IOptions<JwtOptions> optAccessor, LoginDto dto) =>
         {
-            var user = await db.Users.FirstOrDefaultAsync(u => u.Username == dto.Username);
+            var sets = GetSets(db);
+            var users = sets.Users;
+            var userRoles = sets.UserRoles;
+            var roles = sets.Roles;
+            var sessions = sets.Sessions;
+
+            var user = await users.FirstOrDefaultAsync(u => u.Username == dto.Username).ConfigureAwait(false);
             if (user is null) return Results.Unauthorized();
             if (!hasher.Verify(dto.Password, user.PasswordHash, user.PasswordSalt)) return Results.Unauthorized();
-            var roleNames = await db.UserRoles
+            var roleNames = await userRoles
                 .Where(x => x.UserId == user.Id)
-                .Join(db.Roles, ur => ur.RoleId, r => r.Id, (ur, r) => r.Name)
-                .ToArrayAsync();
+                .Join(roles, ur => ur.RoleId, r => r.Id, (ur, r) => r.Name)
+                .ToArrayAsync()
+                .ConfigureAwait(false);
             var (access, expires) = tokens.CreateAccessToken(user.Id, user.Username, roleNames);
             var (refresh, refreshExpires, hash) = tokens.CreateRefreshToken(optAccessor.Value);
-            db.Sessions.Add(new IdentitySessionReadModel
+            var session = await sessions.FirstOrDefaultAsync(s => s.UserId == user.Id).ConfigureAwait(false);
+            if (session is null)
             {
-                SessionId = Guid.NewGuid(),
-                UserId = user.Id,
-                RefreshTokenHash = hash,
-                IssuedUtc = DateTime.UtcNow,
-                ExpiresUtc = refreshExpires
-            });
-            await db.SaveChangesAsync();
+                session = new IdentitySessionReadModel { SessionId = Guid.NewGuid(), UserId = user.Id };
+                await sessions.AddAsync(session).ConfigureAwait(false);
+            }
+            session.RefreshTokenHash = hash;
+            session.IssuedUtc = DateTime.UtcNow;
+            session.ExpiresUtc = refreshExpires;
+            session.RevokedUtc = null;
+            await db.SaveChangesAsync().ConfigureAwait(false);
             return Results.Ok(new { accessToken = access, accessExpiresUtc = expires, refreshToken = refresh, refreshExpiresUtc = refreshExpires });
         });
 
-        app.MapPost("/auth/roles", async (IMediator mediator, IdentityReadModelContext db, CreateRoleRequest dto) =>
+        app.MapPost("/auth/roles", async (IMediator mediator, ReadModelContext<IdentityReadModelStore> db, CreateRoleRequest dto) =>
         {
-            var roleId = await mediator.Send(new CreateRoleCommand(dto.Name));
-            if (!await db.Roles.AnyAsync(r => r.Id == roleId))
+            var sets = GetSets(db);
+            var roles = sets.Roles;
+            var roleId = await mediator.Send(new CreateRoleCommand(dto.Name)).ConfigureAwait(false);
+            if (!await roles.AnyAsync(r => r.Id == roleId).ConfigureAwait(false))
             {
-                db.Roles.Add(new IdentityRoleReadModel { Id = roleId, Name = dto.Name });
-                await db.SaveChangesAsync();
+                await roles.AddAsync(new IdentityRoleReadModel { Id = roleId, Name = dto.Name }).ConfigureAwait(false);
+                await db.SaveChangesAsync().ConfigureAwait(false);
             }
             return Results.Ok(new { roleId });
         });
 
-        app.MapPost("/auth/roles/{roleId:guid}/permissions", async (IMediator mediator, IdentityReadModelContext db, Guid roleId, GrantPermissionRequest dto) =>
+        app.MapPost("/auth/roles/{roleId:guid}/permissions", async (IMediator mediator, ReadModelContext<IdentityReadModelStore> db, Guid roleId, GrantPermissionRequest dto) =>
         {
-            var result = await mediator.Send(new GrantRolePermissionCommand(roleId, dto.Permission));
+            var sets = GetSets(db);
+            var rolePermissions = sets.RolePermissions;
+            var result = await mediator.Send(new GrantRolePermissionCommand(roleId, dto.Permission)).ConfigureAwait(false);
             if (result)
             {
-                if (!await db.RolePermissions.AnyAsync(rp => rp.RoleId == roleId && rp.Permission == dto.Permission))
+                if (!await rolePermissions.AnyAsync(rp => rp.RoleId == roleId && rp.Permission == dto.Permission).ConfigureAwait(false))
                 {
-                    db.RolePermissions.Add(new IdentityRolePermissionReadModel { RoleId = roleId, Permission = dto.Permission });
-                    await db.SaveChangesAsync();
+                    await rolePermissions.AddAsync(new IdentityRolePermissionReadModel { RoleId = roleId, Permission = dto.Permission }).ConfigureAwait(false);
+                    await db.SaveChangesAsync().ConfigureAwait(false);
                 }
             }
             return result ? Results.Ok() : Results.NotFound();
         });
 
-        app.MapDelete("/auth/roles/{roleId:guid}/permissions/{permission}", async (IMediator mediator, IdentityReadModelContext db, Guid roleId, string permission) =>
+        app.MapDelete("/auth/roles/{roleId:guid}/permissions/{permission}", async (IMediator mediator, ReadModelContext<IdentityReadModelStore> db, Guid roleId, string permission) =>
         {
-            var result = await mediator.Send(new RevokeRolePermissionCommand(roleId, permission));
+            var sets = GetSets(db);
+            var rolePermissions = sets.RolePermissions;
+            var result = await mediator.Send(new RevokeRolePermissionCommand(roleId, permission)).ConfigureAwait(false);
             if (result)
             {
-                var entity = await db.RolePermissions.FirstOrDefaultAsync(rp => rp.RoleId == roleId && rp.Permission == permission);
+                var entity = await rolePermissions.FirstOrDefaultAsync(rp => rp.RoleId == roleId && rp.Permission == permission).ConfigureAwait(false);
                 if (entity is not null)
                 {
-                    db.RolePermissions.Remove(entity);
-                    await db.SaveChangesAsync();
+                    rolePermissions.Remove(entity);
+                    await db.SaveChangesAsync().ConfigureAwait(false);
                 }
             }
             return result ? Results.Ok() : Results.NotFound();
         });
 
-        app.MapPost("/auth/users/{userId:guid}/roles", async (IMediator mediator, IdentityReadModelContext db, Guid userId, AssignUserRoleRequest dto) =>
+        app.MapPost("/auth/users/{userId:guid}/roles", async (IMediator mediator, ReadModelContext<IdentityReadModelStore> db, Guid userId, AssignUserRoleRequest dto) =>
         {
-            var result = await mediator.Send(new AssignRoleToUserCommand(userId, dto.RoleId));
+            var sets = GetSets(db);
+            var userRoles = sets.UserRoles;
+            var result = await mediator.Send(new AssignRoleToUserCommand(userId, dto.RoleId)).ConfigureAwait(false);
             if (result)
             {
-                if (!await db.UserRoles.AnyAsync(ur => ur.UserId == userId && ur.RoleId == dto.RoleId))
+                if (!await userRoles.AnyAsync(ur => ur.UserId == userId && ur.RoleId == dto.RoleId).ConfigureAwait(false))
                 {
-                    db.UserRoles.Add(new IdentityUserRoleReadModel { UserId = userId, RoleId = dto.RoleId });
-                    await db.SaveChangesAsync();
+                    await userRoles.AddAsync(new IdentityUserRoleReadModel { UserId = userId, RoleId = dto.RoleId }).ConfigureAwait(false);
+                    await db.SaveChangesAsync().ConfigureAwait(false);
                 }
             }
             return result ? Results.Ok() : Results.NotFound();
         });
 
-        app.MapDelete("/auth/users/{userId:guid}/roles/{roleId:guid}", async (IMediator mediator, IdentityReadModelContext db, Guid userId, Guid roleId) =>
+        app.MapDelete("/auth/users/{userId:guid}/roles/{roleId:guid}", async (IMediator mediator, ReadModelContext<IdentityReadModelStore> db, Guid userId, Guid roleId) =>
         {
-            var result = await mediator.Send(new RevokeRoleFromUserCommand(userId, roleId));
+            var sets = GetSets(db);
+            var userRoles = sets.UserRoles;
+            var result = await mediator.Send(new RevokeRoleFromUserCommand(userId, roleId)).ConfigureAwait(false);
             if (result)
             {
-                var entity = await db.UserRoles.FirstOrDefaultAsync(ur => ur.UserId == userId && ur.RoleId == roleId);
+                var entity = await userRoles.FirstOrDefaultAsync(ur => ur.UserId == userId && ur.RoleId == roleId).ConfigureAwait(false);
                 if (entity is not null)
                 {
-                    db.UserRoles.Remove(entity);
-                    await db.SaveChangesAsync();
+                    userRoles.Remove(entity);
+                    await db.SaveChangesAsync().ConfigureAwait(false);
                 }
             }
             return result ? Results.Ok() : Results.NotFound();
         });
 
-        app.MapGet("/auth/users/{userId:guid}/roles", async (IdentityReadModelContext db, Guid userId) =>
+        app.MapGet("/auth/users/{userId:guid}/roles", async (ReadModelContext<IdentityReadModelStore> db, Guid userId) =>
         {
-            var roles = await db.UserRoles
+            var sets = GetSets(db);
+            var roles = await sets.UserRoles
                 .Where(ur => ur.UserId == userId)
-                .Join(db.Roles, ur => ur.RoleId, r => r.Id, (ur, r) => new { r.Id, r.Name })
-                .ToListAsync();
+                .Join(sets.Roles, ur => ur.RoleId, r => r.Id, (ur, r) => new { r.Id, r.Name })
+                .ToListAsync()
+                .ConfigureAwait(false);
             return Results.Ok(roles);
         });
 
-        app.MapGet("/auth/users/{userId:guid}/permissions", async (IdentityReadModelContext db, Guid userId) =>
+        app.MapGet("/auth/users/{userId:guid}/permissions", async (ReadModelContext<IdentityReadModelStore> db, Guid userId) =>
         {
-            var permissions = await db.UserRoles
+            var sets = GetSets(db);
+            var permissions = await sets.UserRoles
                 .Where(ur => ur.UserId == userId)
-                .Join(db.RolePermissions, ur => ur.RoleId, rp => rp.RoleId, (ur, rp) => rp.Permission)
+                .Join(sets.RolePermissions, ur => ur.RoleId, rp => rp.RoleId, (ur, rp) => rp.Permission)
                 .Distinct()
-                .ToListAsync();
+                .ToListAsync()
+                .ConfigureAwait(false);
             return Results.Ok(permissions);
         });
 
-        app.MapGet("/auth/roles/{roleId:guid}/permissions", async (IdentityReadModelContext db, Guid roleId) =>
+        app.MapGet("/auth/roles/{roleId:guid}/permissions", async (ReadModelContext<IdentityReadModelStore> db, Guid roleId) =>
         {
-            var perms = await db.RolePermissions
+            var sets = GetSets(db);
+            var perms = await sets.RolePermissions
                 .Where(rp => rp.RoleId == roleId)
                 .Select(rp => rp.Permission)
-                .ToListAsync();
+                .ToListAsync()
+                .ConfigureAwait(false);
             return Results.Ok(perms);
         });
 
-        app.MapGet("/auth/roles", async (IdentityReadModelContext db) =>
+        app.MapGet("/auth/roles", async (ReadModelContext<IdentityReadModelStore> db) =>
         {
-            var roles = await db.Roles.ToListAsync();
+            var sets = GetSets(db);
+            var roles = await sets.Roles.ToListAsync().ConfigureAwait(false);
             return Results.Ok(roles);
         });
 
-        app.MapGet("/auth/users", async (IdentityReadModelContext db) =>
+        app.MapGet("/auth/users", async (ReadModelContext<IdentityReadModelStore> db) =>
         {
-            var users = await db.Users
+            var sets = GetSets(db);
+            var users = await sets.Users
                 .Select(u => new
                 {
                     u.Id,
                     u.Username,
                     u.Email
                 })
-                .ToListAsync();
+                .ToListAsync()
+                .ConfigureAwait(false);
             return Results.Ok(users);
         });
 
-        app.MapGet("/auth/acl", async (IdentityReadModelContext db) =>
+        app.MapGet("/auth/acl", async (ReadModelContext<IdentityReadModelStore> db) =>
         {
-            var assignments = await db.UserRoles
-                .Join(db.Users, ur => ur.UserId, u => u.Id, (ur, u) => new { ur, u })
-                .Join(db.Roles, x => x.ur.RoleId, r => r.Id, (x, r) => new
+            var sets = GetSets(db);
+            var assignments = await sets.UserRoles
+                .Join(sets.Users, ur => ur.UserId, u => u.Id, (ur, u) => new { ur, u })
+                .Join(sets.Roles, x => x.ur.RoleId, r => r.Id, (x, r) => new
                 {
                     UserId = x.u.Id,
                     x.u.Username,
                     RoleId = r.Id,
                     RoleName = r.Name
                 })
-                .ToListAsync();
+                .ToListAsync()
+                .ConfigureAwait(false);
             return Results.Ok(assignments);
         });
 
-        app.MapPost("/auth/token/refresh", async (IJwtTokenService tokens, IdentityReadModelContext db, IOptions<JwtOptions> optAccessor, RefreshRequest dto) =>
+        app.MapPost("/auth/token/refresh", async (IJwtTokenService tokens, ReadModelContext<IdentityReadModelStore> db, IOptions<JwtOptions> optAccessor, RefreshRequest dto) =>
         {
             if (!TryComputeRefreshHash(dto.RefreshToken, out var hash)) return Results.Unauthorized();
-            var session = await db.Sessions.FirstOrDefaultAsync(s => s.RefreshTokenHash == hash && s.RevokedUtc == null);
+            var sets = GetSets(db);
+            var session = await sets.Sessions.FirstOrDefaultAsync(s => s.RefreshTokenHash == hash && s.RevokedUtc == null).ConfigureAwait(false);
             if (session is null) return Results.Unauthorized();
             if (session.ExpiresUtc < DateTime.UtcNow) return Results.Unauthorized();
 
-            var user = await db.Users.FirstOrDefaultAsync(u => u.Id == session.UserId);
+            var user = await sets.Users.FirstOrDefaultAsync(u => u.Id == session.UserId).ConfigureAwait(false);
             if (user is null) return Results.Unauthorized();
 
-            var roleNames = await db.UserRoles
+            var roleNames = await sets.UserRoles
                 .Where(x => x.UserId == user.Id)
-                .Join(db.Roles, ur => ur.RoleId, r => r.Id, (ur, r) => r.Name)
-                .ToArrayAsync();
+                .Join(sets.Roles, ur => ur.RoleId, r => r.Id, (ur, r) => r.Name)
+                .ToArrayAsync()
+                .ConfigureAwait(false);
 
             var (access, accessExpires) = tokens.CreateAccessToken(user.Id, user.Username, roleNames);
             var (refresh, refreshExpires, newHash) = tokens.CreateRefreshToken(optAccessor.Value);
@@ -302,18 +355,19 @@ public static class IdentityEndpoints
             session.RefreshTokenHash = newHash;
             session.IssuedUtc = DateTime.UtcNow;
             session.ExpiresUtc = refreshExpires;
-            await db.SaveChangesAsync();
+            await db.SaveChangesAsync().ConfigureAwait(false);
 
             return Results.Ok(new { accessToken = access, accessExpiresUtc = accessExpires, refreshToken = refresh, refreshExpiresUtc = refreshExpires });
         });
 
-        app.MapPost("/auth/logout", async (IdentityReadModelContext db, LogoutRequest dto) =>
+        app.MapPost("/auth/logout", async (ReadModelContext<IdentityReadModelStore> db, LogoutRequest dto) =>
         {
             if (!TryComputeRefreshHash(dto.RefreshToken, out var hash)) return Results.Ok();
-            var session = await db.Sessions.FirstOrDefaultAsync(s => s.RefreshTokenHash == hash && s.RevokedUtc == null);
+            var sets = GetSets(db);
+            var session = await sets.Sessions.FirstOrDefaultAsync(s => s.RefreshTokenHash == hash && s.RevokedUtc == null).ConfigureAwait(false);
             if (session is null) return Results.Ok();
             session.RevokedUtc = DateTime.UtcNow;
-            await db.SaveChangesAsync();
+            await db.SaveChangesAsync().ConfigureAwait(false);
             return Results.Ok();
         });
 
@@ -328,3 +382,19 @@ public sealed record GrantPermissionRequest(string Permission);
 public sealed record AssignUserRoleRequest(Guid RoleId);
 public sealed record RefreshRequest(string RefreshToken);
 public sealed record LogoutRequest(string RefreshToken);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

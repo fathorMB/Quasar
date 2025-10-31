@@ -1,4 +1,4 @@
-﻿# Quasar Micro-Framework
+# Quasar Micro-Framework
 
 Quasar is a modular .NET micro-framework for CQRS, event sourcing, identity, scheduling, logging, and real-time streaming. It bundles a mediator-centric command pipeline, pluggable event stores, EF Core read models, ACL/Identity, Quartz-based scheduling, and SignalR time-series streaming.
 
@@ -128,15 +128,15 @@ Seeded credentials:
 
 Each subdirectory under `src/` represents a NuGet package published via GitHub Packages:
 
-- **Quasar.Core** – core primitives (`IClock`, strongly-typed IDs, `Result` types).
-- **Quasar.Cqrs** – mediator, command/query abstractions, pipeline behaviors.
-- **Quasar.Domain** – base `AggregateRoot`, event sourcing helpers, value objects.
+- **Quasar.Core** � core primitives (`IClock`, strongly-typed IDs, `Result` types).
+- **Quasar.Cqrs** � mediator, command/query abstractions, pipeline behaviors.
+- **Quasar.Domain** � base `AggregateRoot`, event sourcing helpers, value objects.
 - **Quasar.EventSourcing.\*** - event store abstractions plus in-memory/SQLite/SQL Server implementations.
 - **Quasar.Persistence.\*** - read-model abstractions, EF Core integration, TimescaleDB time-series support.
 - **Quasar.Identity.\*** - event-sourced identity, persistence, Web APIs.
-- **Quasar.Logging** – Serilog setup helper.
-- **Quasar.RealTime** – SignalR & Timescale integration.
-- **Quasar.Scheduling.Quartz** – Quartz hosting, schema bootstrapper, REST endpoints.
+- **Quasar.Logging** � Serilog setup helper.
+- **Quasar.RealTime** � SignalR & Timescale integration.
+- **Quasar.Scheduling.Quartz** � Quartz hosting, schema bootstrapper, REST endpoints.
 
 ## Practical Modelling Examples
 
@@ -217,6 +217,16 @@ public sealed class AddCartItemValidator : AbstractValidator<AddCartItem>
 ```
 
 ### Projection & Read Model
+
+Read models are now schema-first: register the store metadata and let Quasar create the relational schema on application start.
+
+1. Create a marker implementing `IReadModelStoreMarker` and a definition derived from `ReadModelDefinition<TStore>` where you configure the EF Core entities.
+2. Register the definition (`services.AddReadModelDefinition<MyStoreDefinition>()`) and choose a provider with `UseEfCoreSqlServerReadModels<TStore>()` or `UseEfCoreSqliteReadModels<TStore>()`.
+3. Before running custom seeders call `await host.InitializeReadModelsAsync();` so the framework can create any missing tables/columns for each registered store.
+4. Implement projections by injecting `ReadModelContext<TStore>` or `IReadRepository<T>` and mutating the read models when events are replayed.
+
+The framework inspects the assembled EF model at runtime and issues the required DDL (creates tables everywhere, adds new nullable columns on SQL Server). The sample therefore no longer ships EF Core migrations.
+
 
 ```csharp
 public sealed class CartReadModel
@@ -333,10 +343,10 @@ Template tips:
 
 ## Extending Quasar
 
-1. **Add aggregates** – derive from `AggregateRoot`, define domain events, and wire command/query handlers.
-2. **Create projections** – implement `IProjection<TEvent>` and register it so the polling projector picks it up.
-3. **Secure requests** – implement `IAuthorizableRequest` and evaluate permissions via `IAuthorizationService`.
-4. **Broadcast** – map events to `TimeSeriesPoint` and SignalR payloads using the real-time adapters.
+1. **Add aggregates** � derive from `AggregateRoot`, define domain events, and wire command/query handlers.
+2. **Create projections** � implement `IProjection<TEvent>` and register it so the polling projector picks it up.
+3. **Secure requests** � implement `IAuthorizableRequest` and evaluate permissions via `IAuthorizationService`.
+4. **Broadcast** � map events to `TimeSeriesPoint` and SignalR payloads using the real-time adapters.
 
 ## Testing
 
@@ -349,3 +359,6 @@ The test suite covers mediator behavior, event store logic, scheduling infrastru
 ## License
 
 This project is provided under the MIT License. See [LICENSE](LICENSE) for details.
+
+
+

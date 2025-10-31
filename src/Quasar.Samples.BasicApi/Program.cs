@@ -10,6 +10,7 @@ using Quasar.EventSourcing.Sqlite;
 using Quasar.Samples.BasicApi;
 using Quasar.Web;
 using Quasar.Persistence.Abstractions;
+using Quasar.Persistence.Relational.EfCore;
 using Microsoft.EntityFrameworkCore;
 using Quasar.Projections.Abstractions;
 using Quasar.Identity.Web;
@@ -57,6 +58,7 @@ services.AddQuasarTelemetry(builder =>
 });
 services.AddQuasarAuditing();
 services.AddQuasarEventSourcingCore();
+services.AddReadModelDefinition<SampleReadModelDefinition>();
 
 // Event serializer mapping
 IEventTypeMap typeMap = new DictionaryEventTypeMap(new[]
@@ -154,7 +156,7 @@ switch (storeMode)
         services.UseSqlServerEventStore(sqlOptions);
         services.UseSqlServerCommandTransaction();
         // read models + projections
-        services.UseEfCoreSqlServerReadModels<SampleReadModelContext>(sqlConnString);
+        services.UseEfCoreSqlServerReadModels<SampleReadModelStore>(sqlConnString);
         services.UseSqlServerProjectionCheckpoints(() => new SqlConnection(sqlConnString));
         services.AddScoped<object, CounterProjection>();
         services.AddScoped<object, ShoppingCartProjection>();
@@ -162,7 +164,7 @@ switch (storeMode)
         services.AddScoped<object, SensorRealTimeProjection>();
         services.AddPollingProjector("MainProjector", new[] { SampleConfig.CounterStreamId, SampleConfig.CartStreamId, SampleConfig.SensorStreamId }, TimeSpan.FromMilliseconds(500));
         // Identity read models
-        services.UseEfCoreSqlServerReadModels<IdentityReadModelContext>(sqlConnString, registerRepositories: false);
+        services.UseEfCoreSqlServerReadModels<IdentityReadModelStore>(sqlConnString, registerRepositories: false);
         quartzConnectionString = sqlConnString;
         quartzProvider = "SqlServer";
         quartzDelegateType = "Quartz.Impl.AdoJobStore.SqlServerDelegate, Quartz";
@@ -177,7 +179,7 @@ switch (storeMode)
         services.UseSqliteEventStore(sqliteOptions);
         services.UseSqliteCommandTransaction();
         // read models + projections
-        services.UseEfCoreSqliteReadModels<SampleReadModelContext>(sqliteConnString);
+        services.UseEfCoreSqliteReadModels<SampleReadModelStore>(sqliteConnString);
         services.UseSqliteProjectionCheckpoints(() => new SqliteConnection(sqliteConnString));
         services.AddScoped<object, CounterProjection>();
         services.AddScoped<object, ShoppingCartProjection>();
@@ -185,7 +187,7 @@ switch (storeMode)
         services.AddScoped<object, SensorRealTimeProjection>();
         services.AddPollingProjector("MainProjector", new[] { SampleConfig.CounterStreamId, SampleConfig.CartStreamId, SampleConfig.SensorStreamId }, TimeSpan.FromMilliseconds(500));
         // Identity read models
-        services.UseEfCoreSqliteReadModels<IdentityReadModelContext>(sqliteConnString, registerRepositories: false);
+        services.UseEfCoreSqliteReadModels<IdentityReadModelStore>(sqliteConnString, registerRepositories: false);
         quartzConnectionString = sqliteConnString;
         quartzProvider = "SQLite-Microsoft";
         quartzDelegateType = "Quartz.Impl.AdoJobStore.SQLiteDelegate, Quartz";
@@ -195,7 +197,7 @@ switch (storeMode)
         services.AddScoped<ICommandTransaction, NoopCommandTransaction>();
         // use sqlite for read models while using in-memory event store for demo
         var demoSqlite = configuration.GetConnectionString("QuasarSqlite") ?? "Data Source=quasar.db";
-        services.UseEfCoreSqliteReadModels<SampleReadModelContext>(demoSqlite);
+        services.UseEfCoreSqliteReadModels<SampleReadModelStore>(demoSqlite);
         services.UseSqliteProjectionCheckpoints(() => new SqliteConnection(demoSqlite));
         services.AddScoped<object, CounterProjection>();
         services.AddScoped<object, ShoppingCartProjection>();
@@ -203,7 +205,7 @@ switch (storeMode)
         services.AddScoped<object, SensorRealTimeProjection>();
         services.AddPollingProjector("MainProjector", new[] { SampleConfig.CounterStreamId, SampleConfig.CartStreamId, SampleConfig.SensorStreamId }, TimeSpan.FromMilliseconds(500));
         // Identity read models
-        services.UseEfCoreSqliteReadModels<IdentityReadModelContext>(demoSqlite, registerRepositories: false);
+        services.UseEfCoreSqliteReadModels<IdentityReadModelStore>(demoSqlite, registerRepositories: false);
         quartzConnectionString = demoSqlite;
         quartzProvider = "SQLite-Microsoft";
         quartzDelegateType = "Quartz.Impl.AdoJobStore.SQLiteDelegate, Quartz";
@@ -255,12 +257,13 @@ var app = builder.Build();
 // Apply EF Core migrations for read models
 using (var scope = app.Services.CreateScope())
 {
-    var db = scope.ServiceProvider.GetService<SampleReadModelContext>();
+    var db = scope.ServiceProvider.GetService<ReadModelContext<SampleReadModelStore>>();
     if (db is not null) await db.Database.MigrateAsync();
-    var idDb = scope.ServiceProvider.GetService<IdentityReadModelContext>();
+    var idDb = scope.ServiceProvider.GetService<ReadModelContext<IdentityReadModelStore>>();
     if (idDb is not null) await idDb.Database.MigrateAsync();
 }
 
+await app.InitializeReadModelsAsync();
 await app.SeedDataAsync();
 
 // Identity endpoints
@@ -408,6 +411,9 @@ app.Run();
 
 public sealed record SensorIngestRequest(Guid DeviceId, string SensorType, double Value, DateTime? TimestampUtc);
 public sealed record SensorReadingResponse(DateTime TimestampUtc, double Value, string SensorType);
+
+
+
 
 
 

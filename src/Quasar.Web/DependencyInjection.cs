@@ -12,6 +12,7 @@ using Quasar.Projections.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using System.Data.Common;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Quasar.Security;
 using Quasar.Persistence.Abstractions;
 using Quasar.Persistence.TimeSeries.Timescale;
@@ -111,38 +112,54 @@ public static class DependencyInjection
     /// <summary>
     /// Configures EF Core-backed read models using SQL Server.
     /// </summary>
-    public static IServiceCollection UseEfCoreSqlServerReadModels<TContext>(this IServiceCollection services, string connectionString, bool registerRepositories = true)
-        where TContext : ReadModelContext
+    public static IServiceCollection UseEfCoreSqlServerReadModels<TStore>(this IServiceCollection services, string connectionString, bool registerRepositories = true)
+        where TStore : class, IReadModelStoreMarker
     {
-        services.AddDbContext<TContext>(o =>
+        services.TryAddSingleton<IReadModelModelSource, ReadModelModelSource>();
+
+        services.AddDbContext<ReadModelContext<TStore>>(o =>
         {
-            o.UseSqlServer(connectionString, b => b.MigrationsAssembly(typeof(TContext).Assembly.FullName));
+            o.UseSqlServer(connectionString);
             o.ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning));
         });
+
+        services.AddScoped<IReadModelSchemaInitializer<ReadModelContext<TStore>>, SqlServerReadModelSchemaInitializer<ReadModelContext<TStore>>>();
+        services.AddSingleton<IReadModelSchemaBootstrapper, ReadModelSchemaBootstrapper<ReadModelContext<TStore>>>();
+        services.AddHostedService<ReadModelSchemaInitializerHostedService<ReadModelContext<TStore>>>();
+
         if (registerRepositories)
         {
-            services.AddScoped<ReadModelContext>(sp => sp.GetRequiredService<TContext>());
+            services.AddScoped<ReadModelContext>(sp => sp.GetRequiredService<ReadModelContext<TStore>>());
             services.AddScoped(typeof(IReadRepository<>), typeof(EfReadRepository<>));
         }
+
         return services;
     }
 
     /// <summary>
     /// Configures EF Core-backed read models using SQLite.
     /// </summary>
-    public static IServiceCollection UseEfCoreSqliteReadModels<TContext>(this IServiceCollection services, string connectionString, bool registerRepositories = true)
-        where TContext : ReadModelContext
+    public static IServiceCollection UseEfCoreSqliteReadModels<TStore>(this IServiceCollection services, string connectionString, bool registerRepositories = true)
+        where TStore : class, IReadModelStoreMarker
     {
-        services.AddDbContext<TContext>(o =>
+        services.TryAddSingleton<IReadModelModelSource, ReadModelModelSource>();
+
+        services.AddDbContext<ReadModelContext<TStore>>(o =>
         {
-            o.UseSqlite(connectionString, b => b.MigrationsAssembly(typeof(TContext).Assembly.FullName));
+            o.UseSqlite(connectionString);
             o.ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning));
         });
+
+        services.AddScoped<IReadModelSchemaInitializer<ReadModelContext<TStore>>, SqliteReadModelSchemaInitializer<ReadModelContext<TStore>>>();
+        services.AddSingleton<IReadModelSchemaBootstrapper, ReadModelSchemaBootstrapper<ReadModelContext<TStore>>>();
+        services.AddHostedService<ReadModelSchemaInitializerHostedService<ReadModelContext<TStore>>>();
+
         if (registerRepositories)
         {
-            services.AddScoped<ReadModelContext>(sp => sp.GetRequiredService<TContext>());
+            services.AddScoped<ReadModelContext>(sp => sp.GetRequiredService<ReadModelContext<TStore>>());
             services.AddScoped(typeof(IReadRepository<>), typeof(EfReadRepository<>));
         }
+
         return services;
     }
 
@@ -194,3 +211,5 @@ public static class DependencyInjection
         return services;
     }
 }
+
+

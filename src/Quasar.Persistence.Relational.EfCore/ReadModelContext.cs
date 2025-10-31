@@ -8,7 +8,26 @@ namespace Quasar.Persistence.Relational.EfCore;
 /// </summary>
 public abstract class ReadModelContext : DbContext
 {
-    protected ReadModelContext(DbContextOptions options) : base(options) { }
+    private readonly IReadModelModelSource _modelSource;
+    private readonly Type _storeKey;
+
+    protected ReadModelContext(
+        DbContextOptions options,
+        IReadModelModelSource modelSource,
+        Type storeKey) : base(options)
+    {
+        _modelSource = modelSource;
+        _storeKey = storeKey;
+    }
+
+    /// <summary>
+    /// Applies registered read model definitions for the configured store.
+    /// </summary>
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
+        _modelSource.Configure(modelBuilder, _storeKey);
+    }
 }
 
 /// <summary>
