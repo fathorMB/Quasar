@@ -33,6 +33,7 @@ using OpenTelemetry.Trace;
 using Quasar.Auditing;
 using Quasar.Sagas;
 using Quasar.Sagas.Persistence;
+using Quasar.Sagas.Persistence.Relational.EfCore;
 
 var builder = WebApplication.CreateBuilder(args);
 var services = builder.Services;
@@ -54,16 +55,6 @@ builder.Host.UseQuasarSerilog(configuration, "Logging", options =>
 
 // CQRS + ES wiring
 services.AddQuasarMediator();
-services.AddQuasarSagas(cfg =>
-{
-    cfg.AddSaga<CheckoutSaga, CheckoutSagaState>(builder =>
-    {
-        builder.StartsWith<BeginCheckoutCommand>(cmd => cmd.CheckoutId);
-        builder.Handles<ConfirmCheckoutPaymentCommand>(cmd => cmd.CheckoutId);
-        builder.Handles<MarkCheckoutFulfilledCommand>(cmd => cmd.CheckoutId);
-    });
-});
-services.AddScoped<CheckoutSaga>();
 services.AddQuasarTelemetry(builder =>
 {
     builder.AddConsoleExporter();
@@ -149,6 +140,7 @@ services.UseTimescaleTimeSeries(options =>
     options.Schema = "public";
     options.WriteBatchSize = 500;
 });
+Action<ISagaPersistenceBuilder>? sagaPersistenceConfigurator = null;
 
 services.AddSingleton<SensorTimeSeriesAdapter>();
 services.AddSingleton<SensorPayloadAdapter>();
@@ -164,6 +156,7 @@ switch (storeMode)
     case "sqlserver":
         var sqlConnString = configuration.GetConnectionString("QuasarSqlServer")
             ?? throw new InvalidOperationException("Connection string 'QuasarSqlServer' is required for SQL Server store.");
+        sagaPersistenceConfigurator = builder => builder.UseSqlServerSagaStore(sqlConnString);
         var sqlOptions = new SqlEventStoreOptions
         {
             ConnectionFactory = () => new SqlConnection(sqlConnString)
@@ -187,6 +180,7 @@ switch (storeMode)
         break;
     case "sqlite":
         var sqliteConnString = configuration.GetConnectionString("QuasarSqlite") ?? "Data Source=quasar.db";
+        sagaPersistenceConfigurator = builder => builder.UseSqliteSagaStore(sqliteConnString);
         var sqliteOptions = new SqliteEventStoreOptions
         {
             ConnectionFactory = () => new SqliteConnection(sqliteConnString)
@@ -213,6 +207,7 @@ switch (storeMode)
         services.AddScoped<ICommandTransaction, NoopCommandTransaction>();
         // use sqlite for read models while using in-memory event store for demo
         var demoSqlite = configuration.GetConnectionString("QuasarSqlite") ?? "Data Source=quasar.db";
+        sagaPersistenceConfigurator = builder => builder.UseSqliteSagaStore(demoSqlite);
         services.UseEfCoreSqliteReadModels<SampleReadModelStore>(demoSqlite);
         services.UseSqliteProjectionCheckpoints(() => new SqliteConnection(demoSqlite));
         services.AddScoped<object, CounterProjection>();
@@ -227,6 +222,17 @@ switch (storeMode)
         quartzDelegateType = "Quartz.Impl.AdoJobStore.SQLiteDelegate, Quartz";
         break;
 }
+
+services.AddQuasarSagas(cfg =>
+{
+    cfg.AddSaga<CheckoutSaga, CheckoutSagaState>(builder =>
+    {
+        builder.StartsWith<BeginCheckoutCommand>(cmd => cmd.CheckoutId);
+        builder.Handles<ConfirmCheckoutPaymentCommand>(cmd => cmd.CheckoutId);
+        builder.Handles<MarkCheckoutFulfilledCommand>(cmd => cmd.CheckoutId);
+    });
+}, sagaPersistenceConfigurator);
+services.AddScoped<CheckoutSaga>();
 
 services.AddQuartzScheduler(options =>
 {
@@ -628,9 +634,6 @@ public sealed record CheckoutStatusResponse(
         return "PaymentPending";
     }
 }
-
-
-
 
 
 

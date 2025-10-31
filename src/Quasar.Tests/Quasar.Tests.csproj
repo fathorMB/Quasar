@@ -41,6 +41,7 @@
     <ProjectReference Include="..\Quasar.Auditing\Quasar.Auditing.csproj" />
     <ProjectReference Include="..\Quasar.Sagas\Quasar.Sagas.csproj" />
     <ProjectReference Include="..\Quasar.Web\Quasar.Web.csproj" />
+    <ProjectReference Include="..\Quasar.Sagas.Persistence.Relational.EfCore\Quasar.Sagas.Persistence.Relational.EfCore.csproj" />
   </ItemGroup>
 
 </Project>

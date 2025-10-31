@@ -22,6 +22,7 @@
     <ProjectReference Include="..\Quasar.Scheduling.Quartz\Quasar.Scheduling.Quartz.csproj" />
     <ProjectReference Include="..\Quasar.Telemetry\Quasar.Telemetry.csproj" />
     <ProjectReference Include="..\Quasar.Auditing\Quasar.Auditing.csproj" />
+    <ProjectReference Include="..\Quasar.Sagas.Persistence.Relational.EfCore\Quasar.Sagas.Persistence.Relational.EfCore.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Data.SqlClient" Version="7.0.0-preview2.25289.6" />

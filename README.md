@@ -317,6 +317,7 @@ The Quartz integration auto-provisions the job-store schema (SQL Server/SQLite),
 
 The `Quasar.Samples.BasicApi` project now ships with a checkout saga that demonstrates the framework-level orchestration primitives. The saga coordinates three commands and persists its state via the default in-memory saga repository.
 
+Saga state persistence is now provider-agnostic: configure `AddQuasarSagas` with `builder => builder.UseSqlServerSagaStore(...)` or `UseSqliteSagaStore(...)` to reuse the same EF Core connector powering your identity/read model stores.
 1. Start a checkout and capture the saga id (omit `checkoutId` to auto-generate):
    ```bash
    curl -X POST http://localhost:5236/checkout/start \
@@ -388,6 +389,5 @@ The test suite covers mediator behavior, event store logic, scheduling infrastru
 ## License
 
 This project is provided under the MIT License. See [LICENSE](LICENSE) for details.
-
 
 

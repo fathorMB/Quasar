@@ -10,7 +10,10 @@ namespace Quasar.Sagas;
 
 public static class SagaServiceCollectionExtensions
 {
-    public static IServiceCollection AddQuasarSagas(this IServiceCollection services, Action<ISagaConfigurator>? configure = null)
+    public static IServiceCollection AddQuasarSagas(
+        this IServiceCollection services,
+        Action<ISagaConfigurator>? configure = null,
+        Action<ISagaPersistenceBuilder>? configurePersistence = null)
     {
         if (services is null) throw new ArgumentNullException(nameof(services));
 
@@ -36,13 +39,16 @@ public static class SagaServiceCollectionExtensions
 
         services.TryAddScoped<ISagaCoordinator, SagaCoordinator>();
         services.AddScoped(typeof(IPipelineBehavior<,>), typeof(SagaPipelineBehavior<,>));
-        services.TryAddSingleton(typeof(ISagaRepository<>), typeof(InMemorySagaRepository<>));
 
         if (configure is not null)
         {
             var configurator = new SagaConfigurator(services, store);
             configure(configurator);
         }
+
+        var persistenceBuilder = new SagaPersistenceBuilder(services);
+        configurePersistence?.Invoke(persistenceBuilder);
+        persistenceBuilder.Build();
 
         return services;
     }

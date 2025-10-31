@@ -1,3 +1,6 @@
+using Microsoft.Data.Sqlite;
+using Microsoft.EntityFrameworkCore;
+using Quasar.Sagas.Persistence.Relational.EfCore;
 using Microsoft.Extensions.DependencyInjection;
 using Quasar.Cqrs;
 using Quasar.Sagas;
@@ -44,7 +47,31 @@ public sealed class SagaTests
         Assert.Null(state);
     }
 
-    private static IServiceCollection CreateServiceCollection()
+    [Fact]
+    public async Task Saga_state_persists_with_sqlite_repository()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+
+        var services = CreateServiceCollection(builder =>
+            builder.UseSagaDbContext((_, options) => options.UseSqlite(connection)));
+
+        using var provider = services.BuildServiceProvider();
+        var mediator = provider.GetRequiredService<IMediator>();
+        var repository = provider.GetRequiredService<ISagaRepository<TestSagaState>>();
+
+        var sagaId = Guid.NewGuid();
+        await mediator.Send(new StartSagaCommand(sagaId));
+
+        var state = await repository.FindAsync(sagaId);
+        Assert.NotNull(state);
+
+        await mediator.Send(new ProgressSagaCommand(sagaId, true));
+        var deleted = await repository.FindAsync(sagaId);
+        Assert.Null(deleted);
+    }
+
+    private static IServiceCollection CreateServiceCollection(Action<ISagaPersistenceBuilder>? persistence = null)
     {
         var services = new ServiceCollection();
         services.AddLogging();
@@ -60,7 +87,7 @@ public sealed class SagaTests
                 builder.StartsWith<StartSagaCommand>(cmd => cmd.CorrelationId);
                 builder.Handles<ProgressSagaCommand>(cmd => cmd.CorrelationId);
             });
-        });
+        }, persistence);
 
         if (!services.Any(d => d.ServiceType == typeof(Quasar.Security.IAuthorizationService)))
         {
@@ -131,4 +158,3 @@ public sealed class SagaTests
         public Task<bool> AuthorizeAsync(Guid subjectId, string action, string resource, CancellationToken cancellationToken = default) => Task.FromResult(true);
     }
 }
-
