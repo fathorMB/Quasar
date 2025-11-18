@@ -13,7 +13,7 @@ h1:focus {
 body {
     margin: 0;
     min-height: 100vh;
-    background: #060b1c;
+    background: var(--quasar-bg, #060b1c);
     color: #e5e7eb;
 }
 
@@ -21,13 +21,13 @@ body {
     min-height: 100vh;
     display: grid;
     grid-template-columns: 260px 1fr;
-    background: #060b1c;
+    background: var(--quasar-bg, #060b1c);
     color: #e2e8f0;
 }
 
 .quasar-shell__sidenav {
-    background: #050818;
-    border-right: 1px solid rgba(148, 163, 184, 0.2);
+    background: var(--quasar-nav-bg, #050818);
+    border-right: 1px solid var(--quasar-border, rgba(148, 163, 184, 0.2));
     padding: 1.75rem;
     display: flex;
     flex-direction: column;
@@ -44,10 +44,23 @@ body {
     width: 42px;
     height: 42px;
     border-radius: 12px;
-    background: linear-gradient(135deg, #2563eb, #7c3aed);
+    background: linear-gradient(135deg, var(--quasar-accent-start, #2563eb), var(--quasar-accent-end, #7c3aed));
     display: grid;
     place-items: center;
     font-weight: 700;
+}
+
+.quasar-shell__appname {
+    font-size: 0.75rem;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+.quasar-shell__logo--small {
+    width: 36px;
+    height: 36px;
+    font-size: 0.95rem;
 }
 
 .quasar-shell__eyebrow {
@@ -89,7 +102,7 @@ body {
 .quasar-shell__nav a.active,
 .quasar-shell__nav a:hover,
 .quasar-shell__nav button:hover {
-    background: rgba(148, 163, 184, 0.2);
+    background: var(--quasar-nav-active, rgba(148, 163, 184, 0.2));
     color: #fff;
 }
 
@@ -110,10 +123,10 @@ body {
 }
 
 .quasar-shell__topbar {
-    background: radial-gradient(circle at 10% -20%, rgba(124, 58, 237, 0.5), transparent), #0f172a;
+    background: radial-gradient(circle at 10% -20%, color-mix(in srgb, var(--quasar-accent-end, #7c3aed) 40%, transparent), transparent), var(--quasar-panel, #0f172a);
     border-radius: 1.25rem;
     padding: 1.75rem;
-    border: 1px solid rgba(148, 163, 184, 0.2);
+    border: 1px solid var(--quasar-border, rgba(148, 163, 184, 0.2));
     display: flex;
     justify-content: space-between;
     gap: 1.5rem;
@@ -132,7 +145,19 @@ body {
 .quasar-shell__topbar-actions {
     display: flex;
     gap: 0.6rem;
-    align-items: flex-start;
+    align-items: center;
+}
+
+.quasar-shell__topbar-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding-right: 0.75rem;
+    border-right: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.quasar-shell__topbar-brand span {
+    font-weight: 600;
 }
 
 .quasar-shell__topbar-actions button {
@@ -146,14 +171,14 @@ body {
 }
 
 .quasar-shell__topbar-actions button.primary {
-    background: linear-gradient(135deg, #2563eb, #7c3aed);
+    background: linear-gradient(135deg, var(--quasar-accent-start, #2563eb), var(--quasar-accent-end, #7c3aed));
     border-color: transparent;
 }
 
 .quasar-shell__body {
-    background: rgba(8, 14, 35, 0.9);
+    background: color-mix(in srgb, var(--quasar-panel, #0f172a), #000 10%);
     border-radius: 1.25rem;
-    border: 1px solid rgba(148, 163, 184, 0.15);
+    border: 1px solid color-mix(in srgb, var(--quasar-border, rgba(148,163,184,0.2)), transparent 30%);
     padding: 2rem;
     min-height: calc(100vh - 180px);
 }
@@ -192,9 +217,9 @@ body {
 }
 
 .workspace__hero {
-    background: rgba(15, 23, 42, 0.8);
+    background: color-mix(in srgb, var(--quasar-panel, #0f172a), rgba(255,255,255,0.02));
     border-radius: 1.25rem;
-    border: 1px solid rgba(148, 163, 184, 0.2);
+    border: 1px solid var(--quasar-border, rgba(148, 163, 184, 0.2));
     padding: 1.6rem;
 }
 
@@ -231,9 +256,9 @@ body {
 }
 
 .workspace__grid article {
-    background: rgba(9, 14, 30, 0.9);
+    background: color-mix(in srgb, var(--quasar-panel, #0f172a), rgba(0, 0, 0, 0.05));
     border-radius: 1rem;
-    border: 1px solid rgba(148, 163, 184, 0.15);
+    border: 1px solid color-mix(in srgb, var(--quasar-border, rgba(148,163,184,0.2)), transparent 20%);
     padding: 1.2rem;
     display: flex;
     flex-direction: column;
@@ -254,8 +279,8 @@ body {
 }
 
 .badge--ok {
-    background: rgba(34, 197, 94, 0.2);
-    color: #4ade80;
+    background: color-mix(in srgb, var(--quasar-primary, #2563eb), transparent 70%);
+    color: var(--quasar-primary, #2563eb);
 }
 
 .workspace__grid ul {
@@ -290,9 +315,9 @@ body {
 }
 
 .workspace__card {
-    background: rgba(9, 14, 30, 0.85);
+    background: color-mix(in srgb, var(--quasar-panel, #0f172a), rgba(0,0,0,0.1));
     border-radius: 1rem;
-    border: 1px solid rgba(148, 163, 184, 0.15);
+    border: 1px solid color-mix(in srgb, var(--quasar-border, rgba(148,163,184,0.2)), transparent 20%);
     padding: 1.25rem;
     display: flex;
     flex-direction: column;

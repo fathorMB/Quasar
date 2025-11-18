@@ -14,6 +14,7 @@ using Quasar.Identity.Web;
 using Quasar.Persistence.Relational.EfCore;
 using Quasar.Seeding;
 using Quasar.Ui;
+using Quasar.Ui.Branding;
 using Quasar.Web;
 
 namespace BEAM.Server;
@@ -26,7 +27,21 @@ public static class Program
         var configuration = builder.Configuration;
         var services = builder.Services;
 
-        services.AddQuasarUi();
+        services.AddQuasarUi(
+            configureNavigation: nav =>
+            {
+                nav.ClearSections()
+                    .AddSection("Menu", section =>
+                {
+                    section.AddItem("Overview", typeof(Quasar.Ui.Components.Panels.OverviewPanel), slug: string.Empty, isDefault: true);
+                });
+            },
+            configureBranding: branding =>
+            {
+                branding.ApplicationName = "BEAM v1";
+                branding.LogoGlyph = "B";
+                branding.Palette = QuasarUiColorPalettes.Default;
+            });
 
         services.AddAuthorization();
 

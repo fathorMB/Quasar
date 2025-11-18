@@ -1,20 +1,36 @@
 using System;
 using Microsoft.Extensions.DependencyInjection;
+using Quasar.Ui.Branding;
 using Quasar.Ui.Navigation;
 
 namespace Quasar.Ui;
 
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddQuasarUi(this IServiceCollection services, Action<QuasarUiNavigationBuilder>? configure = null)
+    public static IServiceCollection AddQuasarUi(
+        this IServiceCollection services,
+        Action<QuasarUiNavigationBuilder>? configureNavigation = null,
+        Action<QuasarUiBrandingOptions>? configureBranding = null)
     {
         services.AddSingleton(provider =>
         {
             var options = CreateDefaultNavigation();
             var builder = new QuasarUiNavigationBuilder(options);
-            configure?.Invoke(builder);
+            configureNavigation?.Invoke(builder);
             builder.EnsureDefaults();
             return new QuasarUiNavigationStore(options);
+        });
+
+        services.AddSingleton(provider =>
+        {
+            var branding = new QuasarUiBrandingOptions();
+            configureBranding?.Invoke(branding);
+            branding.ApplicationName = string.IsNullOrWhiteSpace(branding.ApplicationName) ? "Quasar Server" : branding.ApplicationName.Trim();
+            branding.LogoGlyph = string.IsNullOrWhiteSpace(branding.LogoGlyph)
+                ? branding.ApplicationName.Substring(0, 1).ToUpperInvariant()
+                : branding.LogoGlyph.Trim();
+            branding.Palette = branding.Palette.Equals(default) ? QuasarUiColorPalettes.Default : branding.Palette;
+            return branding;
         });
 
         services.AddRazorComponents()

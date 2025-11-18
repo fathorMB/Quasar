@@ -1,14 +1,12 @@
 @inherits LayoutComponentBase
 @inject QuasarUiNavigationStore NavigationStore
+@inject Quasar.Ui.Branding.QuasarUiBrandingOptions Branding
 
-<div class="quasar-shell">
+<div class="quasar-shell" style="--quasar-bg:@Branding.Palette.Background; --quasar-panel:@Branding.Palette.Panel; --quasar-nav-bg:@Branding.Palette.Navigation; --quasar-border:@Branding.Palette.Border; --quasar-accent-start:@Branding.Palette.AccentGradientStart; --quasar-accent-end:@Branding.Palette.AccentGradientEnd; --quasar-primary:@Branding.Palette.PrimaryBadge; --quasar-nav-active:@Branding.Palette.NavActive;">
     <aside class="quasar-shell__sidenav">
         <div class="quasar-shell__brand">
-            <div class="quasar-shell__logo">Q</div>
-            <div>
-                <p class="quasar-shell__eyebrow">Quasar Server</p>
-                <h2>Operations</h2>
-            </div>
+            <div class="quasar-shell__logo">@Branding.LogoGlyph</div>
+            <div class="quasar-shell__appname">@Branding.ApplicationName</div>
         </div>
 
         @foreach (var navSection in NavigationStore.Sections)
@@ -39,6 +37,10 @@
                 <p>Configure domains, monitor background jobs and surface UI panels straight from your Quasar application.</p>
             </div>
             <div class="quasar-shell__topbar-actions">
+                <div class="quasar-shell__topbar-brand">
+                    <div class="quasar-shell__logo quasar-shell__logo--small">@Branding.LogoGlyph</div>
+                    <span>@Branding.ApplicationName</span>
+                </div>
                 <button>Deploy</button>
                 <button class="primary">Invite</button>
             </div>
