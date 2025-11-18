@@ -8,14 +8,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\BEAM.Server.Client\BEAM.Server.Client.csproj" />
     <ProjectReference Include="..\..\Quasar.Web\Quasar.Web.csproj" />
+    <ProjectReference Include="..\..\Quasar.Ui\Quasar.Ui.csproj" />
     <ProjectReference Include="..\..\Quasar.EventSourcing.Sqlite\Quasar.EventSourcing.Sqlite.csproj" />
     <ProjectReference Include="..\..\Quasar.Identity.Web\Quasar.Identity.Web.csproj" />
     <ProjectReference Include="..\..\Quasar.Identity.Persistence.Relational.EfCore\Quasar.Identity.Persistence.Relational.EfCore.csproj" />
     <ProjectReference Include="..\..\Quasar.Persistence.Relational.EfCore\Quasar.Persistence.Relational.EfCore.csproj" />
     <ProjectReference Include="..\..\Quasar.Seeding\Quasar.Seeding.csproj" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="10.0.0-rc.2.25502.107" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.0-rc.2.25502.107" />
   </ItemGroup>
 

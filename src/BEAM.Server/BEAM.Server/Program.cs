@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
-using BEAM.Server.Components;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Data.Sqlite;
 using Microsoft.IdentityModel.Tokens;
@@ -14,6 +13,7 @@ using Quasar.Identity.Persistence.Relational.EfCore.Seeding;
 using Quasar.Identity.Web;
 using Quasar.Persistence.Relational.EfCore;
 using Quasar.Seeding;
+using Quasar.Ui;
 using Quasar.Web;
 
 namespace BEAM.Server;
@@ -26,9 +26,7 @@ public static class Program
         var configuration = builder.Configuration;
         var services = builder.Services;
 
-        services.AddRazorComponents()
-            .AddInteractiveServerComponents()
-            .AddInteractiveWebAssemblyComponents();
+        services.AddQuasarUi();
 
         services.AddAuthorization();
 
@@ -105,11 +103,7 @@ public static class Program
 
         var app = builder.Build();
 
-        if (app.Environment.IsDevelopment())
-        {
-            app.UseWebAssemblyDebugging();
-        }
-        else
+        if (!app.Environment.IsDevelopment())
         {
             app.UseExceptionHandler("/Error");
             app.UseHsts();
@@ -125,10 +119,7 @@ public static class Program
         app.MapQuasarIdentityEndpoints();
 
         app.MapStaticAssets();
-        app.MapRazorComponents<App>()
-            .AddInteractiveServerRenderMode()
-            .AddInteractiveWebAssemblyRenderMode()
-            .AddAdditionalAssemblies(typeof(BEAM.Server.Client._Imports).Assembly);
+        app.MapQuasarUi();
 
         await app.InitializeReadModelsAsync().ConfigureAwait(false);
         await app.SeedDataAsync().ConfigureAwait(false);

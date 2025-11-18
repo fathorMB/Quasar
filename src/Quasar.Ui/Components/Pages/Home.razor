@@ -1,0 +1,24 @@
+@page "/{Slug?}"
+
+@inject Navigation.QuasarUiNavigationStore NavigationStore
+
+@if (_current is null)
+{
+    <Pages.NotFound />
+}
+else
+{
+    <DynamicComponent Type="_current.ComponentType" Parameters="_current.Parameters" />
+}
+
+@code {
+    [Parameter]
+    public string? Slug { get; set; }
+
+    private Navigation.QuasarUiNavItem? _current;
+
+    protected override void OnParametersSet()
+    {
+        _current = NavigationStore.Resolve(Slug);
+    }
+}

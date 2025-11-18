@@ -1,0 +1,322 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&display=swap');
+
+h1:focus {
+    outline: none;
+}
+
+:root {
+    font-family: "Space Grotesk", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+    color: #e2e8f0;
+    background-color: #060b1c;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    background: #060b1c;
+    color: #e5e7eb;
+}
+
+.quasar-shell {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    background: #060b1c;
+    color: #e2e8f0;
+}
+
+.quasar-shell__sidenav {
+    background: #050818;
+    border-right: 1px solid rgba(148, 163, 184, 0.2);
+    padding: 1.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.quasar-shell__brand {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.quasar-shell__logo {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #2563eb, #7c3aed);
+    display: grid;
+    place-items: center;
+    font-weight: 700;
+}
+
+.quasar-shell__eyebrow {
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    font-size: 0.65rem;
+    color: #94a3b8;
+    margin: 0;
+}
+
+.quasar-shell__nav {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.quasar-shell__nav h3 {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.3em;
+    color: #94a3b8;
+    margin-bottom: 0.5rem;
+}
+
+.quasar-shell__nav a,
+.quasar-shell__nav button {
+    border-radius: 10px;
+    padding: 0.55rem 0.75rem;
+    text-align: left;
+    background: transparent;
+    border: none;
+    color: #cbd5f5;
+    text-decoration: none;
+    font-weight: 500;
+    transition: background 0.15s ease, color 0.15s ease;
+    cursor: pointer;
+}
+
+.quasar-shell__nav a.active,
+.quasar-shell__nav a:hover,
+.quasar-shell__nav button:hover {
+    background: rgba(148, 163, 184, 0.2);
+    color: #fff;
+}
+
+.quasar-shell__footer {
+    margin-top: auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.85rem;
+    color: #94a3b8;
+}
+
+.quasar-shell__content {
+    padding: 2rem 3rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.quasar-shell__topbar {
+    background: radial-gradient(circle at 10% -20%, rgba(124, 58, 237, 0.5), transparent), #0f172a;
+    border-radius: 1.25rem;
+    padding: 1.75rem;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    display: flex;
+    justify-content: space-between;
+    gap: 1.5rem;
+}
+
+.quasar-shell__topbar h1 {
+    margin: 0.2rem 0 0.5rem 0;
+    font-size: clamp(1.5rem, 4vw, 2rem);
+}
+
+.quasar-shell__topbar p {
+    color: #cbd5f5;
+    max-width: 60ch;
+}
+
+.quasar-shell__topbar-actions {
+    display: flex;
+    gap: 0.6rem;
+    align-items: flex-start;
+}
+
+.quasar-shell__topbar-actions button {
+    border-radius: 999px;
+    border: 1px solid rgba(148, 163, 184, 0.4);
+    padding: 0.45rem 1.25rem;
+    background: transparent;
+    color: #e2e8f0;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.quasar-shell__topbar-actions button.primary {
+    background: linear-gradient(135deg, #2563eb, #7c3aed);
+    border-color: transparent;
+}
+
+.quasar-shell__body {
+    background: rgba(8, 14, 35, 0.9);
+    border-radius: 1.25rem;
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    padding: 2rem;
+    min-height: calc(100vh - 180px);
+}
+
+@media (max-width: 900px) {
+    .quasar-shell {
+        grid-template-columns: 1fr;
+    }
+
+    .quasar-shell__sidenav {
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: space-between;
+    }
+
+    .quasar-shell__content {
+        padding: 1.5rem;
+    }
+
+    .quasar-shell__topbar {
+        flex-direction: column;
+    }
+}
+
+.workspace {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) 320px;
+    gap: 2rem;
+}
+
+.workspace__primary,
+.workspace__secondary {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.workspace__hero {
+    background: rgba(15, 23, 42, 0.8);
+    border-radius: 1.25rem;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    padding: 1.6rem;
+}
+
+.workspace__eyebrow {
+    text-transform: uppercase;
+    letter-spacing: 0.25em;
+    font-size: 0.7rem;
+    color: #94a3b8;
+}
+
+.workspace__hero h2 {
+    margin: 0.4rem 0;
+    font-size: 1.8rem;
+}
+
+.workspace__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin-top: 1rem;
+}
+
+.workspace__chips span {
+    border-radius: 999px;
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    padding: 0.3rem 0.9rem;
+    font-size: 0.85rem;
+}
+
+.workspace__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.25rem;
+}
+
+.workspace__grid article {
+    background: rgba(9, 14, 30, 0.9);
+    border-radius: 1rem;
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    padding: 1.2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+}
+
+.workspace__grid header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-weight: 600;
+}
+
+.badge {
+    border-radius: 999px;
+    padding: 0.2rem 0.8rem;
+    font-size: 0.75rem;
+}
+
+.badge--ok {
+    background: rgba(34, 197, 94, 0.2);
+    color: #4ade80;
+}
+
+.workspace__grid ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+}
+
+.workspace__actions button {
+    width: 100%;
+    border-radius: 0.9rem;
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    background: transparent;
+    color: #e5e7eb;
+    padding: 0.6rem 0.8rem;
+    text-align: left;
+}
+
+.workspace__table table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.workspace__table th,
+.workspace__table td {
+    text-align: left;
+    padding: 0.55rem 0;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+}
+
+.workspace__card {
+    background: rgba(9, 14, 30, 0.85);
+    border-radius: 1rem;
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+}
+
+.workspace__card button {
+    border-radius: 0.8rem;
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    padding: 0.5rem 0.75rem;
+    background: transparent;
+    color: #fff;
+    align-self: flex-start;
+}
+
+.workspace__placeholder {
+    border-radius: 1rem;
+    border: 1px dashed rgba(148, 163, 184, 0.3);
+    padding: 1.5rem;
+    background: rgba(9, 14, 30, 0.7);
+}
+
+@media (max-width: 1100px) {
+    .workspace {
+        grid-template-columns: 1fr;
+    }
+}

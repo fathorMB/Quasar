@@ -1,0 +1,57 @@
+@inherits LayoutComponentBase
+@inject QuasarUiNavigationStore NavigationStore
+
+<div class="quasar-shell">
+    <aside class="quasar-shell__sidenav">
+        <div class="quasar-shell__brand">
+            <div class="quasar-shell__logo">Q</div>
+            <div>
+                <p class="quasar-shell__eyebrow">Quasar Server</p>
+                <h2>Operations</h2>
+            </div>
+        </div>
+
+        @foreach (var navSection in NavigationStore.Sections)
+        {
+            <div class="quasar-shell__nav">
+                <h3>@navSection.Title</h3>
+                @foreach (var navItem in navSection.Items)
+                {
+                    <NavLink href="@navItem.Href" Match="NavLinkMatch.All">@navItem.Label</NavLink>
+                }
+            </div>
+        }
+
+        <footer class="quasar-shell__footer">
+            <div>
+                <p class="quasar-shell__eyebrow">Connected</p>
+                <p class="quasar-shell__status">BEAM Server</p>
+            </div>
+            <a href="https://github.com/quasar" target="_blank" rel="noreferrer">GitHub</a>
+        </footer>
+    </aside>
+
+    <main class="quasar-shell__content">
+        <header class="quasar-shell__topbar">
+            <div>
+                <p class="quasar-shell__eyebrow">Quasar Microframework</p>
+                <h1>Service control center</h1>
+                <p>Configure domains, monitor background jobs and surface UI panels straight from your Quasar application.</p>
+            </div>
+            <div class="quasar-shell__topbar-actions">
+                <button>Deploy</button>
+                <button class="primary">Invite</button>
+            </div>
+        </header>
+
+        <div class="quasar-shell__body">
+            @Body
+        </div>
+    </main>
+</div>
+
+<div id="blazor-error-ui" data-nosnippet>
+    An unhandled error has occurred.
+    <a href="." class="reload">Reload</a>
+    <span class="dismiss">🗙</span>
+</div>
