@@ -87,44 +87,22 @@ public static class Program
             options.AccessMinutes = jwtOptions.AccessMinutes;
             options.RefreshDays = jwtOptions.RefreshDays;
         });
-
-        services.AddIdentityDataSeeding(options =>
+        services.AddQuasarIdentitySeed(seed =>
         {
             var admin = ResolveAdminSeedOptions(configuration);
-            var seedSet = new IdentitySeedSet { Name = "Default" };
 
-            var adminRole = new IdentityRoleSeed
+            seed.WithRole(admin.RoleName, role =>
             {
-                Name = admin.RoleName
-            };
-            foreach (var permission in admin.Permissions)
-            {
-                adminRole.Permissions.Add(permission);
-            }
-            seedSet.Roles.Add(adminRole);
-            seedSet.Roles.Add(new IdentityRoleSeed
-            {
-                Name = "operator"
+                foreach (var permission in admin.Permissions)
+                {
+                    role.Permissions.Add(permission);
+                }
             });
 
-            var adminUser = new IdentityUserSeed
-            {
-                Username = admin.Username,
-                Email = admin.Email,
-                Password = admin.Password
-            };
-            adminUser.RoleNames.Add(adminRole.Name);
-            seedSet.Users.Add(adminUser);
+            seed.WithRole("operator");
 
-            seedSet.Users.Add(new IdentityUserSeed
-            {
-                Username = "operator",
-                Email = "operator@beam.local",
-                Password = "ChangeMe123!",
-                RoleNames = { "operator" }
-            });
-
-            options.Sets.Add(seedSet);
+            seed.WithUser(admin.Username, admin.Email, admin.Password, admin.RoleName);
+            seed.WithUser("operator", "operator@beam.local", "ChangeMe123!", "operator");
         });
 
         // Registers the Quasar-provided JWT bearer scheme so API clients can authenticate with the same options used by the UI.
