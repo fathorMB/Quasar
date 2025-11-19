@@ -82,7 +82,17 @@ public static class ServiceCollectionExtensions
         var overview = new QuasarUiNavItem("Overview", typeof(Components.Panels.OverviewPanel), string.Empty, isDefault: true);
         spaces.Items.Add(overview);
 
-        AddPlaceholder(spaces, "Identity", "identity");
+        AddPlaceholder(spaces, "Identity", "identity", childBuilder =>
+        {
+            childBuilder.AddChild("Users", typeof(Components.Panels.PlaceholderPanel), "users", new Dictionary<string, object?>
+            {
+                { nameof(Components.Panels.PlaceholderPanel.Title), "Users" }
+            });
+            childBuilder.AddChild("Roles", typeof(Components.Panels.PlaceholderPanel), "roles", new Dictionary<string, object?>
+            {
+                { nameof(Components.Panels.PlaceholderPanel.Title), "Roles" }
+            });
+        });
         AddPlaceholder(spaces, "Event stream", "event-stream");
         AddPlaceholder(spaces, "Docs", "docs");
 
@@ -90,10 +100,14 @@ public static class ServiceCollectionExtensions
         return options;
     }
 
-    private static void AddPlaceholder(QuasarUiNavSection section, string label, string slug)
+    private static void AddPlaceholder(QuasarUiNavSection section, string label, string slug, Action<QuasarUiNavItemChildBuilder>? configureChildren = null)
     {
         var placeholder = new QuasarUiNavItem(label, typeof(Components.Panels.PlaceholderPanel), slug, isDefault: false);
         placeholder.SetParameter(nameof(Components.Panels.PlaceholderPanel.Title), label);
+        if (configureChildren is not null)
+        {
+            configureChildren(new QuasarUiNavItemChildBuilder(placeholder));
+        }
         section.Items.Add(placeholder);
     }
 }

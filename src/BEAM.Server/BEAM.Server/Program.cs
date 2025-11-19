@@ -31,9 +31,23 @@ public static class Program
             {
                 nav.ClearSections()
                     .AddSection("Menu", section =>
-                {
-                    section.AddItem("Overview", typeof(Quasar.Ui.Components.Panels.OverviewPanel), slug: string.Empty, isDefault: true);
-                });
+                    {
+                        section.AddItem("Overview", typeof(Quasar.Ui.Components.Panels.OverviewPanel), slug: string.Empty, isDefault: true);
+                        section.AddItem("Identity", typeof(Quasar.Ui.Components.Panels.PlaceholderPanel), "identity", parameters: new Dictionary<string, object?>
+                        {
+                            { nameof(Quasar.Ui.Components.Panels.PlaceholderPanel.Title), "Identity" }
+                        }, configureChildren: children =>
+                        {
+                            children.AddChild("Users", typeof(Quasar.Ui.Components.Panels.PlaceholderPanel), "users", new Dictionary<string, object?>
+                            {
+                                { nameof(Quasar.Ui.Components.Panels.PlaceholderPanel.Title), "Users" }
+                            });
+                            children.AddChild("Roles", typeof(Quasar.Ui.Components.Panels.PlaceholderPanel), "roles", new Dictionary<string, object?>
+                            {
+                                { nameof(Quasar.Ui.Components.Panels.PlaceholderPanel.Title), "Roles" }
+                            });
+                        });
+                    });
             },
             configureBranding: branding =>
             {

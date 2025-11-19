@@ -12,6 +12,7 @@ public sealed class QuasarUiNavigationStore
         Options = options;
         _lookup = Options.Sections
             .SelectMany(section => section.Items)
+            .SelectMany(Flatten)
             .ToDictionary(item => item.Slug, StringComparer.OrdinalIgnoreCase);
     }
 
@@ -27,5 +28,17 @@ public sealed class QuasarUiNavigationStore
         }
 
         return _lookup.TryGetValue(slug, out var item) ? item : null;
+    }
+
+    private static IEnumerable<QuasarUiNavItem> Flatten(QuasarUiNavItem root)
+    {
+        yield return root;
+        foreach (var child in root.Children)
+        {
+            foreach (var nested in Flatten(child))
+            {
+                yield return nested;
+            }
+        }
     }
 }

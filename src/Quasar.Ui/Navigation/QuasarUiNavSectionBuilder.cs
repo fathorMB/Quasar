@@ -12,9 +12,15 @@ public sealed class QuasarUiNavSectionBuilder
         _section = section;
     }
 
-    public QuasarUiNavSectionBuilder AddItem(string label, Type componentType, string? slug = null, bool isDefault = false, IReadOnlyDictionary<string, object?>? parameters = null)
+    public QuasarUiNavSectionBuilder AddItem(
+        string label,
+        Type componentType,
+        string? slug = null,
+        bool isDefault = false,
+        IReadOnlyDictionary<string, object?>? parameters = null,
+        Action<QuasarUiNavItemChildBuilder>? configureChildren = null)
     {
-        slug ??= Slugify(label);
+        slug ??= QuasarUiSlug.Slugify(label);
         var item = new QuasarUiNavItem(label, componentType, slug, isDefault);
         if (parameters is not null)
         {
@@ -23,14 +29,12 @@ public sealed class QuasarUiNavSectionBuilder
                 item.SetParameter(pair.Key, pair.Value);
             }
         }
+        if (configureChildren is not null)
+        {
+            var childBuilder = new QuasarUiNavItemChildBuilder(item);
+            configureChildren(childBuilder);
+        }
         _section.Items.Add(item);
         return this;
-    }
-
-    private static string Slugify(string label)
-    {
-        var slug = label.Trim().ToLowerInvariant();
-        slug = string.Join('-', slug.Split(' ', StringSplitOptions.RemoveEmptyEntries));
-        return slug;
     }
 }

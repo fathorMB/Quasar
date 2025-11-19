@@ -7,7 +7,7 @@ public sealed class QuasarUiNavItem
 {
     private readonly Dictionary<string, object?> _parameters = new();
 
-    public QuasarUiNavItem(string label, Type componentType, string slug, bool isDefault)
+    public QuasarUiNavItem(string label, Type componentType, string slug, bool isDefault, QuasarUiNavItem? parent = null)
     {
         if (string.IsNullOrWhiteSpace(label))
         {
@@ -20,6 +20,7 @@ public sealed class QuasarUiNavItem
 
         Label = label;
         ComponentType = componentType;
+        Parent = parent;
         Slug = (slug ?? string.Empty).Trim('/');
         IsDefault = isDefault;
     }
@@ -32,6 +33,10 @@ public sealed class QuasarUiNavItem
 
     public bool IsDefault { get; internal set; }
 
+    public QuasarUiNavItem? Parent { get; }
+
+    public IList<QuasarUiNavItem> Children { get; } = new List<QuasarUiNavItem>();
+
     public string Href => string.IsNullOrWhiteSpace(Slug) ? "/" : $"/app/{Slug}";
 
     public IDictionary<string, object?> Parameters => _parameters;
@@ -39,5 +44,21 @@ public sealed class QuasarUiNavItem
     public void SetParameter(string name, object? value)
     {
         _parameters[name] = value;
+    }
+
+    public string BuildChildSlug(string slugFragment)
+    {
+        var childSlug = (slugFragment ?? string.Empty).Trim('/');
+        if (string.IsNullOrEmpty(childSlug))
+        {
+            return Slug;
+        }
+
+        if (string.IsNullOrEmpty(Slug))
+        {
+            return childSlug;
+        }
+
+        return $"{Slug}/{childSlug}";
     }
 }

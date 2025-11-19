@@ -16,7 +16,18 @@
                 <h3>@navSection.Title</h3>
                 @foreach (var navItem in navSection.Items)
                 {
-                    <NavLink href="@navItem.Href" Match="NavLinkMatch.All">@navItem.Label</NavLink>
+                    <div class="quasar-shell__nav-item">
+                        <NavLink href="@navItem.Href" Match="NavLinkMatch.All">@navItem.Label</NavLink>
+                        @if (navItem.Children.Count > 0)
+                        {
+                            <div class="quasar-shell__nav-children">
+                                @foreach (var child in navItem.Children)
+                                {
+                                    <NavLink href="@child.Href" Match="NavLinkMatch.All">@child.Label</NavLink>
+                                }
+                            </div>
+                        }
+                    </div>
                 }
             </div>
         }
