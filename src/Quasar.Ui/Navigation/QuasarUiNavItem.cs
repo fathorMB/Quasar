@@ -7,7 +7,13 @@ public sealed class QuasarUiNavItem
 {
     private readonly Dictionary<string, object?> _parameters = new();
 
-    public QuasarUiNavItem(string label, Type componentType, string slug, bool isDefault, QuasarUiNavItem? parent = null)
+    public QuasarUiNavItem(
+        string label,
+        Type componentType,
+        string slug,
+        bool isDefault,
+        QuasarUiNavItem? parent = null,
+        IEnumerable<string>? allowedRoles = null)
     {
         if (string.IsNullOrWhiteSpace(label))
         {
@@ -23,6 +29,10 @@ public sealed class QuasarUiNavItem
         Parent = parent;
         Slug = (slug ?? string.Empty).Trim('/');
         IsDefault = isDefault;
+        AllowedRoles = allowedRoles?.Where(r => !string.IsNullOrWhiteSpace(r))
+            .Select(r => r.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray() ?? Array.Empty<string>();
     }
 
     public string Label { get; }
@@ -36,6 +46,8 @@ public sealed class QuasarUiNavItem
     public QuasarUiNavItem? Parent { get; }
 
     public IList<QuasarUiNavItem> Children { get; } = new List<QuasarUiNavItem>();
+
+    public IReadOnlyCollection<string> AllowedRoles { get; }
 
     public string Href => string.IsNullOrWhiteSpace(Slug) ? "/" : $"/app/{Slug}";
 

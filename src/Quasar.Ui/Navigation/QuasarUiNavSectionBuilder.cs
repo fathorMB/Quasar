@@ -18,10 +18,11 @@ public sealed class QuasarUiNavSectionBuilder
         string? slug = null,
         bool isDefault = false,
         IReadOnlyDictionary<string, object?>? parameters = null,
-        Action<QuasarUiNavItemChildBuilder>? configureChildren = null)
+        Action<QuasarUiNavItemChildBuilder>? configureChildren = null,
+        IEnumerable<string>? allowedRoles = null)
     {
         slug ??= QuasarUiSlug.Slugify(label);
-        var item = new QuasarUiNavItem(label, componentType, slug, isDefault);
+        var item = new QuasarUiNavItem(label, componentType, slug, isDefault, allowedRoles: allowedRoles);
         if (parameters is not null)
         {
             foreach (var pair in parameters)

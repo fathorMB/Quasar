@@ -15,14 +15,18 @@ body {
     min-height: 100vh;
     background: var(--quasar-bg, #060b1c);
     color: #e5e7eb;
+    height: 100vh;
+    overflow: hidden;
 }
 
 .quasar-shell {
     min-height: 100vh;
+    height: 100vh;
     display: grid;
     grid-template-columns: 260px 1fr;
     background: var(--quasar-bg, #060b1c);
     color: #e2e8f0;
+    overflow: hidden;
 }
 
 .quasar-shell__sidenav {
@@ -32,6 +36,9 @@ body {
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
+    position: sticky;
+    top: 0;
+    height: 100vh;
 }
 
 .quasar-shell__brand {
@@ -135,6 +142,10 @@ body {
     align-items: center;
     font-size: 0.85rem;
     color: #94a3b8;
+    position: sticky;
+    bottom: 1.5rem;
+    padding-top: 1rem;
+    background: var(--quasar-nav-bg, #050818);
 }
 
 .quasar-shell__content {
@@ -142,6 +153,8 @@ body {
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
+    height: 100vh;
+    overflow-y: auto;
 }
 
 .quasar-shell__topbar {
@@ -168,6 +181,24 @@ body {
     display: flex;
     gap: 0.6rem;
     align-items: center;
+}
+
+.quasar-shell__user,
+.quasar-shell__user-pill {
+    font-size: 0.85rem;
+    color: rgba(226, 232, 240, 0.8);
+}
+
+.quasar-shell__roles {
+    display: block;
+    font-size: 0.75rem;
+    color: rgba(226, 232, 240, 0.6);
+}
+
+.quasar-shell__user-pill {
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    border-radius: 999px;
+    padding: 0.3rem 0.75rem;
 }
 
 .quasar-shell__topbar-actions form {
@@ -442,4 +473,30 @@ body {
 .login-panel__error {
     color: #fca5a5;
     margin-bottom: 1rem;
+}
+
+#blazor-error-ui {
+    display: none;
+    background: #111827;
+    bottom: 0;
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.4);
+    box-sizing: border-box;
+    left: 0;
+    padding: 0.75rem 1.5rem;
+    position: fixed;
+    width: 100%;
+    z-index: 1000;
+    color: #f8fafc;
+    border-top: 1px solid rgba(148, 163, 184, 0.3);
+}
+
+#blazor-error-ui a {
+    color: #f97316;
+}
+
+#blazor-error-ui .dismiss {
+    cursor: pointer;
+    position: absolute;
+    right: 1.5rem;
+    top: 0.75rem;
 }

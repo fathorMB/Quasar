@@ -12,11 +12,16 @@ public sealed class QuasarUiNavItemChildBuilder
         _parent = parent;
     }
 
-    public QuasarUiNavItemChildBuilder AddChild(string label, Type componentType, string? slug = null, IReadOnlyDictionary<string, object?>? parameters = null)
+    public QuasarUiNavItemChildBuilder AddChild(
+        string label,
+        Type componentType,
+        string? slug = null,
+        IReadOnlyDictionary<string, object?>? parameters = null,
+        IEnumerable<string>? allowedRoles = null)
     {
         slug ??= QuasarUiSlug.Slugify(label);
         var combinedSlug = _parent.BuildChildSlug(slug);
-        var child = new QuasarUiNavItem(label, componentType, combinedSlug, isDefault: false, parent: _parent);
+        var child = new QuasarUiNavItem(label, componentType, combinedSlug, isDefault: false, parent: _parent, allowedRoles: allowedRoles);
         if (parameters is not null)
         {
             foreach (var pair in parameters)

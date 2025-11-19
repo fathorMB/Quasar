@@ -14,6 +14,7 @@ using Quasar.Persistence.Relational.EfCore;
 using Quasar.Seeding;
 using Quasar.Ui;
 using Quasar.Ui.Branding;
+using Quasar.Ui.Security;
 using Quasar.Web;
 
 namespace BEAM.Server;
@@ -101,6 +102,10 @@ public static class Program
                 adminRole.Permissions.Add(permission);
             }
             seedSet.Roles.Add(adminRole);
+            seedSet.Roles.Add(new IdentityRoleSeed
+            {
+                Name = "operator"
+            });
 
             var adminUser = new IdentityUserSeed
             {
@@ -110,6 +115,14 @@ public static class Program
             };
             adminUser.RoleNames.Add(adminRole.Name);
             seedSet.Users.Add(adminUser);
+
+            seedSet.Users.Add(new IdentityUserSeed
+            {
+                Username = "operator",
+                Email = "operator@beam.local",
+                Password = "ChangeMe123!",
+                RoleNames = { "operator" }
+            });
 
             options.Sets.Add(seedSet);
         });

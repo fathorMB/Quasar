@@ -23,6 +23,7 @@ public static class ServiceCollectionExtensions
             var builder = new QuasarUiNavigationBuilder(options);
             configureNavigation?.Invoke(builder);
             builder.EnsureDefaults();
+            EnsureAdminSection(options);
             return new QuasarUiNavigationStore(options);
         });
 
@@ -97,12 +98,42 @@ public static class ServiceCollectionExtensions
         AddPlaceholder(spaces, "Docs", "docs");
 
         options.Sections.Add(spaces);
+
         return options;
     }
 
-    private static void AddPlaceholder(QuasarUiNavSection section, string label, string slug, Action<QuasarUiNavItemChildBuilder>? configureChildren = null)
+    private static void EnsureAdminSection(QuasarUiNavigationOptions options)
     {
-        var placeholder = new QuasarUiNavItem(label, typeof(Components.Panels.PlaceholderPanel), slug, isDefault: false);
+        var alreadyHasAdmin = options.Sections
+            .SelectMany(section => section.Items)
+            .Any(item => item.AllowedRoles.Contains(Security.QuasarUiRoles.Admin, StringComparer.OrdinalIgnoreCase));
+        if (alreadyHasAdmin)
+        {
+            return;
+        }
+
+        var section = new QuasarUiNavSection("Administration");
+        var builder = new QuasarUiNavSectionBuilder(section);
+        builder.AddItem(
+            "Admin workspace",
+            typeof(Components.Panels.PlaceholderPanel),
+            slug: "admin",
+            parameters: new Dictionary<string, object?>
+            {
+                { nameof(Components.Panels.PlaceholderPanel.Title), "Admin workspace" }
+            },
+            allowedRoles: new[] { Security.QuasarUiRoles.Admin });
+        options.Sections.Add(section);
+    }
+
+    private static void AddPlaceholder(
+        QuasarUiNavSection section,
+        string label,
+        string slug,
+        Action<QuasarUiNavItemChildBuilder>? configureChildren = null,
+        IEnumerable<string>? allowedRoles = null)
+    {
+        var placeholder = new QuasarUiNavItem(label, typeof(Components.Panels.PlaceholderPanel), slug, isDefault: false, allowedRoles: allowedRoles);
         placeholder.SetParameter(nameof(Components.Panels.PlaceholderPanel.Title), label);
         if (configureChildren is not null)
         {
