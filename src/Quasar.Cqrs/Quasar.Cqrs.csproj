@@ -8,6 +8,6 @@
     <ProjectReference Include="..\Quasar.Core\Quasar.Core.csproj" />
     <ProjectReference Include="..\Quasar.Domain\Quasar.Domain.csproj" />
     <ProjectReference Include="..\Quasar.EventSourcing.Abstractions\Quasar.EventSourcing.Abstractions.csproj" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.0-rc.2.25502.107" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.0" />
   </ItemGroup>
 </Project>

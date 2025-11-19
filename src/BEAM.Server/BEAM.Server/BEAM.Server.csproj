@@ -15,7 +15,7 @@
     <ProjectReference Include="..\..\Quasar.Identity.Persistence.Relational.EfCore\Quasar.Identity.Persistence.Relational.EfCore.csproj" />
     <ProjectReference Include="..\..\Quasar.Persistence.Relational.EfCore\Quasar.Persistence.Relational.EfCore.csproj" />
     <ProjectReference Include="..\..\Quasar.Seeding\Quasar.Seeding.csproj" />
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.0-rc.2.25502.107" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.0" />
   </ItemGroup>
 
 </Project>
