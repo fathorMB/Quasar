@@ -1,6 +1,7 @@
 @inherits LayoutComponentBase
 @inject QuasarUiNavigationStore NavigationStore
 @inject Quasar.Ui.Branding.QuasarUiBrandingOptions Branding
+@inject Quasar.Ui.Security.QuasarUiSecurityOptions SecurityOptions
 
 <div class="quasar-shell" style="--quasar-bg:@Branding.Palette.Background; --quasar-panel:@Branding.Palette.Panel; --quasar-nav-bg:@Branding.Palette.Navigation; --quasar-border:@Branding.Palette.Border; --quasar-accent-start:@Branding.Palette.AccentGradientStart; --quasar-accent-end:@Branding.Palette.AccentGradientEnd; --quasar-primary:@Branding.Palette.PrimaryBadge; --quasar-nav-active:@Branding.Palette.NavActive;">
     <aside class="quasar-shell__sidenav">
@@ -43,6 +44,13 @@
                 </div>
                 <button>Deploy</button>
                 <button class="primary">Invite</button>
+                @if (SecurityOptions.RequireAuthentication)
+                {
+                    <form method="post" action="/logout">
+                        <AntiforgeryToken />
+                        <button type="submit" class="ghost">Sign out</button>
+                    </form>
+                }
             </div>
         </header>
 

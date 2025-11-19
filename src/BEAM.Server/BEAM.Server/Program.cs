@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Data.Sqlite;
 using Microsoft.IdentityModel.Tokens;
 using Quasar.EventSourcing.Abstractions;
@@ -40,7 +39,7 @@ public static class Program
             {
                 branding.ApplicationName = "BEAM v1";
                 branding.LogoGlyph = "B";
-                branding.Palette = QuasarUiColorPalettes.Default;
+                branding.Palette = QuasarUiColorPalettes.Grove;
             });
 
         services.AddAuthorization();
@@ -101,20 +100,20 @@ public static class Program
             options.Sets.Add(seedSet);
         });
 
-        services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-            .AddJwtBearer(options =>
+        // Registers the Quasar-provided JWT bearer scheme so API clients can authenticate with the same options used by the UI.
+        services.AddQuasarJwtAuthentication(options =>
+        {
+            options.TokenValidationParameters = new TokenValidationParameters
             {
-                options.TokenValidationParameters = new TokenValidationParameters
-                {
-                    ValidateIssuer = true,
-                    ValidIssuer = jwtOptions.Issuer,
-                    ValidateAudience = true,
-                    ValidAudience = jwtOptions.Audience,
-                    ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtOptions.Key)),
-                    ValidateLifetime = true
-                };
-            });
+                ValidateIssuer = true,
+                ValidIssuer = jwtOptions.Issuer,
+                ValidateAudience = true,
+                ValidAudience = jwtOptions.Audience,
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtOptions.Key)),
+                ValidateLifetime = true
+            };
+        });
 
         var app = builder.Build();
 

@@ -1,0 +1,9 @@
+@inherits LayoutComponentBase
+
+@inject Quasar.Ui.Branding.QuasarUiBrandingOptions Branding
+
+<div class="login-shell" style="--quasar-bg:@Branding.Palette.Background; --quasar-panel:@Branding.Palette.Panel; --quasar-border:@Branding.Palette.Border; --quasar-accent-start:@Branding.Palette.AccentGradientStart; --quasar-accent-end:@Branding.Palette.AccentGradientEnd; --quasar-primary:@Branding.Palette.PrimaryBadge; --quasar-nav-active:@Branding.Palette.NavActive;">
+    <div class="login-card">
+        @Body
+    </div>
+</div>

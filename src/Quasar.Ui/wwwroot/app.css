@@ -148,6 +148,10 @@ body {
     align-items: center;
 }
 
+.quasar-shell__topbar-actions form {
+    margin: 0;
+}
+
 .quasar-shell__topbar-brand {
     display: flex;
     align-items: center;
@@ -173,6 +177,12 @@ body {
 .quasar-shell__topbar-actions button.primary {
     background: linear-gradient(135deg, var(--quasar-accent-start, #2563eb), var(--quasar-accent-end, #7c3aed));
     border-color: transparent;
+}
+
+.quasar-shell__topbar-actions button.ghost {
+    background: transparent;
+    border-color: transparent;
+    color: rgba(226, 232, 240, 0.7);
 }
 
 .quasar-shell__body {
@@ -344,4 +354,70 @@ body {
     .workspace {
         grid-template-columns: 1fr;
     }
+}
+
+.login-shell {
+    min-height: 100vh;
+    background: var(--quasar-bg, #060b1c);
+    display: grid;
+    place-items: center;
+    padding: 2rem;
+}
+
+.login-card {
+    width: min(420px, 100%);
+    background: color-mix(in srgb, var(--quasar-panel, #0f172a), rgba(0,0,0,0.05));
+    border-radius: 1.5rem;
+    border: 1px solid var(--quasar-border, rgba(148, 163, 184, 0.2));
+    padding: 2rem;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+}
+
+.login-panel__header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.login-panel__header h1 {
+    margin: 0;
+    font-size: 1.4rem;
+}
+
+.login-panel__field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    margin-bottom: 1rem;
+}
+
+.login-panel__field input {
+    border-radius: 0.75rem;
+    border: 1px solid var(--quasar-border, rgba(148, 163, 184, 0.2));
+    padding: 0.65rem 0.8rem;
+    background: transparent;
+    color: #f8fafc;
+}
+
+.login-panel__actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1rem;
+}
+
+.login-panel__actions button {
+    border-radius: 999px;
+    border: none;
+    padding: 0.6rem 1.5rem;
+    background: linear-gradient(135deg, var(--quasar-accent-start, #2563eb), var(--quasar-accent-end, #7c3aed));
+    color: #fff;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.login-panel__error {
+    color: #fca5a5;
+    margin-bottom: 1rem;
 }

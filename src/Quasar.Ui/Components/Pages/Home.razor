@@ -1,5 +1,7 @@
-@page "/{Slug?}"
+@page "/"
+@page "/app/{Slug}"
 
+@attribute [Authorize]
 @inject Navigation.QuasarUiNavigationStore NavigationStore
 
 @if (_current is null)

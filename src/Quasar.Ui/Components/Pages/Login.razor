@@ -1,0 +1,79 @@
+@page "/login"
+@layout Layout.LoginLayout
+@attribute [AllowAnonymous]
+@using Microsoft.AspNetCore.Antiforgery
+@inject Quasar.Ui.Security.QuasarUiSecurityOptions SecurityOptions
+@inject Quasar.Ui.Branding.QuasarUiBrandingOptions Branding
+@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Antiforgery
+@inject Microsoft.AspNetCore.Http.IHttpContextAccessor HttpContextAccessor
+<section class="login-panel">
+    <div class="login-panel__header">
+        <div class="quasar-shell__logo">@Branding.LogoGlyph</div>
+        <h1>@Branding.ApplicationName</h1>
+    </div>
+
+    @if (!SecurityOptions.RequireAuthentication)
+    {
+        <p class="login-panel__error">Authentication is not enabled for this application.</p>
+    }
+    else
+    {
+        <form method="post" action="@PostTarget">
+            <input type="hidden" name="@(_token?.FormFieldName ?? "__RequestVerificationToken")" value="@_token?.RequestToken" />
+            <input type="hidden" name="returnUrl" value="@ReturnUrl" />
+            <input type="hidden" name="rememberMe" value="false" />
+            @if (ShowError)
+            {
+                <p class="login-panel__error">Invalid username or password.</p>
+            }
+            <div class="login-panel__field">
+                <label for="username">Username</label>
+                <input id="username" name="username" autocomplete="username" required />
+            </div>
+            <div class="login-panel__field">
+                <label for="password">Password</label>
+                <input id="password" name="password" type="password" autocomplete="current-password" required />
+            </div>
+            <div class="login-panel__actions">
+                <label>
+                    <input type="checkbox" name="rememberMe" value="true" checked />
+                    Keep me signed in
+                </label>
+                <button type="submit">Sign in</button>
+            </div>
+        </form>
+    }
+</section>
+
+@code {
+    [SupplyParameterFromQuery(Name = "ReturnUrl")]
+    public string? ReturnUrl { get; set; }
+
+    [SupplyParameterFromQuery(Name = "status")]
+    public string? Status { get; set; }
+    private AntiforgeryTokenSet? _token;
+
+    protected override void OnInitialized()
+    {
+        var httpContext = HttpContextAccessor.HttpContext;
+        if (httpContext is not null)
+        {
+            _token = Antiforgery.GetAndStoreTokens(httpContext);
+        }
+    }
+
+    private bool ShowError => string.Equals(Status, "failed", StringComparison.OrdinalIgnoreCase);
+
+    private string PostTarget
+    {
+        get
+        {
+            if (string.IsNullOrEmpty(ReturnUrl))
+            {
+                return "/auth/login";
+            }
+
+            return $"/auth/login?ReturnUrl={Uri.EscapeDataString(ReturnUrl)}";
+        }
+    }
+}

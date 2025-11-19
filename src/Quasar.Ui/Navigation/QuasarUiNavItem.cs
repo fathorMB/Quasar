@@ -32,7 +32,7 @@ public sealed class QuasarUiNavItem
 
     public bool IsDefault { get; internal set; }
 
-    public string Href => string.IsNullOrWhiteSpace(Slug) ? "/" : $"/{Slug}";
+    public string Href => string.IsNullOrWhiteSpace(Slug) ? "/" : $"/app/{Slug}";
 
     public IDictionary<string, object?> Parameters => _parameters;
 

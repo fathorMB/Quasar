@@ -1,7 +1,11 @@
 using System;
+using System.Linq;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Quasar.Ui.Branding;
 using Quasar.Ui.Navigation;
+using Quasar.Ui.Security;
 
 namespace Quasar.Ui;
 
@@ -10,7 +14,8 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddQuasarUi(
         this IServiceCollection services,
         Action<QuasarUiNavigationBuilder>? configureNavigation = null,
-        Action<QuasarUiBrandingOptions>? configureBranding = null)
+        Action<QuasarUiBrandingOptions>? configureBranding = null,
+        Action<QuasarUiSecurityOptions>? configureSecurity = null)
     {
         services.AddSingleton(provider =>
         {
@@ -32,6 +37,36 @@ public static class ServiceCollectionExtensions
             branding.Palette = branding.Palette.Equals(default) ? QuasarUiColorPalettes.Default : branding.Palette;
             return branding;
         });
+
+        var securityOptions = new QuasarUiSecurityOptions();
+        configureSecurity?.Invoke(securityOptions);
+        var hasIdentity = services.Any(sd => sd.ServiceType.FullName == "Quasar.Identity.Web.IJwtTokenService");
+        if (!securityOptions.RequireAuthenticationExplicitlySet && securityOptions.AutoDetectAuthentication && hasIdentity)
+        {
+            securityOptions.RequireAuthentication = true;
+        }
+        services.AddSingleton(securityOptions);
+
+        services.AddAntiforgery();
+        services.AddCascadingAuthenticationState();
+
+        services.AddAuthentication()
+            .AddCookie(QuasarUiAuthenticationDefaults.AuthenticationScheme, options =>
+            {
+                options.Cookie.Name = "quasar_ui_auth";
+                options.Cookie.HttpOnly = true;
+                options.Cookie.SameSite = SameSiteMode.Strict;
+                options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+                options.LoginPath = "/login";
+                options.AccessDeniedPath = "/login";
+                options.SlidingExpiration = true;
+                options.ExpireTimeSpan = securityOptions.SessionDuration;
+            });
+
+        services.AddHttpContextAccessor();
+        services.AddScoped<QuasarUiAuthenticationService>();
+
+        services.AddAuthorizationCore();
 
         services.AddRazorComponents()
             .AddInteractiveServerComponents();
