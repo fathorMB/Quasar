@@ -92,8 +92,17 @@
     padding-top: var(--spacing-md);
 }
 
+/* Main Content Wrapper */
+.content-wrapper {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+}
+
 /* Main Content */
 .main-content {
+    flex: 1;
     overflow-y: auto;
     padding: var(--spacing-xl);
 }

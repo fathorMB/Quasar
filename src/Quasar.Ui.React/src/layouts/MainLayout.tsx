@@ -1,10 +1,13 @@
 import React from 'react';
 import { Outlet, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useUi } from '../context/UiContext';
+import { Header } from '../components/Header';
 import './MainLayout.css';
 
 export const MainLayout: React.FC = () => {
     const { user, logout } = useAuth();
+    const { settings } = useUi();
     const navigate = useNavigate();
 
     const handleLogout = async () => {
@@ -19,7 +22,7 @@ export const MainLayout: React.FC = () => {
                 <div className="sidebar-header">
                     <div className="logo">
                         <div className="logo-icon">Q</div>
-                        <span className="logo-text">BEAM</span>
+                        <span className="logo-text">{settings?.applicationName || 'BEAM'}</span>
                     </div>
                 </div>
 
@@ -54,10 +57,13 @@ export const MainLayout: React.FC = () => {
                 </div>
             </aside>
 
-            {/* Main Content */}
-            <main className="main-content">
-                <Outlet />
-            </main>
+            {/* Main Content Wrapper */}
+            <div className="content-wrapper">
+                <Header />
+                <main className="main-content">
+                    <Outlet />
+                </main>
+            </div>
         </div>
     );
 };

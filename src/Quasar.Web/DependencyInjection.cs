@@ -210,6 +210,15 @@ public static class DependencyInjection
         TimescaleServiceCollectionExtensions.UseTimescaleTimeSeries(services, configure);
         return services;
     }
+
+    /// <summary>
+    /// Configures the Quasar UI settings (application name, theme, etc.).
+    /// </summary>
+    public static IServiceCollection AddQuasarUi(this IServiceCollection services, Action<UiSettings>? configure = null)
+    {
+        var settings = new UiSettings();
+        configure?.Invoke(settings);
+        services.AddSingleton(settings);
+        return services;
+    }
 }
-
-

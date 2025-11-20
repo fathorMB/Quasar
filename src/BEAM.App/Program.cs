@@ -91,6 +91,12 @@ services.AddQuasarJwtAuthentication(options =>
     };
 });
 
+services.AddQuasarUi(ui =>
+{
+    ui.ApplicationName = "BEAM";
+    ui.Theme = "green";
+});
+
 var app = builder.Build();
 // Discover features from referenced assemblies (attributes + contributors)
 featureRegistry.LoadFromAssemblies(AppDomain.CurrentDomain.GetAssemblies(), app.Services);
@@ -107,10 +113,9 @@ app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapQuasarIdentityEndpoints();
+app.MapQuasarUiEndpoints();
 
-app.UseDefaultFiles();
-app.UseStaticFiles();
-app.MapFallbackToFile("index.html");
+app.UseQuasarReactUi();
 
 app.MapGet("/api/features", (FeatureRegistry registry) => Results.Ok(registry.GetAll()))
    .WithName("GetFeatures")
