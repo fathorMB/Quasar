@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import { authApi, type User, type LoginRequest } from '../api';
+import { authApi, usersApi, type User, type LoginRequest } from '../api';
 
 interface AuthContextType {
     user: User | null;
@@ -35,10 +35,33 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     const checkAuth = async () => {
         try {
-            if (authApi.isAuthenticated()) {
-                // TODO: Fetch current user info from an endpoint
-                // For now, we'll just mark as authenticated without user details
-                setUser({ id: '', username: '', email: '' });
+            const token = localStorage.getItem('accessToken');
+            if (token) {
+                const payload = parseJwt(token);
+                console.log('Decoded payload:', payload);
+                const userId = payload.sub;
+                const username = payload.unique_name || payload.name || 'User';
+
+                // Fetch roles
+                let roles: string[] = [];
+                try {
+                    console.log('Fetching roles for userId:', userId);
+                    const userRoles = await usersApi.getRoles(userId);
+                    console.log('Fetched userRoles:', userRoles);
+                    roles = userRoles.map(r => r.name);
+                    console.log('Mapped roles:', roles);
+                } catch (err) {
+                    console.error('Failed to fetch roles', err);
+                }
+
+                setUser({
+                    id: userId,
+                    username: username,
+                    email: payload.email || '',
+                    roles: roles
+                });
+            } else {
+                setUser(null);
             }
         } catch (error) {
             console.error('Auth check failed:', error);
@@ -47,6 +70,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             setIsLoading(false);
         }
     };
+
+    function parseJwt(token: string) {
+        var base64Url = token.split('.')[1];
+        var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        var jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function (c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+
+        return JSON.parse(jsonPayload);
+    }
 
     const login = async (credentials: LoginRequest) => {
         setIsLoading(true);

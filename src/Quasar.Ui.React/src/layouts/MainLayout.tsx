@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import './MainLayout.css';
 
 export const MainLayout: React.FC = () => {
-    const { logout } = useAuth();
+    const { user, logout } = useAuth();
     const navigate = useNavigate();
 
     const handleLogout = async () => {
@@ -31,18 +31,20 @@ export const MainLayout: React.FC = () => {
                         </Link>
                     </div>
 
-                    <div className="nav-section">
-                        <h3 className="nav-section-title">Administration</h3>
-                        <Link to="/users" className="nav-link">
-                            <span>Users</span>
-                        </Link>
-                        <Link to="/roles" className="nav-link">
-                            <span>Roles</span>
-                        </Link>
-                        <Link to="/features" className="nav-link">
-                            <span>Features</span>
-                        </Link>
-                    </div>
+                    {user?.roles?.includes('administrator') && (
+                        <div className="nav-section">
+                            <h3 className="nav-section-title">Administration</h3>
+                            <Link to="/users" className="nav-link">
+                                <span>Users</span>
+                            </Link>
+                            <Link to="/roles" className="nav-link">
+                                <span>Roles</span>
+                            </Link>
+                            <Link to="/features" className="nav-link">
+                                <span>Features</span>
+                            </Link>
+                        </div>
+                    )}
                 </nav>
 
                 <div className="sidebar-footer">

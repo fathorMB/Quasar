@@ -48,18 +48,12 @@ export interface User {
   id: string;
   username: string;
   email: string;
+  roles?: string[];
 }
 
 export interface Role {
   id: string;
   name: string;
-}
-
-export interface UserRole {
-  userId: string;
-  username: string;
-  roleId: string;
-  roleName: string;
 }
 
 export interface RegisterResponse {

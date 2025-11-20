@@ -8,11 +8,16 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/auth': {
-        target: 'http://localhost:5289',
+        target: 'http://localhost:5288',
         changeOrigin: true,
-        secure: false,
+        secure: false
       },
-    },
+      '/api': {
+        target: 'http://localhost:5288',
+        changeOrigin: true,
+        secure: false
+      }
+    }
   },
   build: {
     // Keep the SPA build inside this project so BEAM.App's MSBuild targets
