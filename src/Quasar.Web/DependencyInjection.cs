@@ -221,4 +221,143 @@ public static class DependencyInjection
         services.AddSingleton(settings);
         return services;
     }
+
+    /// <summary>
+    /// Configures Quasar Identity with SQLite infrastructure (event store, read models, projections).
+    /// Automatically registers event type map, initializes schema, and wires up projections.
+    /// </summary>
+    /// <param name="services">The service collection.</param>
+    /// <param name="connectionString">
+    /// Optional SQLite connection string. If not provided, attempts to read from configuration key "ConnectionStrings:QuasarIdentity".
+    /// Defaults to "Data Source=quasar.identity.db" if not found.
+    /// </param>
+    /// <param name="configureEventStore">Optional callback to customize event store options.</param>
+    public static IServiceCollection AddQuasarIdentitySqliteInfrastructure(
+        this IServiceCollection services,
+        string? connectionString = null,
+        Action<SqliteEventStoreOptions>? configureEventStore = null)
+    {
+        // Resolve connection string with fallback to configuration
+        if (string.IsNullOrWhiteSpace(connectionString))
+        {
+            var sp = services.BuildServiceProvider();
+            var configuration = sp.GetService<Microsoft.Extensions.Configuration.IConfiguration>();
+            connectionString = configuration?["ConnectionStrings:QuasarIdentity"] ?? "Data Source=quasar.identity.db";
+        }
+
+        var resolvedConnectionString = ResolveSqliteConnectionString(connectionString);
+
+        // Register event type map only if no serializer exists
+        var existingSerializer = services.FirstOrDefault(d => d.ServiceType == typeof(IEventSerializer));
+        if (existingSerializer == null)
+        {
+            services.AddQuasarEventSerializer(Quasar.Identity.IdentityEventTypeMap.Create());
+        }
+
+        // Event store configuration
+        var sqliteOptions = new SqliteEventStoreOptions
+        {
+            ConnectionFactory = () => new Microsoft.Data.Sqlite.SqliteConnection(resolvedConnectionString)
+        };
+        configureEventStore?.Invoke(sqliteOptions);
+
+        // Initialize schema synchronously (required before DI completes)
+        SqliteEventStoreInitializer.EnsureSchemaAsync(sqliteOptions).GetAwaiter().GetResult();
+
+        services.UseSqliteEventStore(sqliteOptions);
+        services.UseSqliteCommandTransaction();
+
+        // Read models
+        services.UseEfCoreSqliteReadModels<Quasar.Identity.Persistence.Relational.EfCore.IdentityReadModelStore>(
+            resolvedConnectionString,
+            registerRepositories: false);
+
+        // Projections
+        services.AddScoped<object, Quasar.Identity.Persistence.Relational.EfCore.IdentityProjections>();
+
+        return services;
+    }
+
+    /// <summary>
+    /// Configures Quasar Identity with SQL Server infrastructure (event store, read models, projections).
+    /// Automatically registers event type map, initializes schema, and wires up projections.
+    /// </summary>
+    /// <param name="services">The service collection.</param>
+    /// <param name="connectionString">
+    /// Optional SQL Server connection string. If not provided, attempts to read from configuration key "ConnectionStrings:QuasarIdentity".
+    /// Required if not found in configuration.
+    /// </param>
+    /// <param name="configureEventStore">Optional callback to customize event store options.</param>
+    public static IServiceCollection AddQuasarIdentitySqlServerInfrastructure(
+        this IServiceCollection services,
+        string? connectionString = null,
+        Action<SqlEventStoreOptions>? configureEventStore = null)
+    {
+        // Resolve connection string with  fallback to configuration
+        if (string.IsNullOrWhiteSpace(connectionString))
+        {
+            var sp = services.BuildServiceProvider();
+            var configuration = sp.GetService<Microsoft.Extensions.Configuration.IConfiguration>();
+            connectionString = configuration?["ConnectionStrings:QuasarIdentity"];
+
+            if (string.IsNullOrWhiteSpace(connectionString))
+            {
+                throw new InvalidOperationException(
+                    "SQL Server connection string is required. Provide it explicitly or configure 'ConnectionStrings:QuasarIdentity' in appsettings.json.");
+            }
+        }
+
+        // Register event type map only if no serializer exists
+        var existingSerializer = services.FirstOrDefault(d => d.ServiceType == typeof(IEventSerializer));
+        if (existingSerializer == null)
+        {
+            services.AddQuasarEventSerializer(Quasar.Identity.IdentityEventTypeMap.Create());
+        }
+
+        // Event store configuration
+        var sqlServerOptions = new SqlEventStoreOptions
+        {
+            ConnectionFactory = () => new Microsoft.Data.SqlClient.SqlConnection(connectionString)
+        };
+        configureEventStore?.Invoke(sqlServerOptions);
+
+        // Initialize schema synchronously
+        SqlEventStoreInitializer.EnsureSchemaAsync(sqlServerOptions).GetAwaiter().GetResult();
+
+        services.UseSqlServerEventStore(sqlServerOptions);
+        services.UseSqlServerCommandTransaction();
+
+        // Read models
+        services.UseEfCoreSqlServerReadModels<Quasar.Identity.Persistence.Relational.EfCore.IdentityReadModelStore>(
+            connectionString,
+            registerRepositories: false);
+
+        // Projections
+        services.AddScoped<object, Quasar.Identity.Persistence.Relational.EfCore.IdentityProjections>();
+
+        return services;
+    }
+
+    private static string ResolveSqliteConnectionString(string connectionString)
+    {
+        var builder = new Microsoft.Data.Sqlite.SqliteConnectionStringBuilder();
+        builder.ConnectionString = connectionString;
+        var dataSource = builder.DataSource;
+
+        if (!System.IO.Path.IsPathRooted(dataSource))
+        {
+            dataSource = System.IO.Path.Combine(System.AppContext.BaseDirectory, dataSource);
+        }
+
+        var directory = System.IO.Path.GetDirectoryName(dataSource);
+        if (!string.IsNullOrEmpty(directory))
+        {
+            System.IO.Directory.CreateDirectory(directory);
+        }
+
+        builder.DataSource = System.IO.Path.GetFullPath(dataSource);
+        builder.Mode = Microsoft.Data.Sqlite.SqliteOpenMode.ReadWriteCreate;
+
+        return builder.ToString();
+    }
 }
