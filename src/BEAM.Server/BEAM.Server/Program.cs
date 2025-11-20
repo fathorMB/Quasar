@@ -118,12 +118,7 @@ public static class Program
 
         app.MapQuasarIdentityEndpoints();
 
-        // Serve React static files
-        app.UseDefaultFiles();
-        app.UseStaticFiles();
-
-        // Fallback to index.html for client-side routing
-        app.MapFallbackToFile("index.html");
+        app.UseQuasarReactUi();
 
         await app.InitializeReadModelsAsync().ConfigureAwait(false);
         await app.SeedDataAsync().ConfigureAwait(false);
