@@ -1,0 +1,19 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "Quasar Framework",
+  "classifications": ["Quasar", "Web", "API"],
+  "identity": "Quasar.Template.Service",
+  "name": "Quasar API Service",
+  "shortName": "quasar-service",
+  "sourceName": "Quasar.Service",
+  "preferNameDirectory": true,
+  "symbols": {
+    "quasarVersion": {
+      "type": "parameter",
+      "datatype": "string",
+      "defaultValue": "*",
+      "replaces": "__QUASAR_VERSION__",
+      "description": "Version of Quasar packages to reference"
+    }
+  }
+}

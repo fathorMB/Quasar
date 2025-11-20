@@ -1,0 +1,110 @@
+.main-layout {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    height: 100vh;
+    background: var(--color-bg-primary);
+}
+
+/* Sidebar */
+.sidebar {
+    background: var(--color-bg-nav);
+    border-right: 1px solid var(--color-border);
+    display: flex;
+    flex-direction: column;
+    padding: var(--spacing-xl);
+    gap: var(--spacing-lg);
+}
+
+.sidebar-header {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+}
+
+.logo-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: var(--radius-lg);
+    background: linear-gradient(135deg, var(--color-accent-start), var(--color-accent-end));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    color: white;
+    font-size: var(--font-size-lg);
+}
+
+.logo-text {
+    font-size: var(--font-size-xs);
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+/* Sidebar Navigation */
+.sidebar-nav {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+    overflow-y: auto;
+}
+
+.nav-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.nav-section-title {
+    font-size: var(--font-size-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.3em;
+    color: var(--color-text-muted);
+    margin-bottom: var(--spacing-sm);
+    font-weight: 600;
+}
+
+.nav-link {
+    display: block;
+    padding: 0.625rem 0.875rem;
+    border-radius: var(--radius-md);
+    color: var(--color-text-secondary);
+    font-weight: 500;
+    transition: all var(--transition-fast);
+    font-size: var(--font-size-sm);
+}
+
+.nav-link:hover,
+.nav-link.active {
+    background: var(--color-nav-active);
+    color: white;
+}
+
+.sidebar-footer {
+    border-top: 1px solid var(--color-border);
+    padding-top: var(--spacing-md);
+}
+
+/* Main Content */
+.main-content {
+    overflow-y: auto;
+    padding: var(--spacing-xl);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .main-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .sidebar {
+        display: none;
+    }
+}

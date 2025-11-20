@@ -1,0 +1,63 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <!-- Point to the shared React workspace (Quasar.Ui.React) so builds can pull its dist into wwwroot -->
+    <SpaRoot>..\Quasar.Ui.React\</SpaRoot>
+    <SpaRootFull>$(MSBuildThisFileDirectory)$(SpaRoot)</SpaRootFull>
+    <SpaDist>$(SpaRoot)dist\</SpaDist>
+    <SpaDistFull>$(SpaRootFull)dist\</SpaDistFull>
+    <SpaIndex>$(SpaDist)index.html</SpaIndex>
+    <SpaIndexFull>$(SpaDistFull)index.html</SpaIndexFull>
+    <SpaBuildOnBuild>true</SpaBuildOnBuild>
+    <SpaBuildOnPublish>true</SpaBuildOnPublish>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Quasar.Web\Quasar.Web.csproj" />
+    <ProjectReference Include="..\Quasar.EventSourcing.Sqlite\Quasar.EventSourcing.Sqlite.csproj" />
+    <ProjectReference Include="..\Quasar.Identity.Web\Quasar.Identity.Web.csproj" />
+    <ProjectReference Include="..\Quasar.Identity.Persistence.Relational.EfCore\Quasar.Identity.Persistence.Relational.EfCore.csproj" />
+    <ProjectReference Include="..\Quasar.Persistence.Relational.EfCore\Quasar.Persistence.Relational.EfCore.csproj" />
+    <ProjectReference Include="..\Quasar.Seeding\Quasar.Seeding.csproj" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.0" />
+  </ItemGroup>
+
+  <Target Name="EnsureSpaNodeModules" BeforeTargets="Build;Publish"
+          Condition="( '$(SpaBuildOnBuild)' == 'true' or '$(SpaBuildOnPublish)' == 'true' ) and Exists('$(SpaRootFull)package.json') and !Exists('$(SpaRootFull)node_modules')">
+    <Message Text="Installing React UI dependencies (npm ci) under $(SpaRootFull)" Importance="High" />
+    <Exec Command="npm ci" WorkingDirectory="$(SpaRootFull)" />
+  </Target>
+
+  <Target Name="BuildSpaOnBuild" AfterTargets="Build"
+          Condition="'$(SpaBuildOnBuild)' == 'true' and Exists('$(SpaRootFull)package.json')">
+    <Message Text="Building React UI (npm run build) under $(SpaRootFull)" Importance="High" />
+    <Exec Command="npm run build" WorkingDirectory="$(SpaRootFull)" />
+  </Target>
+
+  <Target Name="BuildSpaOnPublish" BeforeTargets="Publish"
+          Condition="'$(SpaBuildOnPublish)' == 'true' and Exists('$(SpaRootFull)package.json')">
+    <Message Text="Building React UI for publish (npm run build) under $(SpaRootFull)" Importance="High" />
+    <Exec Command="npm run build" WorkingDirectory="$(SpaRootFull)" />
+  </Target>
+
+  <Target Name="CopySpaOnBuild" AfterTargets="BuildSpaOnBuild"
+          Condition="Exists('$(SpaIndexFull)') and Exists('$(SpaDistFull)')">
+    <ItemGroup>
+      <SpaAssets Include="$(SpaDistFull)**\*.*" />
+    </ItemGroup>
+    <MakeDir Directories="wwwroot" Condition="!Exists('wwwroot')" />
+    <Copy SourceFiles="@(SpaAssets)" DestinationFiles="@(SpaAssets->'wwwroot/%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
+  </Target>
+
+  <Target Name="CopySpaOnPublish" AfterTargets="BuildSpaOnPublish"
+          Condition="Exists('$(SpaIndexFull)') and Exists('$(SpaDistFull)')">
+    <ItemGroup>
+      <SpaPublishAssets Include="$(SpaDistFull)**\*.*" />
+    </ItemGroup>
+    <MakeDir Directories="$(PublishDir)wwwroot" />
+    <Copy SourceFiles="@(SpaPublishAssets)" DestinationFiles="@(SpaPublishAssets->'$(PublishDir)wwwroot/%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
+  </Target>
+
+</Project>

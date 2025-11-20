@@ -1,11 +1,11 @@
-﻿{
+{
   "$schema": "http://json.schemastore.org/template",
   "author": "Quasar Framework",
-  "classifications": ["Quasar", "Web", "API"],
-  "identity": "Quasar.Template.Service",
-  "name": "Quasar API Service",
-  "shortName": "quasar-service",
-  "sourceName": "Quasar.Service",
+  "classifications": ["Quasar", "Web", "React"],
+  "identity": "Quasar.Template.Service.React",
+  "name": "Quasar API Service with React UI host",
+  "shortName": "quasar-service-react",
+  "sourceName": "Quasar.Service.React",
   "preferNameDirectory": true,
   "symbols": {
     "quasarVersion": {
