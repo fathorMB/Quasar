@@ -171,6 +171,17 @@ public sealed class IdentityDataSeed : IOrderedDataSeed
         var users = db.Set<IdentityUserReadModel>();
         var userRoles = db.Set<IdentityUserRoleReadModel>();
 
+        // Check if a user with this username already exists
+        var existingUser = await users.AsNoTracking()
+            .FirstOrDefaultAsync(u => u.Username == seed.Username, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (existingUser is not null)
+        {
+            _logger.LogDebug("User {Username} already exists ({UserId}), skipping creation", seed.Username, existingUser.Id);
+            return; // Skip this user - already exists
+        }
+
         var userId = seed.Id != Guid.Empty ? seed.Id : Guid.NewGuid();
         var aggregate = await repo.GetAsync(userId, cancellationToken).ConfigureAwait(false);
         var isNew = aggregate.Id == Guid.Empty;

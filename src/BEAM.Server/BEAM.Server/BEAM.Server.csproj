@@ -4,12 +4,10 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\Quasar.Web\Quasar.Web.csproj" />
-    <ProjectReference Include="..\..\Quasar.Ui\Quasar.Ui.csproj" />
     <ProjectReference Include="..\..\Quasar.EventSourcing.Sqlite\Quasar.EventSourcing.Sqlite.csproj" />
     <ProjectReference Include="..\..\Quasar.Identity.Web\Quasar.Identity.Web.csproj" />
     <ProjectReference Include="..\..\Quasar.Identity.Persistence.Relational.EfCore\Quasar.Identity.Persistence.Relational.EfCore.csproj" />

@@ -3,6 +3,7 @@ using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Data.Sqlite;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
 using Quasar.EventSourcing.Abstractions;
 using Quasar.EventSourcing.Sqlite;
@@ -12,9 +13,6 @@ using Quasar.Identity.Persistence.Relational.EfCore.Seeding;
 using Quasar.Identity.Web;
 using Quasar.Persistence.Relational.EfCore;
 using Quasar.Seeding;
-using Quasar.Ui;
-using Quasar.Ui.Branding;
-using Quasar.Ui.Security;
 using Quasar.Web;
 
 namespace BEAM.Server;
@@ -27,35 +25,17 @@ public static class Program
         var configuration = builder.Configuration;
         var services = builder.Services;
 
-        services.AddQuasarUi(
-            configureNavigation: nav =>
+        // Add CORS for React development server
+        services.AddCors(options =>
+        {
+            options.AddDefaultPolicy(policy =>
             {
-                nav.ClearSections()
-                    .AddSection("Menu", section =>
-                    {
-                        section.AddItem("Overview", typeof(Quasar.Ui.Components.Panels.OverviewPanel), slug: string.Empty, isDefault: true);
-                        section.AddItem("Identity", typeof(Quasar.Ui.Components.Panels.PlaceholderPanel), "identity", parameters: new Dictionary<string, object?>
-                        {
-                            { nameof(Quasar.Ui.Components.Panels.PlaceholderPanel.Title), "Identity" }
-                        }, configureChildren: children =>
-                        {
-                            children.AddChild("Users", typeof(Quasar.Ui.Components.Panels.PlaceholderPanel), "users", new Dictionary<string, object?>
-                            {
-                                { nameof(Quasar.Ui.Components.Panels.PlaceholderPanel.Title), "Users" }
-                            });
-                            children.AddChild("Roles", typeof(Quasar.Ui.Components.Panels.PlaceholderPanel), "roles", new Dictionary<string, object?>
-                            {
-                                { nameof(Quasar.Ui.Components.Panels.PlaceholderPanel.Title), "Roles" }
-                            });
-                        });
-                    });
-            },
-            configureBranding: branding =>
-            {
-                branding.ApplicationName = "BEAM v1";
-                branding.LogoGlyph = "B";
-                branding.Palette = QuasarUiColorPalettes.Grove;
+                policy.WithOrigins("http://localhost:5173") // Vite dev server
+                    .AllowAnyMethod()
+                    .AllowAnyHeader()
+                    .AllowCredentials();
             });
+        });
 
         services.AddAuthorization();
 
@@ -131,14 +111,19 @@ public static class Program
         app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
         app.UseHttpsRedirection();
 
+        app.UseCors(); // Enable CORS for React app
+
         app.UseAuthentication();
         app.UseAuthorization();
-        app.UseAntiforgery();
 
         app.MapQuasarIdentityEndpoints();
 
-        app.MapStaticAssets();
-        app.MapQuasarUi();
+        // Serve React static files
+        app.UseDefaultFiles();
+        app.UseStaticFiles();
+
+        // Fallback to index.html for client-side routing
+        app.MapFallbackToFile("index.html");
 
         await app.InitializeReadModelsAsync().ConfigureAwait(false);
         await app.SeedDataAsync().ConfigureAwait(false);
