@@ -70,6 +70,15 @@ export interface CreateRoleResponse {
   roleId: string;
 }
 
+export interface Feature {
+  id: string;
+  name: string;
+  category: string;
+  description: string;
+  status: string;
+  details?: string | null;
+}
+
 // ============================================
 // Error Types
 // ============================================

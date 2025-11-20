@@ -6,6 +6,7 @@ using Microsoft.Data.Sqlite;
 using Microsoft.IdentityModel.Tokens;
 using Quasar.EventSourcing.Abstractions;
 using Quasar.EventSourcing.Sqlite;
+using Quasar.Features;
 using Quasar.Identity;
 using Quasar.Identity.Persistence.Relational.EfCore;
 using Quasar.Identity.Persistence.Relational.EfCore.Seeding;
@@ -17,6 +18,8 @@ using Quasar.Web;
 var builder = WebApplication.CreateBuilder(args);
 var configuration = builder.Configuration;
 var services = builder.Services;
+var featureRegistry = new FeatureRegistry();
+services.AddSingleton(featureRegistry);
 
 services.AddCors(options =>
 {
@@ -89,6 +92,7 @@ services.AddQuasarJwtAuthentication(options =>
 });
 
 var app = builder.Build();
+featureRegistry.LoadFromAssemblies(AppDomain.CurrentDomain.GetAssemblies(), app.Services);
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error");
@@ -106,6 +110,10 @@ app.MapQuasarIdentityEndpoints();
 app.UseDefaultFiles();
 app.UseStaticFiles();
 app.MapFallbackToFile("index.html");
+
+app.MapGet("/api/features", (FeatureRegistry registry) => Results.Ok(registry.GetAll()))
+   .WithName("GetFeatures")
+   .WithTags("Administration");
 
 await app.InitializeReadModelsAsync().ConfigureAwait(false);
 await app.SeedDataAsync().ConfigureAwait(false);

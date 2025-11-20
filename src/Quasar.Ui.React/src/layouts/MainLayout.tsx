@@ -39,6 +39,9 @@ export const MainLayout: React.FC = () => {
                         <Link to="/roles" className="nav-link">
                             <span>Roles</span>
                         </Link>
+                        <Link to="/features" className="nav-link">
+                            <span>Features</span>
+                        </Link>
                     </div>
                 </nav>
 
