@@ -19,6 +19,10 @@ public static class UiEndpoints
            .WithTags("Configuration")
            .AllowAnonymous();
 
+        app.MapGet("/api/features", (Quasar.Features.FeatureRegistry registry) => Results.Ok(registry.GetAll()))
+           .WithName("GetFeatures")
+           .WithTags("Administration");
+
         return app;
     }
 }

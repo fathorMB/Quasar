@@ -94,7 +94,7 @@ services.AddQuasarJwtAuthentication(options =>
 services.AddQuasarUi(ui =>
 {
     ui.ApplicationName = "BEAM";
-    ui.Theme = "green";
+    ui.Theme = "orange";
 });
 
 var app = builder.Build();
@@ -117,9 +117,6 @@ app.MapQuasarUiEndpoints();
 
 app.UseQuasarReactUi();
 
-app.MapGet("/api/features", (FeatureRegistry registry) => Results.Ok(registry.GetAll()))
-   .WithName("GetFeatures")
-   .WithTags("Administration");
 
 await app.InitializeReadModelsAsync().ConfigureAwait(false);
 await app.SeedDataAsync().ConfigureAwait(false);
