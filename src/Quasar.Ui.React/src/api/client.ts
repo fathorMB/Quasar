@@ -62,7 +62,9 @@ apiClient.interceptors.response.use(
 
         // Transform error to ApiError format
         const apiError: ApiError = {
-            message: (error.response?.data as any)?.message || error.message || 'An error occurred',
+            message: error.response?.status === 401
+                ? 'Invalid username or password'
+                : ((error.response?.data as any)?.message || error.message || 'An error occurred'),
             statusCode: error.response?.status || 500,
         };
 
