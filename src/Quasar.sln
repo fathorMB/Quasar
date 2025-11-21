@@ -75,6 +75,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Quasar.Cqrs", "Quasar.Cqrs\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BEAM.App", "BEAM.App\BEAM.App.csproj", "{E0AE2465-A4D2-4706-9B32-1DA5CB6CDD84}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Quasar.Discovery", "Quasar.Discovery\Quasar.Discovery.csproj", "{3FF11012-3F1E-49C7-8006-FBB00C5D2FAC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -517,6 +519,18 @@ Global
 		{E0AE2465-A4D2-4706-9B32-1DA5CB6CDD84}.Release|x64.Build.0 = Release|Any CPU
 		{E0AE2465-A4D2-4706-9B32-1DA5CB6CDD84}.Release|x86.ActiveCfg = Release|Any CPU
 		{E0AE2465-A4D2-4706-9B32-1DA5CB6CDD84}.Release|x86.Build.0 = Release|Any CPU
+		{3FF11012-3F1E-49C7-8006-FBB00C5D2FAC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3FF11012-3F1E-49C7-8006-FBB00C5D2FAC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3FF11012-3F1E-49C7-8006-FBB00C5D2FAC}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{3FF11012-3F1E-49C7-8006-FBB00C5D2FAC}.Debug|x64.Build.0 = Debug|Any CPU
+		{3FF11012-3F1E-49C7-8006-FBB00C5D2FAC}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{3FF11012-3F1E-49C7-8006-FBB00C5D2FAC}.Debug|x86.Build.0 = Debug|Any CPU
+		{3FF11012-3F1E-49C7-8006-FBB00C5D2FAC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3FF11012-3F1E-49C7-8006-FBB00C5D2FAC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3FF11012-3F1E-49C7-8006-FBB00C5D2FAC}.Release|x64.ActiveCfg = Release|Any CPU
+		{3FF11012-3F1E-49C7-8006-FBB00C5D2FAC}.Release|x64.Build.0 = Release|Any CPU
+		{3FF11012-3F1E-49C7-8006-FBB00C5D2FAC}.Release|x86.ActiveCfg = Release|Any CPU
+		{3FF11012-3F1E-49C7-8006-FBB00C5D2FAC}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

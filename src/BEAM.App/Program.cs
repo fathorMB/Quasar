@@ -8,6 +8,7 @@ using Quasar.Identity.Web;
 using Quasar.Persistence.Relational.EfCore;
 using Quasar.Seeding;
 using Quasar.Web;
+using Quasar.Discovery;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -79,6 +80,20 @@ services.AddQuasarUi(ui =>
 {
     ui.ApplicationName = "BEAM";
     ui.Theme = "orange";
+});
+
+// UDP Network Discovery Service
+services.AddQuasarDiscovery(options =>
+{
+    options.Enabled = true;
+    options.Port = 6000;
+    options.ServiceName = "BEAM Identity Server";
+    options.Metadata = new Dictionary<string, string>
+    {
+        { "version", "1.0.0" },
+        { "description", "BEAM Identity & Access Management Server" },
+        { "framework", "Quasar" }
+    };
 });
 
 var app = builder.Build();
