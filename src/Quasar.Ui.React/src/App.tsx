@@ -10,6 +10,7 @@ import { UsersPage } from './pages/UsersPage';
 import { RolesPage } from './pages/RolesPage';
 import { FeaturesPage } from './pages/FeaturesPage';
 import { JobsPage } from './pages/JobsPage';
+import { LogsPage } from './pages/LogsPage';
 import './styles/globals.css';
 import './styles/components.css';
 
@@ -45,6 +46,7 @@ function AppRoutes() {
         <Route path="roles" element={<RolesPage />} />
         <Route path="features" element={<FeaturesPage />} />
         <Route path="jobs" element={<JobsPage />} />
+        <Route path="logs" element={<LogsPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

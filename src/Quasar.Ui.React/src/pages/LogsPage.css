@@ -1,0 +1,11 @@
+.logs-table td:nth-child(1) {
+    width: 180px;
+}
+
+.logs-table td:nth-child(2) {
+    width: 100px;
+}
+
+.logs-table td:nth-child(4) {
+    width: 360px;
+}

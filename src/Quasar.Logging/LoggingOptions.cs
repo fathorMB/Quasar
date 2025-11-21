@@ -21,7 +21,7 @@ public sealed class LoggingOptions
     /// <summary>
     /// Gets or sets a value indicating whether logs should be buffered in-memory for diagnostics.
     /// </summary>
-    public bool UseInMemoryBuffer { get; set; } = true;
+    public bool UseInMemoryBuffer { get; set; } = false;
 
     /// <summary>
     /// Gets or sets the maximum number of log entries retained in-memory.

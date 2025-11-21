@@ -11,4 +11,7 @@
     <PackageReference Include="Serilog.Sinks.Seq" Version="9.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="10.0.0" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Quasar.Core\Quasar.Core.csproj" />
+  </ItemGroup>
 </Project>

@@ -5,6 +5,7 @@ using Microsoft.IdentityModel.Tokens;
 using Quasar.Features;
 using Quasar.Identity.Persistence.Relational.EfCore.Seeding;
 using Quasar.Identity.Web;
+using Quasar.Logging;
 using Quasar.Persistence.Relational.EfCore;
 using Quasar.Seeding;
 using Quasar.Web;
@@ -19,6 +20,13 @@ var configuration = builder.Configuration;
 var services = builder.Services;
 var featureRegistry = new FeatureRegistry();
 services.AddSingleton(featureRegistry);
+builder.Host.UseQuasarSerilog(configuration, "Logging", opts =>
+{
+    opts.UseInMemoryBuffer = true;
+    opts.InMemoryBufferCapacity = 512;
+    opts.UseConsole = true;
+});
+services.AddSingleton<InMemoryLogBuffer>();
 
 services.AddCors(options =>
 {
@@ -132,6 +140,7 @@ app.UseAuthorization();
 app.MapQuasarIdentityEndpoints();
 app.MapQuasarUiEndpoints();
 app.MapQuartzEndpoints();
+app.MapLoggingEndpoints();
 
 app.UseQuasarReactUi();
 
