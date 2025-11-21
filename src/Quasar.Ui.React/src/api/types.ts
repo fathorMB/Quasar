@@ -49,11 +49,15 @@ export interface User {
   username: string;
   email: string;
   roles?: string[];
+  isDeleted?: boolean;
+  deletedAtUtc?: string | null;
 }
 
 export interface Role {
   id: string;
   name: string;
+  isDeleted?: boolean;
+  deletedAtUtc?: string | null;
 }
 
 export interface RegisterResponse {
@@ -62,6 +66,11 @@ export interface RegisterResponse {
 
 export interface CreateRoleResponse {
   roleId: string;
+}
+
+export interface DeleteRoleResponse {
+  success: boolean;
+  message?: string;
 }
 
 export interface Feature {

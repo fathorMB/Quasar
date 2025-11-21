@@ -1,5 +1,5 @@
 import apiClient from './client';
-import type { Role, CreateRoleRequest, CreateRoleResponse, GrantPermissionRequest } from './types';
+import type { Role, CreateRoleRequest, CreateRoleResponse, GrantPermissionRequest, DeleteRoleResponse } from './types';
 
 export const rolesApi = {
     /**
@@ -38,5 +38,10 @@ export const rolesApi = {
      */
     revokePermission: async (roleId: string, permission: string): Promise<void> => {
         await apiClient.delete(`/roles/${roleId}/permissions/${encodeURIComponent(permission)}`);
+    },
+
+    delete: async (roleId: string): Promise<DeleteRoleResponse> => {
+        const response = await apiClient.delete<DeleteRoleResponse>(`/roles/${roleId}`);
+        return response.data;
     },
 };

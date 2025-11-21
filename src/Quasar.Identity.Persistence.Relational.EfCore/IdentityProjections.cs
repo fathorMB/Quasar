@@ -13,7 +13,9 @@ public sealed class IdentityProjections :
     IProjection<RoleCreated>,
     IProjection<RoleRenamed>,
     IProjection<RolePermissionGranted>,
-    IProjection<RolePermissionRevoked>
+    IProjection<RolePermissionRevoked>,
+    IProjection<UserDeleted>,
+    IProjection<RoleDeleted>
 {
     private readonly ReadModelContext<IdentityReadModelStore> _db;
     private readonly DbSet<IdentityUserReadModel> _users;
@@ -116,6 +118,28 @@ public sealed class IdentityProjections :
         if (entity is not null)
         {
             _rolePermissions.Remove(entity);
+            await _db.SaveChangesAsync(cancellationToken);
+        }
+    }
+
+    public async Task HandleAsync(UserDeleted @event, CancellationToken cancellationToken = default)
+    {
+        var user = await _users.FirstOrDefaultAsync(x => x.Id == @event.UserId, cancellationToken);
+        if (user is not null)
+        {
+            user.IsDeleted = true;
+            user.DeletedAtUtc = @event.DeletedAtUtc;
+            await _db.SaveChangesAsync(cancellationToken);
+        }
+    }
+
+    public async Task HandleAsync(RoleDeleted @event, CancellationToken cancellationToken = default)
+    {
+        var role = await _roles.FirstOrDefaultAsync(x => x.Id == @event.RoleId, cancellationToken);
+        if (role is not null)
+        {
+            role.IsDeleted = true;
+            role.DeletedAtUtc = @event.DeletedAtUtc;
             await _db.SaveChangesAsync(cancellationToken);
         }
     }

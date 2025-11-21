@@ -11,6 +11,7 @@ export const RolesPage: React.FC = () => {
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [createForm, setCreateForm] = useState({ name: '' });
     const [isCreating, setIsCreating] = useState(false);
+    const [confirmDeleteRole, setConfirmDeleteRole] = useState<Role | null>(null);
 
     useEffect(() => {
         loadRoles();
@@ -80,6 +81,22 @@ export const RolesPage: React.FC = () => {
         }
     };
 
+    const handleDeleteRole = async () => {
+        if (!confirmDeleteRole) return;
+        setError('');
+        try {
+            const result = await rolesApi.delete(confirmDeleteRole.id);
+            if (result && result.success === false) {
+                setError(result.message || 'Role is assigned to users. Remove assignments before deleting.');
+                return;
+            }
+            setConfirmDeleteRole(null);
+            await loadRoles();
+        } catch (err: any) {
+            setError(err.message || 'Failed to delete role');
+        }
+    };
+
     if (isLoading) {
         return (
             <div className="page-container">
@@ -120,14 +137,28 @@ export const RolesPage: React.FC = () => {
                     <tbody>
                         {roles.map((role) => (
                             <tr key={role.id}>
-                                <td><strong>{role.name}</strong></td>
+                                <td>
+                                    <strong>{role.name}</strong>
+                                    {role.isDeleted && (
+                                        <span className="badge badge-error" style={{ marginLeft: 'var(--spacing-sm)' }}>Deleted</span>
+                                    )}
+                                </td>
                                 <td className="text-muted">{role.id.slice(0, 8)}...</td>
                                 <td>
                                     <button
                                         className="btn btn-sm btn-secondary"
                                         onClick={() => handleViewRole(role)}
+                                        disabled={!!role.isDeleted}
                                     >
                                         Manage Permissions
+                                    </button>
+                                    <button
+                                        className="btn btn-sm btn-secondary"
+                                        onClick={() => setConfirmDeleteRole(role)}
+                                        style={{ marginLeft: 'var(--spacing-sm)' }}
+                                        disabled={!!role.isDeleted}
+                                    >
+                                        Delete
                                     </button>
                                 </td>
                             </tr>
@@ -244,6 +275,34 @@ export const RolesPage: React.FC = () => {
                                     style={{ flex: 1 }}
                                 >
                                     {isCreating ? 'Creating...' : 'Create'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Confirm Delete Role Modal */}
+            {confirmDeleteRole && (
+                <div className="modal-overlay" onClick={() => setConfirmDeleteRole(null)}>
+                    <div className="modal" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h2 className="modal-title">Delete Role</h2>
+                            <button className="modal-close" onClick={() => setConfirmDeleteRole(null)}>
+                                ×
+                            </button>
+                        </div>
+                        <div className="modal-body">
+                            <p>Are you sure you want to delete <strong>{confirmDeleteRole.name}</strong>?</p>
+                            <p className="text-muted" style={{ marginTop: 'var(--spacing-md)' }}>
+                                Roles assigned to users cannot be deleted.
+                            </p>
+                            <div style={{ display: 'flex', gap: 'var(--spacing-md)', marginTop: 'var(--spacing-lg)' }}>
+                                <button className="btn btn-secondary" onClick={() => setConfirmDeleteRole(null)} style={{ flex: 1 }}>
+                                    Cancel
+                                </button>
+                                <button className="btn btn-primary" onClick={handleDeleteRole} style={{ flex: 1 }}>
+                                    Delete
                                 </button>
                             </div>
                         </div>

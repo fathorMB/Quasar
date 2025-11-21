@@ -21,7 +21,9 @@ public static class IdentityEventTypeMap
             ("identity.role_created", typeof(RoleCreated)),
             ("identity.role_renamed", typeof(RoleRenamed)),
             ("identity.role_permission_granted", typeof(RolePermissionGranted)),
-            ("identity.role_permission_revoked", typeof(RolePermissionRevoked))
+            ("identity.role_permission_revoked", typeof(RolePermissionRevoked)),
+            ("identity.user_deleted", typeof(UserDeleted)),
+            ("identity.role_deleted", typeof(RoleDeleted))
         });
     }
 }

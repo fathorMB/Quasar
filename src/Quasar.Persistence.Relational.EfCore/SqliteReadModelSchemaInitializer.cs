@@ -101,16 +101,22 @@ public sealed class SqliteReadModelSchemaInitializer<TContext> : IReadModelSchem
         var sqlHelper = context.GetService<ISqlGenerationHelper>();
         var tableName = sqlHelper.DelimitIdentifier(table.Name);
 
+        var missingRequired = table.Columns
+            .Where(c => !existingColumns.ContainsKey(c.Name) && !c.IsNullable)
+            .Select(c => c.Name)
+            .ToArray();
+
+        if (missingRequired.Length > 0)
+        {
+            _logger.LogWarning("Recreating SQLite read model table {Table} to add required columns: {Columns}", tableName, string.Join(", ", missingRequired));
+            await RecreateTableAsync(connection, context, table, cancellationToken).ConfigureAwait(false);
+            return;
+        }
+
         foreach (var column in table.Columns)
         {
             if (existingColumns.ContainsKey(column.Name))
             {
-                continue;
-            }
-
-            if (!column.IsNullable)
-            {
-                _logger.LogWarning("Skipping addition of non-nullable column {Column} on SQLite table {Table} because ALTER TABLE ADD COLUMN does not support it without defaults.", column.Name, tableName);
                 continue;
             }
 
@@ -119,6 +125,16 @@ public sealed class SqliteReadModelSchemaInitializer<TContext> : IReadModelSchem
             _logger.LogInformation("Adding column {Column} to SQLite read model table {Table}", column.Name, tableName);
             await ExecuteNonQueryAsync(connection, commandText, cancellationToken).ConfigureAwait(false);
         }
+    }
+
+    private async Task RecreateTableAsync(DbConnection connection, TContext context, ITable table, CancellationToken cancellationToken)
+    {
+        var sqlHelper = context.GetService<ISqlGenerationHelper>();
+        var tableName = sqlHelper.DelimitIdentifier(table.Name);
+
+        var dropCommand = $"DROP TABLE IF EXISTS {tableName};";
+        await ExecuteNonQueryAsync(connection, dropCommand, cancellationToken).ConfigureAwait(false);
+        await CreateTableAsync(connection, context, table, cancellationToken).ConfigureAwait(false);
     }
 
     private static string BuildColumnDefinition(IColumnBase column, ISqlGenerationHelper sqlHelper)

@@ -114,6 +114,8 @@ public static class IdentityEndpoints
         services.AddScoped<ICommandHandler<RevokeRolePermissionCommand, bool>, RevokeRolePermissionHandler>();
         services.AddScoped<ICommandHandler<AssignRoleToUserCommand, bool>, AssignRoleToUserHandler>();
         services.AddScoped<ICommandHandler<RevokeRoleFromUserCommand, bool>, RevokeRoleFromUserHandler>();
+        services.AddScoped<ICommandHandler<DeleteUserCommand, bool>, DeleteUserHandler>();
+        services.AddScoped<ICommandHandler<DeleteRoleCommand, bool>, DeleteRoleHandler>();
         services.AddScoped<Quasar.Security.IAuthorizationService, EfCoreAuthorizationService>();
         services.AddOptions<JwtOptions>();
         if (configure != null) services.Configure(configure);
@@ -158,7 +160,7 @@ public static class IdentityEndpoints
             var sessions = sets.Sessions;
 
             var user = await users.FirstOrDefaultAsync(u => u.Username == dto.Username).ConfigureAwait(false);
-            if (user is null) return Results.Unauthorized();
+            if (user is null || user.IsDeleted) return Results.Unauthorized();
             if (!hasher.Verify(dto.Password, user.PasswordHash, user.PasswordSalt)) return Results.Unauthorized();
             var roleNames = await userRoles
                 .Where(x => x.UserId == user.Id)
@@ -309,7 +311,9 @@ public static class IdentityEndpoints
                 {
                     u.Id,
                     u.Username,
-                    u.Email
+                    u.Email,
+                    u.IsDeleted,
+                    u.DeletedAtUtc
                 })
                 .ToListAsync()
                 .ConfigureAwait(false);
@@ -413,7 +417,7 @@ public static class IdentityEndpoints
             if (session.ExpiresUtc < DateTime.UtcNow) return Results.Unauthorized();
 
             var user = await sets.Users.FirstOrDefaultAsync(u => u.Id == session.UserId).ConfigureAwait(false);
-            if (user is null) return Results.Unauthorized();
+            if (user is null || user.IsDeleted) return Results.Unauthorized();
 
             var roleNames = await sets.UserRoles
                 .Where(x => x.UserId == user.Id)
@@ -443,6 +447,47 @@ public static class IdentityEndpoints
             return Results.Ok();
         });
 
+        app.MapDelete("/auth/users/{userId:guid}", async (IMediator mediator, ReadModelContext<IdentityReadModelStore> db, Guid userId) =>
+        {
+            var deleted = await mediator.Send(new DeleteUserCommand(userId)).ConfigureAwait(false);
+            if (deleted)
+            {
+                var user = await db.Set<IdentityUserReadModel>().FirstOrDefaultAsync(u => u.Id == userId).ConfigureAwait(false);
+                if (user is not null)
+                {
+                    user.IsDeleted = true;
+                    user.DeletedAtUtc = DateTime.UtcNow;
+                    await db.SaveChangesAsync().ConfigureAwait(false);
+                }
+                return Results.Ok();
+            }
+            return Results.NotFound();
+        });
+
+        app.MapDelete("/auth/roles/{roleId:guid}", async (IMediator mediator, ReadModelContext<IdentityReadModelStore> db, Guid roleId) =>
+        {
+            var assigned = await db.Set<IdentityUserRoleReadModel>().AnyAsync(ur => ur.RoleId == roleId).ConfigureAwait(false);
+            if (assigned)
+            {
+                return Results.Ok(new { success = false, message = "This role is assigned to one or more users. Unassign it from all users before deleting." });
+            }
+
+            var deleted = await mediator.Send(new DeleteRoleCommand(roleId)).ConfigureAwait(false);
+            if (deleted)
+            {
+                var role = await db.Set<IdentityRoleReadModel>().FirstOrDefaultAsync(r => r.Id == roleId).ConfigureAwait(false);
+                if (role is not null)
+                {
+                    role.IsDeleted = true;
+                    role.DeletedAtUtc = DateTime.UtcNow;
+                    await db.SaveChangesAsync().ConfigureAwait(false);
+                }
+                return Results.Ok(new { success = true });
+            }
+
+            return Results.Ok(new { success = false, message = "Role not found." });
+        });
+
         return app;
     }
 }
@@ -454,6 +499,8 @@ public sealed record GrantPermissionRequest(string Permission);
 public sealed record AssignUserRoleRequest(Guid RoleId);
 public sealed record RefreshRequest(string RefreshToken);
 public sealed record LogoutRequest(string RefreshToken);
+public sealed record DeleteUserRequest(Guid UserId);
+public sealed record DeleteRoleRequest(Guid RoleId);
 
 
 

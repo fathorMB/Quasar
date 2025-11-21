@@ -1,7 +1,7 @@
+using System.Security.Cryptography;
 using Quasar.Cqrs;
 using Quasar.Domain;
 using Quasar.EventSourcing.Abstractions;
-using System.Security.Cryptography;
 
 namespace Quasar.Identity;
 
@@ -9,11 +9,13 @@ public sealed record UserRegistered(Guid UserId, string Username, string Email) 
 public sealed record UserPasswordSet(Guid UserId, string PasswordHash, string PasswordSalt) : IEvent;
 public sealed record UserRoleAssigned(Guid UserId, Guid RoleId) : IEvent;
 public sealed record UserRoleRevoked(Guid UserId, Guid RoleId) : IEvent;
+public sealed record UserDeleted(Guid UserId, DateTime DeletedAtUtc) : IEvent;
 
 public sealed record RoleCreated(Guid RoleId, string Name) : IEvent;
 public sealed record RoleRenamed(Guid RoleId, string Name) : IEvent;
 public sealed record RolePermissionGranted(Guid RoleId, string Permission) : IEvent;
 public sealed record RolePermissionRevoked(Guid RoleId, string Permission) : IEvent;
+public sealed record RoleDeleted(Guid RoleId, DateTime DeletedAtUtc) : IEvent;
 
 public sealed class UserAggregate : AggregateRoot
 {
@@ -44,6 +46,11 @@ public sealed class UserAggregate : AggregateRoot
             ApplyChange(new UserRoleRevoked(Id, roleId));
     }
 
+    public void Delete(DateTime deletedAtUtc)
+    {
+        ApplyChange(new UserDeleted(Id, deletedAtUtc));
+    }
+
     private void When(UserRegistered e)
     {
         Id = e.UserId;
@@ -62,13 +69,9 @@ public sealed class UserAggregate : AggregateRoot
     {
         _roles.Remove(e.RoleId);
     }
-}
 
-public sealed record RegisterUserCommand(string Username, string Email, string Password) : ICommand<Guid>;
-public sealed record ResetPasswordResult(string Password, string PasswordHash, string PasswordSalt);
-public sealed record ResetUserPasswordCommand(Guid UserId) : ICommand<ResetPasswordResult>;
-public sealed record AssignRoleToUserCommand(Guid UserId, Guid RoleId) : ICommand<bool>;
-public sealed record RevokeRoleFromUserCommand(Guid UserId, Guid RoleId) : ICommand<bool>;
+    private void When(UserDeleted e) { }
+}
 
 public sealed class RoleAggregate : AggregateRoot
 {
@@ -83,7 +86,7 @@ public sealed class RoleAggregate : AggregateRoot
 
     public void Rename(string name)
     {
-        if (Name != name)
+        if (!string.Equals(Name, name, StringComparison.Ordinal))
             ApplyChange(new RoleRenamed(Id, name));
     }
 
@@ -97,6 +100,11 @@ public sealed class RoleAggregate : AggregateRoot
     {
         if (_permissions.Remove(permission))
             ApplyChange(new RolePermissionRevoked(Id, permission));
+    }
+
+    public void Delete(DateTime deletedAtUtc)
+    {
+        ApplyChange(new RoleDeleted(Id, deletedAtUtc));
     }
 
     private void When(RoleCreated e)
@@ -119,12 +127,22 @@ public sealed class RoleAggregate : AggregateRoot
     {
         _permissions.Remove(e.Permission);
     }
+
+    private void When(RoleDeleted e) { }
 }
+
+public sealed record RegisterUserCommand(string Username, string Email, string Password) : ICommand<Guid>;
+public sealed record ResetPasswordResult(string Password, string PasswordHash, string PasswordSalt);
+public sealed record ResetUserPasswordCommand(Guid UserId) : ICommand<ResetPasswordResult>;
+public sealed record AssignRoleToUserCommand(Guid UserId, Guid RoleId) : ICommand<bool>;
+public sealed record RevokeRoleFromUserCommand(Guid UserId, Guid RoleId) : ICommand<bool>;
+public sealed record DeleteUserCommand(Guid UserId) : ICommand<bool>;
 
 public sealed record CreateRoleCommand(string Name) : ICommand<Guid>;
 public sealed record RenameRoleCommand(Guid RoleId, string Name) : ICommand<bool>;
 public sealed record GrantRolePermissionCommand(Guid RoleId, string Permission) : ICommand<bool>;
 public sealed record RevokeRolePermissionCommand(Guid RoleId, string Permission) : ICommand<bool>;
+public sealed record DeleteRoleCommand(Guid RoleId) : ICommand<bool>;
 
 public interface IPasswordHasher
 {
@@ -152,16 +170,22 @@ public sealed class RegisterUserHandler : ICommandHandler<RegisterUserCommand, G
 {
     private readonly IEventSourcedRepository<UserAggregate> _repo;
     private readonly IPasswordHasher _hasher;
+
     public RegisterUserHandler(IEventSourcedRepository<UserAggregate> repo, IPasswordHasher hasher)
-    { _repo = repo; _hasher = hasher; }
+    {
+        _repo = repo;
+        _hasher = hasher;
+    }
 
     public async Task<Guid> Handle(RegisterUserCommand command, CancellationToken cancellationToken = default)
     {
         var user = new UserAggregate();
         var id = Guid.NewGuid();
         user.Register(id, command.Username, command.Email);
+
         var (hash, salt) = _hasher.Hash(command.Password);
         user.SetPassword(hash, salt);
+
         await _repo.SaveAsync(user, cancellationToken);
         return id;
     }
@@ -171,7 +195,7 @@ public sealed class ResetUserPasswordHandler : ICommandHandler<ResetUserPassword
 {
     private readonly IEventSourcedRepository<UserAggregate> _repo;
     private readonly IPasswordHasher _hasher;
-    
+
     public ResetUserPasswordHandler(IEventSourcedRepository<UserAggregate> repo, IPasswordHasher hasher)
     {
         _repo = repo;
@@ -186,16 +210,11 @@ public sealed class ResetUserPasswordHandler : ICommandHandler<ResetUserPassword
             throw new InvalidOperationException($"User {command.UserId} not found");
         }
 
-        // Generate secure password
         var newPassword = Quasar.Security.PasswordGenerator.Generate(16, includeSymbols: true);
-        
-        // Hash and set
         var (hash, salt) = _hasher.Hash(newPassword);
         user.SetPassword(hash, salt);
-        
+
         await _repo.SaveAsync(user, cancellationToken);
-        
-        // Return plaintext password AND hash/salt so endpoint can update read model
         return new ResetPasswordResult(newPassword, hash, salt);
     }
 }
@@ -203,12 +222,17 @@ public sealed class ResetUserPasswordHandler : ICommandHandler<ResetUserPassword
 public sealed class AssignRoleToUserHandler : ICommandHandler<AssignRoleToUserCommand, bool>
 {
     private readonly IEventSourcedRepository<UserAggregate> _users;
-    public AssignRoleToUserHandler(IEventSourcedRepository<UserAggregate> users) => _users = users;
+
+    public AssignRoleToUserHandler(IEventSourcedRepository<UserAggregate> users)
+    {
+        _users = users;
+    }
 
     public async Task<bool> Handle(AssignRoleToUserCommand command, CancellationToken cancellationToken = default)
     {
         var user = await _users.GetAsync(command.UserId, cancellationToken);
         if (user.Id == Guid.Empty) return false;
+
         user.AssignRole(command.RoleId);
         await _users.SaveAsync(user, cancellationToken);
         return true;
@@ -218,13 +242,38 @@ public sealed class AssignRoleToUserHandler : ICommandHandler<AssignRoleToUserCo
 public sealed class RevokeRoleFromUserHandler : ICommandHandler<RevokeRoleFromUserCommand, bool>
 {
     private readonly IEventSourcedRepository<UserAggregate> _users;
-    public RevokeRoleFromUserHandler(IEventSourcedRepository<UserAggregate> users) => _users = users;
+
+    public RevokeRoleFromUserHandler(IEventSourcedRepository<UserAggregate> users)
+    {
+        _users = users;
+    }
 
     public async Task<bool> Handle(RevokeRoleFromUserCommand command, CancellationToken cancellationToken = default)
     {
         var user = await _users.GetAsync(command.UserId, cancellationToken);
         if (user.Id == Guid.Empty) return false;
+
         user.RevokeRole(command.RoleId);
+        await _users.SaveAsync(user, cancellationToken);
+        return true;
+    }
+}
+
+public sealed class DeleteUserHandler : ICommandHandler<DeleteUserCommand, bool>
+{
+    private readonly IEventSourcedRepository<UserAggregate> _users;
+
+    public DeleteUserHandler(IEventSourcedRepository<UserAggregate> users)
+    {
+        _users = users;
+    }
+
+    public async Task<bool> Handle(DeleteUserCommand command, CancellationToken cancellationToken = default)
+    {
+        var user = await _users.GetAsync(command.UserId, cancellationToken);
+        if (user.Id == Guid.Empty) return false;
+
+        user.Delete(DateTime.UtcNow);
         await _users.SaveAsync(user, cancellationToken);
         return true;
     }
@@ -233,13 +282,18 @@ public sealed class RevokeRoleFromUserHandler : ICommandHandler<RevokeRoleFromUs
 public sealed class CreateRoleHandler : ICommandHandler<CreateRoleCommand, Guid>
 {
     private readonly IEventSourcedRepository<RoleAggregate> _repo;
-    public CreateRoleHandler(IEventSourcedRepository<RoleAggregate> repo) => _repo = repo;
+
+    public CreateRoleHandler(IEventSourcedRepository<RoleAggregate> repo)
+    {
+        _repo = repo;
+    }
 
     public async Task<Guid> Handle(CreateRoleCommand command, CancellationToken cancellationToken = default)
     {
         var role = new RoleAggregate();
         var id = Guid.NewGuid();
         role.Create(id, command.Name);
+
         await _repo.SaveAsync(role, cancellationToken);
         return id;
     }
@@ -248,12 +302,17 @@ public sealed class CreateRoleHandler : ICommandHandler<CreateRoleCommand, Guid>
 public sealed class RenameRoleHandler : ICommandHandler<RenameRoleCommand, bool>
 {
     private readonly IEventSourcedRepository<RoleAggregate> _repo;
-    public RenameRoleHandler(IEventSourcedRepository<RoleAggregate> repo) => _repo = repo;
+
+    public RenameRoleHandler(IEventSourcedRepository<RoleAggregate> repo)
+    {
+        _repo = repo;
+    }
 
     public async Task<bool> Handle(RenameRoleCommand command, CancellationToken cancellationToken = default)
     {
         var role = await _repo.GetAsync(command.RoleId, cancellationToken);
         if (role.Id == Guid.Empty) return false;
+
         role.Rename(command.Name);
         await _repo.SaveAsync(role, cancellationToken);
         return true;
@@ -263,12 +322,17 @@ public sealed class RenameRoleHandler : ICommandHandler<RenameRoleCommand, bool>
 public sealed class GrantRolePermissionHandler : ICommandHandler<GrantRolePermissionCommand, bool>
 {
     private readonly IEventSourcedRepository<RoleAggregate> _repo;
-    public GrantRolePermissionHandler(IEventSourcedRepository<RoleAggregate> repo) => _repo = repo;
+
+    public GrantRolePermissionHandler(IEventSourcedRepository<RoleAggregate> repo)
+    {
+        _repo = repo;
+    }
 
     public async Task<bool> Handle(GrantRolePermissionCommand command, CancellationToken cancellationToken = default)
     {
         var role = await _repo.GetAsync(command.RoleId, cancellationToken);
         if (role.Id == Guid.Empty) return false;
+
         role.GrantPermission(command.Permission);
         await _repo.SaveAsync(role, cancellationToken);
         return true;
@@ -278,13 +342,38 @@ public sealed class GrantRolePermissionHandler : ICommandHandler<GrantRolePermis
 public sealed class RevokeRolePermissionHandler : ICommandHandler<RevokeRolePermissionCommand, bool>
 {
     private readonly IEventSourcedRepository<RoleAggregate> _repo;
-    public RevokeRolePermissionHandler(IEventSourcedRepository<RoleAggregate> repo) => _repo = repo;
+
+    public RevokeRolePermissionHandler(IEventSourcedRepository<RoleAggregate> repo)
+    {
+        _repo = repo;
+    }
 
     public async Task<bool> Handle(RevokeRolePermissionCommand command, CancellationToken cancellationToken = default)
     {
         var role = await _repo.GetAsync(command.RoleId, cancellationToken);
         if (role.Id == Guid.Empty) return false;
+
         role.RevokePermission(command.Permission);
+        await _repo.SaveAsync(role, cancellationToken);
+        return true;
+    }
+}
+
+public sealed class DeleteRoleHandler : ICommandHandler<DeleteRoleCommand, bool>
+{
+    private readonly IEventSourcedRepository<RoleAggregate> _repo;
+
+    public DeleteRoleHandler(IEventSourcedRepository<RoleAggregate> repo)
+    {
+        _repo = repo;
+    }
+
+    public async Task<bool> Handle(DeleteRoleCommand command, CancellationToken cancellationToken = default)
+    {
+        var role = await _repo.GetAsync(command.RoleId, cancellationToken);
+        if (role.Id == Guid.Empty) return false;
+
+        role.Delete(DateTime.UtcNow);
         await _repo.SaveAsync(role, cancellationToken);
         return true;
     }

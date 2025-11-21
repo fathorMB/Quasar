@@ -7,6 +7,8 @@ public sealed class IdentityUserReadModel
     public string Email { get; set; } = string.Empty;
     public string PasswordHash { get; set; } = string.Empty;
     public string PasswordSalt { get; set; } = string.Empty;
+    public bool IsDeleted { get; set; }
+    public DateTime? DeletedAtUtc { get; set; }
 }
 
 public sealed class IdentitySessionReadModel
@@ -23,6 +25,8 @@ public sealed class IdentityRoleReadModel
 {
     public Guid Id { get; set; }
     public string Name { get; set; } = string.Empty;
+    public bool IsDeleted { get; set; }
+    public DateTime? DeletedAtUtc { get; set; }
 }
 
 public sealed class IdentityRolePermissionReadModel

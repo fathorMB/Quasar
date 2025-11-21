@@ -57,4 +57,8 @@ export const usersApi = {
         const response = await apiClient.post<{ password: string }>('/users/me/reset-password');
         return response.data.password;
     },
+
+    delete: async (userId: string): Promise<void> => {
+        await apiClient.delete(`/users/${userId}`);
+    },
 };

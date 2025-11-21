@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { usersApi, rolesApi, authApi, type User, type Role } from '../api';
 import './UsersPage.css';
 
@@ -12,6 +12,7 @@ export const UsersPage: React.FC = () => {
     const [userRoles, setUserRoles] = useState<Role[]>([]);
     const [resetPasswordResult, setResetPasswordResult] = useState<{ userId: string, username: string, password: string } | null>(null);
     const [confirmResetUser, setConfirmResetUser] = useState<User | null>(null);
+    const [confirmDeleteUser, setConfirmDeleteUser] = useState<User | null>(null);
     const [copied, setCopied] = useState(false);
     const [createForm, setCreateForm] = useState({ username: '', email: '', password: '', confirmPassword: '' });
     const [isCreating, setIsCreating] = useState(false);
@@ -75,6 +76,30 @@ export const UsersPage: React.FC = () => {
         setConfirmResetUser(user);
     };
 
+    const confirmResetPassword = async () => {
+        if (!confirmResetUser) return;
+
+        try {
+            const newPassword = await usersApi.resetPassword(confirmResetUser.id);
+            setResetPasswordResult({ userId: confirmResetUser.id, username: confirmResetUser.username, password: newPassword });
+            setConfirmResetUser(null);
+        } catch (err: any) {
+            setError(err.message || 'Failed to reset password');
+            setConfirmResetUser(null);
+        }
+    };
+
+    const handleDeleteUser = async () => {
+        if (!confirmDeleteUser) return;
+        try {
+            await usersApi.delete(confirmDeleteUser.id);
+            setConfirmDeleteUser(null);
+            await loadData();
+        } catch (err: any) {
+            setError(err.message || 'Failed to delete user');
+        }
+    };
+
     const handleCreateUser = async () => {
         if (createForm.password !== createForm.confirmPassword) {
             setError('Passwords do not match');
@@ -95,19 +120,6 @@ export const UsersPage: React.FC = () => {
             setError(err.message || 'Failed to create user');
         } finally {
             setIsCreating(false);
-        }
-    };
-
-    const confirmResetPassword = async () => {
-        if (!confirmResetUser) return;
-
-        try {
-            const newPassword = await usersApi.resetPassword(confirmResetUser.id);
-            setResetPasswordResult({ userId: confirmResetUser.id, username: confirmResetUser.username, password: newPassword });
-            setConfirmResetUser(null);
-        } catch (err: any) {
-            setError(err.message || 'Failed to reset password');
-            setConfirmResetUser(null);
         }
     };
 
@@ -152,13 +164,19 @@ export const UsersPage: React.FC = () => {
                     <tbody>
                         {users.map((user) => (
                             <tr key={user.id}>
-                                <td><strong>{user.username}</strong></td>
+                                <td>
+                                    <strong>{user.username}</strong>
+                                    {user.isDeleted && (
+                                        <span className="badge badge-error" style={{ marginLeft: 'var(--spacing-sm)' }}>Deleted</span>
+                                    )}
+                                </td>
                                 <td>{user.email}</td>
                                 <td className="text-muted">{user.id.slice(0, 8)}...</td>
                                 <td>
                                     <button
                                         className="btn btn-sm btn-secondary"
                                         onClick={() => handleViewUser(user)}
+                                        disabled={!!user.isDeleted}
                                     >
                                         Manage Roles
                                     </button>
@@ -167,8 +185,16 @@ export const UsersPage: React.FC = () => {
                                         onClick={() => handleResetPassword(user)}
                                         style={{ marginLeft: 'var(--spacing-sm)' }}
                                         title="Reset Password"
+                                        disabled={!!user.isDeleted}
                                     >
-                                        🔑 Reset
+                                        Reset
+                                    </button>
+                                    <button
+                                        className="btn btn-sm btn-secondary"
+                                        onClick={() => setConfirmDeleteUser(user)}
+                                        style={{ marginLeft: 'var(--spacing-sm)' }}
+                                    >
+                                        Delete
                                     </button>
                                 </td>
                             </tr>
@@ -342,11 +368,11 @@ export const UsersPage: React.FC = () => {
                                     }}
                                     style={{ marginLeft: 'var(--spacing-md)' }}
                                 >
-                                    {copied ? '✓ Copied!' : '📋 Copy'}
+                                    {copied ? 'Copied!' : 'Copy'}
                                 </button>
                             </div>
                             <p className="warning" style={{ marginTop: 'var(--spacing-md)', padding: 'var(--spacing-md)', background: 'var(--color-warning-bg)', border: '1px solid var(--color-warning)', borderRadius: 'var(--radius-md)' }}>
-                                ⚠️ Save this password now. It cannot be retrieved later.
+                                Save this password now. It cannot be retrieved later.
                             </p>
                             <button
                                 className="btn btn-primary"
@@ -389,6 +415,34 @@ export const UsersPage: React.FC = () => {
                                     style={{ flex: 1 }}
                                 >
                                     Reset Password
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Confirm Delete User Modal */}
+            {confirmDeleteUser && (
+                <div className="modal-overlay" onClick={() => setConfirmDeleteUser(null)}>
+                    <div className="modal" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h2 className="modal-title">Delete User</h2>
+                            <button className="modal-close" onClick={() => setConfirmDeleteUser(null)}>
+                                ×
+                            </button>
+                        </div>
+                        <div className="modal-body">
+                            <p>Are you sure you want to delete <strong>{confirmDeleteUser.username}</strong>?</p>
+                            <p className="text-muted" style={{ marginTop: 'var(--spacing-md)' }}>
+                                This is a soft delete. The user will be marked as deleted and disabled.
+                            </p>
+                            <div style={{ display: 'flex', gap: 'var(--spacing-md)', marginTop: 'var(--spacing-lg)' }}>
+                                <button className="btn btn-secondary" onClick={() => setConfirmDeleteUser(null)} style={{ flex: 1 }}>
+                                    Cancel
+                                </button>
+                                <button className="btn btn-primary" onClick={handleDeleteUser} style={{ flex: 1 }}>
+                                    Delete
                                 </button>
                             </div>
                         </div>
