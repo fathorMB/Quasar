@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { rolesApi, type Role } from '../api';
 
 export const RolesPage: React.FC = () => {
@@ -8,6 +8,9 @@ export const RolesPage: React.FC = () => {
     const [selectedRole, setSelectedRole] = useState<Role | null>(null);
     const [rolePermissions, setRolePermissions] = useState<string[]>([]);
     const [newPermission, setNewPermission] = useState('');
+    const [showCreateModal, setShowCreateModal] = useState(false);
+    const [createForm, setCreateForm] = useState({ name: '' });
+    const [isCreating, setIsCreating] = useState(false);
 
     useEffect(() => {
         loadRoles();
@@ -61,6 +64,22 @@ export const RolesPage: React.FC = () => {
         }
     };
 
+    const handleCreateRole = async () => {
+        if (!createForm.name.trim()) return;
+        setIsCreating(true);
+        setError('');
+        try {
+            await rolesApi.create({ name: createForm.name.trim() });
+            setShowCreateModal(false);
+            setCreateForm({ name: '' });
+            await loadRoles();
+        } catch (err: any) {
+            setError(err.message || 'Failed to create role');
+        } finally {
+            setIsCreating(false);
+        }
+    };
+
     if (isLoading) {
         return (
             <div className="page-container">
@@ -78,6 +97,9 @@ export const RolesPage: React.FC = () => {
                     <h1>Roles</h1>
                     <p className="text-muted">Manage roles and permissions</p>
                 </div>
+                <button className="btn btn-primary" onClick={() => setShowCreateModal(true)}>
+                    Create Role
+                </button>
             </div>
 
             {error && (
@@ -179,6 +201,49 @@ export const RolesPage: React.FC = () => {
                                     disabled={!newPermission.trim()}
                                 >
                                     Grant
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Create Role Modal */}
+            {showCreateModal && (
+                <div className="modal-overlay" onClick={() => setShowCreateModal(false)}>
+                    <div className="modal" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h2 className="modal-title">Create Role</h2>
+                            <button className="modal-close" onClick={() => setShowCreateModal(false)}>
+                                ×
+                            </button>
+                        </div>
+                        <div className="modal-body">
+                            <div className="form-group">
+                                <label className="label">Role Name</label>
+                                <input
+                                    className="input"
+                                    value={createForm.name}
+                                    onChange={(e) => setCreateForm({ name: e.target.value })}
+                                    placeholder="Role name"
+                                />
+                            </div>
+                            <div style={{ display: 'flex', gap: 'var(--spacing-md)', marginTop: 'var(--spacing-lg)' }}>
+                                <button
+                                    className="btn btn-secondary"
+                                    onClick={() => setShowCreateModal(false)}
+                                    disabled={isCreating}
+                                    style={{ flex: 1 }}
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    className="btn btn-primary"
+                                    onClick={handleCreateRole}
+                                    disabled={isCreating || !createForm.name.trim()}
+                                    style={{ flex: 1 }}
+                                >
+                                    {isCreating ? 'Creating...' : 'Create'}
                                 </button>
                             </div>
                         </div>
