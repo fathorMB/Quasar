@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Quartz;
 using Quartz.Impl;
+using Quartz.Impl.Matchers;
 
 namespace Quasar.Scheduling.Quartz;
 
@@ -13,18 +14,21 @@ internal sealed class QuartzSchedulerHostedService : IHostedService
     private readonly QuartzSchedulerOptions _options;
     private readonly IQuartzSchedulerAccessor _accessor;
     private readonly ILogger<QuartzSchedulerHostedService> _logger;
+    private readonly JobExecutionHistoryStore _history;
     private IScheduler? _scheduler;
 
     public QuartzSchedulerHostedService(
         IServiceProvider services,
         IOptions<QuartzSchedulerOptions> options,
         IQuartzSchedulerAccessor accessor,
-        ILogger<QuartzSchedulerHostedService> logger)
+        ILogger<QuartzSchedulerHostedService> logger,
+        JobExecutionHistoryStore history)
     {
         _services = services;
         _options = options.Value;
         _accessor = accessor;
         _logger = logger;
+        _history = history;
     }
 
     public async Task StartAsync(CancellationToken cancellationToken)
@@ -40,6 +44,7 @@ internal sealed class QuartzSchedulerHostedService : IHostedService
         _scheduler = await factory.GetScheduler(cancellationToken).ConfigureAwait(false);
         _scheduler.JobFactory = new ServiceProviderJobFactory(_services);
         _accessor.SetScheduler(_scheduler);
+        _scheduler.ListenerManager.AddJobListener(new JobHistoryListener(_history), GroupMatcher<JobKey>.AnyGroup());
 
         var builder = new QuartzSchedulerBuilder();
         _options.Configure?.Invoke(builder);

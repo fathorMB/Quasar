@@ -17,6 +17,7 @@ public static class QuartzServiceCollectionExtensions
     {
         services.AddOptions<QuartzSchedulerOptions>().Configure(configure);
         services.TryAddSingleton<IQuartzSchedulerAccessor, QuartzSchedulerAccessor>();
+        services.TryAddSingleton<JobExecutionHistoryStore>();
         services.TryAddTransient(typeof(QuasarJobAdapter<>));
         services.TryAddEnumerable(ServiceDescriptor.Singleton<IHostedService, QuartzSchedulerHostedService>());
         return services;

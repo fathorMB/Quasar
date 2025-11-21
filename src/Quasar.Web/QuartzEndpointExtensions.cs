@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.AspNetCore.Mvc;
 using Quartz;
 using Quartz.Impl.Matchers;
 using Quasar.Scheduling.Quartz;
@@ -25,6 +26,7 @@ public static class QuartzEndpointExtensions
         endpoints.MapPost(prefix + "/jobs/{group}/{name}/trigger", TriggerQuartzJob).WithName("TriggerQuartzJob").WithTags("Quartz");
         endpoints.MapPost(prefix + "/jobs/{group}/{name}/pause", PauseQuartzJob).WithName("PauseQuartzJob").WithTags("Quartz");
         endpoints.MapPost(prefix + "/jobs/{group}/{name}/resume", ResumeQuartzJob).WithName("ResumeQuartzJob").WithTags("Quartz");
+        endpoints.MapGet(prefix + "/history", ListQuartzHistory).WithName("ListQuartzHistory").WithTags("Quartz");
 
         return endpoints;
     }
@@ -103,5 +105,24 @@ public static class QuartzEndpointExtensions
         await scheduler.ResumeJob(new JobKey(name, group), token).ConfigureAwait(false);
         return Results.Accepted();
     }
-}
 
+    private static IResult ListQuartzHistory(
+        HttpContext httpContext,
+        [FromQuery] int take = 50)
+    {
+        var store = httpContext.RequestServices.GetRequiredService<JobExecutionHistoryStore>();
+        take = Math.Clamp(take, 1, 200);
+        var records = store.GetRecent(take).Select(r => new
+        {
+            job = new { name = r.JobName, group = r.JobGroup },
+            trigger = new { name = r.TriggerName, group = r.TriggerGroup },
+            scheduledFireTimeUtc = r.ScheduledFireTimeUtc,
+            fireTimeUtc = r.FireTimeUtc,
+            endTimeUtc = r.EndTimeUtc,
+            nextFireTimeUtc = r.NextFireTimeUtc,
+            success = r.Success,
+            error = r.Error
+        });
+        return Results.Ok(records);
+    }
+}

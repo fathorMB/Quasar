@@ -30,6 +30,11 @@
     gap: var(--spacing-sm);
 }
 
+.badge-error {
+    background: var(--color-error);
+    color: white;
+}
+
 .floating-alert-wrapper {
     position: fixed;
     bottom: var(--spacing-lg);

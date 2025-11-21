@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { quartzApi, type QuartzJob } from '../api/quartz';
+import { quartzApi, type QuartzJob, type QuartzHistoryRecord } from '../api/quartz';
 import { useFeatures } from '../context/FeatureContext';
 import './JobsPage.css';
 
@@ -10,6 +10,7 @@ export const JobsPage: React.FC = () => {
     const [error, setError] = useState('');
     const [message, setMessage] = useState('');
     const [notificationVisible, setNotificationVisible] = useState(false);
+    const [history, setHistory] = useState<QuartzHistoryRecord[]>([]);
     const { hasFeature } = useFeatures();
 
     const fetchJobs = async () => {
@@ -26,9 +27,19 @@ export const JobsPage: React.FC = () => {
         }
     };
 
+    const fetchHistory = async () => {
+        try {
+            const data = await quartzApi.listHistory(50);
+            setHistory(data);
+        } catch (err) {
+            console.error('Failed to load history', err);
+        }
+    };
+
     useEffect(() => {
         if (hasFeature('scheduler')) {
             fetchJobs();
+            fetchHistory();
         } else {
             setIsLoading(false);
         }
@@ -41,6 +52,7 @@ export const JobsPage: React.FC = () => {
             setActioning(`${group}:${name}:trigger`);
             await quartzApi.triggerJob(group, name);
             await fetchJobs();
+            await fetchHistory();
             setMessage('Job triggered successfully');
             setNotificationVisible(true);
         } catch (error) {
@@ -58,6 +70,7 @@ export const JobsPage: React.FC = () => {
             setActioning(`${group}:${name}:pause`);
             await quartzApi.pauseJob(group, name);
             await fetchJobs(); // Refresh state
+            await fetchHistory();
             setMessage('Job paused successfully');
             setNotificationVisible(true);
         } catch (error) {
@@ -75,6 +88,7 @@ export const JobsPage: React.FC = () => {
             setActioning(`${group}:${name}:resume`);
             await quartzApi.resumeJob(group, name);
             await fetchJobs(); // Refresh state
+            await fetchHistory();
             setMessage('Job resumed successfully');
             setNotificationVisible(true);
         } catch (error) {
@@ -180,6 +194,44 @@ export const JobsPage: React.FC = () => {
                         {jobs.length === 0 && (
                             <tr>
                                 <td colSpan={5} className="text-center">No jobs found.</td>
+                            </tr>
+                        )}
+                    </tbody>
+                </table>
+            </div>
+
+            <div className="card jobs-card">
+                <h2 style={{ marginBottom: 'var(--spacing-sm)' }}>Execution History</h2>
+                <p className="text-muted" style={{ marginBottom: 'var(--spacing-md)' }}>Recent job runs</p>
+                <table className="table">
+                    <thead>
+                        <tr>
+                            <th>Job</th>
+                            <th>Trigger</th>
+                            <th>Fired At</th>
+                            <th>Completed</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {history.map((h, idx) => (
+                            <tr key={`${h.job.group}-${h.job.name}-${h.fireTimeUtc}-${idx}`}>
+                                <td>{h.job.group} / {h.job.name}</td>
+                                <td>{h.trigger.group} / {h.trigger.name}</td>
+                                <td>{new Date(h.fireTimeUtc).toLocaleString()}</td>
+                                <td>{h.endTimeUtc ? new Date(h.endTimeUtc).toLocaleString() : '-'}</td>
+                                <td>
+                                    {h.success ? (
+                                        <span className="badge badge-success">Success</span>
+                                    ) : (
+                                        <span className="badge badge-error">{h.error || 'Failed'}</span>
+                                    )}
+                                </td>
+                            </tr>
+                        ))}
+                        {history.length === 0 && (
+                            <tr>
+                                <td colSpan={5} className="text-center text-muted">No executions yet.</td>
                             </tr>
                         )}
                     </tbody>
