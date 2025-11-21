@@ -21,6 +21,7 @@
     <ProjectReference Include="..\Quasar.Identity.Persistence.Relational.EfCore\Quasar.Identity.Persistence.Relational.EfCore.csproj" />
     <ProjectReference Include="..\Quasar.Persistence.Relational.EfCore\Quasar.Persistence.Relational.EfCore.csproj" />
     <ProjectReference Include="..\Quasar.Seeding\Quasar.Seeding.csproj" />
+    <ProjectReference Include="..\Quasar.Scheduling.Quartz\Quasar.Scheduling.Quartz.csproj" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.0" />
   </ItemGroup>
 

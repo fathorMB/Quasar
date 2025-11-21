@@ -9,6 +9,9 @@ using Quasar.Persistence.Relational.EfCore;
 using Quasar.Seeding;
 using Quasar.Web;
 using Quasar.Discovery;
+using Quasar.Scheduling.Quartz;
+using Quartz;
+using BEAM.App.Jobs;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -81,6 +84,20 @@ services.AddQuasarUi(ui =>
     ui.ApplicationName = "BEAM";
     ui.Theme = "orange";
 });
+services.AddTransient<HeartbeatJob>();
+services.AddQuartzScheduler(options =>
+{
+    options.SchedulerName = "beam-scheduler";
+    options.Configure = builder =>
+    {
+        builder.ScheduleQuasarJob<HeartbeatJob>(
+            job => job.WithIdentity("heartbeat", "beam"),
+            trigger => trigger
+                .WithIdentity("heartbeat-trigger", "beam")
+                .WithSimpleSchedule(s => s.WithInterval(TimeSpan.FromMinutes(1)).RepeatForever())
+                .StartNow());
+    };
+});
 
 // UDP Network Discovery Service
 services.AddQuasarDiscovery(options =>
@@ -113,6 +130,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapQuasarIdentityEndpoints();
 app.MapQuasarUiEndpoints();
+app.MapQuartzEndpoints();
 
 app.UseQuasarReactUi();
 

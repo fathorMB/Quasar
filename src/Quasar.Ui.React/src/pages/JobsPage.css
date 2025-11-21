@@ -1,0 +1,59 @@
+.jobs-layout {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+}
+
+.page-container {
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
+}
+
+.page-header h1 {
+    margin-bottom: var(--spacing-xs);
+}
+
+.card.jobs-card {
+    width: 100%;
+}
+
+.jobs-actions {
+    display: inline-flex;
+    gap: var(--spacing-sm);
+}
+
+.floating-alert-wrapper {
+    position: fixed;
+    bottom: var(--spacing-lg);
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    z-index: 1000;
+}
+
+.floating-alert {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    min-width: 280px;
+}
+
+.alert-close {
+    background: none;
+    border: none;
+    color: inherit;
+    cursor: pointer;
+    font-size: var(--font-size-lg);
+    line-height: 1;
+    padding: var(--spacing-xs);
+}

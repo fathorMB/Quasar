@@ -2,12 +2,14 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { UiProvider } from './context/UiContext';
+import { FeatureProvider } from './context/FeatureContext';
 import { MainLayout } from './layouts/MainLayout';
 import { LoginPage } from './pages/LoginPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { UsersPage } from './pages/UsersPage';
 import { RolesPage } from './pages/RolesPage';
 import { FeaturesPage } from './pages/FeaturesPage';
+import { JobsPage } from './pages/JobsPage';
 import './styles/globals.css';
 import './styles/components.css';
 
@@ -42,6 +44,7 @@ function AppRoutes() {
         <Route path="users" element={<UsersPage />} />
         <Route path="roles" element={<RolesPage />} />
         <Route path="features" element={<FeaturesPage />} />
+        <Route path="jobs" element={<JobsPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
@@ -53,7 +56,9 @@ function App() {
     <BrowserRouter>
       <UiProvider>
         <AuthProvider>
-          <AppRoutes />
+          <FeatureProvider>
+            <AppRoutes />
+          </FeatureProvider>
         </AuthProvider>
       </UiProvider>
     </BrowserRouter>
