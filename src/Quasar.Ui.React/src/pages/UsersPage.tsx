@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { usersApi, rolesApi, type User, type Role } from '../api';
+import { usersApi, rolesApi, authApi, type User, type Role } from '../api';
 import './UsersPage.css';
 
 export const UsersPage: React.FC = () => {
@@ -13,6 +13,8 @@ export const UsersPage: React.FC = () => {
     const [resetPasswordResult, setResetPasswordResult] = useState<{ userId: string, username: string, password: string } | null>(null);
     const [confirmResetUser, setConfirmResetUser] = useState<User | null>(null);
     const [copied, setCopied] = useState(false);
+    const [createForm, setCreateForm] = useState({ username: '', email: '', password: '', confirmPassword: '' });
+    const [isCreating, setIsCreating] = useState(false);
 
     useEffect(() => {
         loadData();
@@ -71,6 +73,29 @@ export const UsersPage: React.FC = () => {
 
     const handleResetPassword = async (user: User) => {
         setConfirmResetUser(user);
+    };
+
+    const handleCreateUser = async () => {
+        if (createForm.password !== createForm.confirmPassword) {
+            setError('Passwords do not match');
+            return;
+        }
+        setIsCreating(true);
+        setError('');
+        try {
+            await authApi.register({
+                username: createForm.username.trim(),
+                email: createForm.email.trim(),
+                password: createForm.password,
+            });
+            setShowCreateModal(false);
+            setCreateForm({ username: '', email: '', password: '', confirmPassword: '' });
+            await loadData();
+        } catch (err: any) {
+            setError(err.message || 'Failed to create user');
+        } finally {
+            setIsCreating(false);
+        }
     };
 
     const confirmResetPassword = async () => {
@@ -221,7 +246,7 @@ export const UsersPage: React.FC = () => {
                 </div>
             )}
 
-            {/* Create User Modal - Placeholder */}
+            {/* Create User Modal */}
             {showCreateModal && (
                 <div className="modal-overlay" onClick={() => setShowCreateModal(false)}>
                     <div className="modal" onClick={(e) => e.stopPropagation()}>
@@ -232,9 +257,63 @@ export const UsersPage: React.FC = () => {
                             </button>
                         </div>
                         <div className="modal-body">
-                            <p className="text-muted">
-                                User creation coming soon! Currently, users can only register through the /auth/register endpoint.
-                            </p>
+                            <div className="form-group">
+                                <label className="label">Username</label>
+                                <input
+                                    className="input"
+                                    value={createForm.username}
+                                    onChange={(e) => setCreateForm({ ...createForm, username: e.target.value })}
+                                    placeholder="Username"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label className="label">Email</label>
+                                <input
+                                    className="input"
+                                    type="email"
+                                    value={createForm.email}
+                                    onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })}
+                                    placeholder="user@example.com"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label className="label">Password</label>
+                                <input
+                                    className="input"
+                                    type="password"
+                                    value={createForm.password}
+                                    onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
+                                    placeholder="Password"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label className="label">Confirm Password</label>
+                                <input
+                                    className="input"
+                                    type="password"
+                                    value={createForm.confirmPassword}
+                                    onChange={(e) => setCreateForm({ ...createForm, confirmPassword: e.target.value })}
+                                    placeholder="Confirm Password"
+                                />
+                            </div>
+                            <div style={{ display: 'flex', gap: 'var(--spacing-md)', marginTop: 'var(--spacing-lg)' }}>
+                                <button
+                                    className="btn btn-secondary"
+                                    onClick={() => setShowCreateModal(false)}
+                                    disabled={isCreating}
+                                    style={{ flex: 1 }}
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    className="btn btn-primary"
+                                    onClick={handleCreateUser}
+                                    disabled={isCreating || !createForm.username || !createForm.email || !createForm.password || !createForm.confirmPassword}
+                                    style={{ flex: 1 }}
+                                >
+                                    {isCreating ? 'Creating...' : 'Create'}
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
