@@ -12,6 +12,7 @@ export const UsersPage: React.FC = () => {
     const [userRoles, setUserRoles] = useState<Role[]>([]);
     const [resetPasswordResult, setResetPasswordResult] = useState<{ userId: string, username: string, password: string } | null>(null);
     const [confirmResetUser, setConfirmResetUser] = useState<User | null>(null);
+    const [copied, setCopied] = useState(false);
 
     useEffect(() => {
         loadData();
@@ -257,11 +258,12 @@ export const UsersPage: React.FC = () => {
                                     className="btn btn-sm btn-secondary"
                                     onClick={() => {
                                         navigator.clipboard.writeText(resetPasswordResult.password);
-                                        alert('Password copied to clipboard!');
+                                        setCopied(true);
+                                        setTimeout(() => setCopied(false), 2000);
                                     }}
                                     style={{ marginLeft: 'var(--spacing-md)' }}
                                 >
-                                    📋 Copy
+                                    {copied ? '✓ Copied!' : '📋 Copy'}
                                 </button>
                             </div>
                             <p className="warning" style={{ marginTop: 'var(--spacing-md)', padding: 'var(--spacing-md)', background: 'var(--color-warning-bg)', border: '1px solid var(--color-warning)', borderRadius: 'var(--radius-md)' }}>

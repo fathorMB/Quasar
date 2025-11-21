@@ -9,6 +9,7 @@ export const Header: React.FC = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [newPassword, setNewPassword] = useState<string | null>(null);
     const [showConfirmChange, setShowConfirmChange] = useState(false);
+    const [copied, setCopied] = useState(false);
     const navigate = useNavigate();
     const menuRef = useRef<HTMLDivElement>(null);
 
@@ -78,7 +79,7 @@ export const Header: React.FC = () => {
                         {isMenuOpen && (
                             <div className="dropdown-menu">
                                 <button onClick={handleChangePassword} className="dropdown-item">
-                                    🔑 Change Password
+                                    Change Password
                                 </button>
                                 <button onClick={handleLogout} className="dropdown-item danger">
                                     Sign Out
@@ -143,10 +144,11 @@ export const Header: React.FC = () => {
                                     className="btn btn-sm btn-secondary"
                                     onClick={() => {
                                         navigator.clipboard.writeText(newPassword);
-                                        alert('Password copied to clipboard!');
+                                        setCopied(true);
+                                        setTimeout(() => setCopied(false), 2000);
                                     }}
                                 >
-                                    📋 Copy
+                                    {copied ? '✓ Copied!' : '📋 Copy'}
                                 </button>
                             </div>
                             <p className="warning" style={{ marginTop: 'var(--spacing-md)', padding: 'var(--spacing-md)', background: 'var(--color-warning-bg)', border: '1px solid var(--color-warning)', borderRadius: 'var(--radius-md)' }}>
