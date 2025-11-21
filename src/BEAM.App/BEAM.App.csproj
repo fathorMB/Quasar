@@ -23,6 +23,7 @@
     <ProjectReference Include="..\Quasar.Seeding\Quasar.Seeding.csproj" />
     <ProjectReference Include="..\Quasar.Scheduling.Quartz\Quasar.Scheduling.Quartz.csproj" />
     <ProjectReference Include="..\Quasar.Logging\Quasar.Logging.csproj" />
+    <ProjectReference Include="..\Quasar.Telemetry\Quasar.Telemetry.csproj" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.0" />
   </ItemGroup>
 

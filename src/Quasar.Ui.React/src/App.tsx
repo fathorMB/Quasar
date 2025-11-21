@@ -11,6 +11,7 @@ import { RolesPage } from './pages/RolesPage';
 import { FeaturesPage } from './pages/FeaturesPage';
 import { JobsPage } from './pages/JobsPage';
 import { LogsPage } from './pages/LogsPage';
+import { MetricsPage } from './pages/MetricsPage';
 import './styles/globals.css';
 import './styles/components.css';
 
@@ -47,6 +48,7 @@ function AppRoutes() {
         <Route path="features" element={<FeaturesPage />} />
         <Route path="jobs" element={<JobsPage />} />
         <Route path="logs" element={<LogsPage />} />
+        <Route path="metrics" element={<MetricsPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

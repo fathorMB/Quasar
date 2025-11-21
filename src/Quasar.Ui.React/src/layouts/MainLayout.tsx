@@ -56,6 +56,11 @@ export const MainLayout: React.FC = () => {
                                     <span>Jobs</span>
                                 </Link>
                             )}
+                            {hasFeature('telemetry') && (
+                                <Link to="/metrics" className="nav-link">
+                                    <span>Metrics</span>
+                                </Link>
+                            )}
                         </div>
                     )}
                 </nav>

@@ -11,6 +11,7 @@ using Quasar.Seeding;
 using Quasar.Web;
 using Quasar.Discovery;
 using Quasar.Scheduling.Quartz;
+using Quasar.Telemetry;
 using Quartz;
 using BEAM.App.Jobs;
 
@@ -41,6 +42,7 @@ services.AddCors(options =>
 
 services.AddAuthorization();
 services.AddQuasarMediator();
+services.AddQuasarTelemetry();
 services.AddQuasarEventSourcingCore();
 
 // Identity infrastructure - event store, read models, projections
@@ -135,11 +137,13 @@ if (!app.Environment.IsDevelopment())
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 app.UseHttpsRedirection();
 app.UseCors();
+app.UseQuasarTelemetry();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapQuasarIdentityEndpoints();
 app.MapQuasarUiEndpoints();
 app.MapQuartzEndpoints();
+app.MapQuasarMetricsEndpoints();
 app.MapLoggingEndpoints();
 
 app.UseQuasarReactUi();

@@ -18,14 +18,21 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddQuasarTelemetry(this IServiceCollection services, Action<TracerProviderBuilder>? configure = null)
     {
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(TelemetryBehavior<,>));
+        
+        // Register metrics aggregator
+        services.AddSingleton<IMetricsAggregator, InMemoryMetricsAggregator>();
 
-        var tracerBuilder = services.AddOpenTelemetry().WithTracing(builder =>
-        {
-            builder.AddSource(QuasarActivitySource.Name);
+        services.AddOpenTelemetry()
+            .WithTracing(builder =>
+            {
+                builder
+                    .AddSource(QuasarActivitySource.Name)
+                    .AddAspNetCoreInstrumentation()
+                    .AddHttpClientInstrumentation();
 
-            // Allow the consumer to add their own configuration
-            configure?.Invoke(builder);
-        });
+                // Allow the consumer to add their own configuration
+                configure?.Invoke(builder);
+            });
 
         return services;
     }
