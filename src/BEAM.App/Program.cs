@@ -83,6 +83,7 @@ services.AddQuasarUi(ui =>
 {
     ui.ApplicationName = "BEAM";
     ui.Theme = "orange";
+    ui.LogoSymbol = "B";
 });
 services.AddTransient<HeartbeatJob>();
 services.AddQuartzScheduler(options =>

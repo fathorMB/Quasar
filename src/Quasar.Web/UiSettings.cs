@@ -14,4 +14,9 @@ public sealed class UiSettings
     /// The theme to apply. Valid values: "dark", "orange", "green".
     /// </summary>
     public string Theme { get; set; } = "dark";
+
+    /// <summary>
+    /// The symbol/letter used in the sidebar logo badge.
+    /// </summary>
+    public string LogoSymbol { get; set; } = "Q";
 }

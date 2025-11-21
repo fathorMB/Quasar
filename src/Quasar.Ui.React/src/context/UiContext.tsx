@@ -3,6 +3,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 interface UiSettings {
     applicationName: string;
     theme: string;
+    logoSymbol?: string;
 }
 
 interface UiContextValue {

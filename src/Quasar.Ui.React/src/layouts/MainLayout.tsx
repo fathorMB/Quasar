@@ -23,7 +23,7 @@ export const MainLayout: React.FC = () => {
             <aside className="sidebar">
                 <div className="sidebar-header">
                     <div className="logo">
-                        <div className="logo-icon">Q</div>
+                        <div className="logo-icon">{settings?.logoSymbol || 'Q'}</div>
                         <span className="logo-text">{settings?.applicationName || 'BEAM'}</span>
                     </div>
                 </div>
