@@ -65,6 +65,8 @@ public sealed class UserAggregate : AggregateRoot
 }
 
 public sealed record RegisterUserCommand(string Username, string Email, string Password) : ICommand<Guid>;
+public sealed record ResetPasswordResult(string Password, string PasswordHash, string PasswordSalt);
+public sealed record ResetUserPasswordCommand(Guid UserId) : ICommand<ResetPasswordResult>;
 public sealed record AssignRoleToUserCommand(Guid UserId, Guid RoleId) : ICommand<bool>;
 public sealed record RevokeRoleFromUserCommand(Guid UserId, Guid RoleId) : ICommand<bool>;
 
@@ -162,6 +164,39 @@ public sealed class RegisterUserHandler : ICommandHandler<RegisterUserCommand, G
         user.SetPassword(hash, salt);
         await _repo.SaveAsync(user, cancellationToken);
         return id;
+    }
+}
+
+public sealed class ResetUserPasswordHandler : ICommandHandler<ResetUserPasswordCommand, ResetPasswordResult>
+{
+    private readonly IEventSourcedRepository<UserAggregate> _repo;
+    private readonly IPasswordHasher _hasher;
+    
+    public ResetUserPasswordHandler(IEventSourcedRepository<UserAggregate> repo, IPasswordHasher hasher)
+    {
+        _repo = repo;
+        _hasher = hasher;
+    }
+
+    public async Task<ResetPasswordResult> Handle(ResetUserPasswordCommand command, CancellationToken cancellationToken = default)
+    {
+        var user = await _repo.GetAsync(command.UserId, cancellationToken);
+        if (user.Id == Guid.Empty)
+        {
+            throw new InvalidOperationException($"User {command.UserId} not found");
+        }
+
+        // Generate secure password
+        var newPassword = Quasar.Security.PasswordGenerator.Generate(16, includeSymbols: true);
+        
+        // Hash and set
+        var (hash, salt) = _hasher.Hash(newPassword);
+        user.SetPassword(hash, salt);
+        
+        await _repo.SaveAsync(user, cancellationToken);
+        
+        // Return plaintext password AND hash/salt so endpoint can update read model
+        return new ResetPasswordResult(newPassword, hash, salt);
     }
 }
 

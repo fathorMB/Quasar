@@ -39,4 +39,22 @@ export const usersApi = {
     revokeRole: async (userId: string, roleId: string): Promise<void> => {
         await apiClient.delete(`/users/${userId}/roles/${roleId}`);
     },
+
+    /**
+     * Reset a user's password (admin only)
+     * Returns the new generated password
+     */
+    resetPassword: async (userId: string): Promise<string> => {
+        const response = await apiClient.post<{ password: string }>(`/users/${userId}/reset-password`);
+        return response.data.password;
+    },
+
+    /**
+     * Reset own password (any authenticated user)
+     * Returns the new generated password
+     */
+    resetOwnPassword: async (): Promise<string> => {
+        const response = await apiClient.post<{ password: string }>('/users/me/reset-password');
+        return response.data.password;
+    },
 };

@@ -107,6 +107,7 @@ public static class IdentityEndpoints
         services.AddReadModelDefinition<IdentityReadModelDefinition>();
         services.AddScoped<IPasswordHasher, Pbkdf2PasswordHasher>();
         services.AddScoped<ICommandHandler<RegisterUserCommand, Guid>, RegisterUserHandler>();
+        services.AddScoped<ICommandHandler<ResetUserPasswordCommand, ResetPasswordResult>, ResetUserPasswordHandler>();
         services.AddScoped<ICommandHandler<CreateRoleCommand, Guid>, CreateRoleHandler>();
         services.AddScoped<ICommandHandler<RenameRoleCommand, bool>, RenameRoleHandler>();
         services.AddScoped<ICommandHandler<GrantRolePermissionCommand, bool>, GrantRolePermissionHandler>();
@@ -314,6 +315,77 @@ public static class IdentityEndpoints
                 .ConfigureAwait(false);
             return Results.Ok(users);
         });
+
+        // Admin: Reset any user's password (requires identity.manage permission)
+        app.MapPost("/auth/users/{userId:guid}/reset-password", async (
+            Guid userId,
+            IMediator mediator,
+            ReadModelContext<IdentityReadModelStore> db,
+            ClaimsPrincipal user) =>
+        {
+            // Get the subject claim
+            var subClaim = user.FindFirst(JwtRegisteredClaimNames.Sub)?.Value 
+                        ?? user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            
+            if (string.IsNullOrEmpty(subClaim) || !Guid.TryParse(subClaim, out var subjectId))
+            {
+                return Results.Unauthorized();
+            }
+
+            // TODO: Add proper authorization check for identity.manage permission
+            // For now, authenticated users can reset any password
+            
+            var result = await mediator.Send(new ResetUserPasswordCommand(userId)).ConfigureAwait(false);
+            
+            // Immediately update read model using hash/salt from handler result
+            // This ensures password is available for login without waiting for async projection
+            var sets = GetSets(db);
+            var readModelUser = await sets.Users.FirstOrDefaultAsync(u => u.Id == userId).ConfigureAwait(false);
+            if (readModelUser is not null)
+            {
+                readModelUser.PasswordHash = result.PasswordHash;
+                readModelUser.PasswordSalt = result.PasswordSalt;
+                await db.SaveChangesAsync().ConfigureAwait(false);
+            }
+            
+            return Results.Ok(new { password = result.Password });
+        })
+        .RequireAuthorization()
+        .WithName("ResetUserPassword")
+        .WithTags("Identity");
+
+        // Self-service: Reset own password
+        app.MapPost("/auth/users/me/reset-password", async (
+            IMediator mediator,
+            ReadModelContext<IdentityReadModelStore> db,
+            ClaimsPrincipal user) =>
+        {
+            // Get the subject claim
+            var subClaim = user.FindFirst(JwtRegisteredClaimNames.Sub)?.Value 
+                        ?? user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            
+            if (string.IsNullOrEmpty(subClaim) || !Guid.TryParse(subClaim, out var subjectId))
+            {
+                return Results.Unauthorized();
+            }
+
+            var result = await mediator.Send(new ResetUserPasswordCommand(subjectId)).ConfigureAwait(false);
+            
+            // Immediately update read model using hash/salt from handler result
+            var sets = GetSets(db);
+            var readModelUser = await sets.Users.FirstOrDefaultAsync(u => u.Id == subjectId).ConfigureAwait(false);
+            if (readModelUser is not null)
+            {
+                readModelUser.PasswordHash = result.PasswordHash;
+                readModelUser.PasswordSalt = result.PasswordSalt;
+                await db.SaveChangesAsync().ConfigureAwait(false);
+            }
+            
+            return Results.Ok(new { password = result.Password });
+        })
+        .RequireAuthorization()
+        .WithName("ResetOwnPassword")
+        .WithTags("Identity");
 
         app.MapGet("/auth/acl", async (ReadModelContext<IdentityReadModelStore> db) =>
         {

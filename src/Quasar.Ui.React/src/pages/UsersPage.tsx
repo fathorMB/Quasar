@@ -10,6 +10,8 @@ export const UsersPage: React.FC = () => {
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
     const [userRoles, setUserRoles] = useState<Role[]>([]);
+    const [resetPasswordResult, setResetPasswordResult] = useState<{ userId: string, username: string, password: string } | null>(null);
+    const [confirmResetUser, setConfirmResetUser] = useState<User | null>(null);
 
     useEffect(() => {
         loadData();
@@ -66,6 +68,23 @@ export const UsersPage: React.FC = () => {
         }
     };
 
+    const handleResetPassword = async (user: User) => {
+        setConfirmResetUser(user);
+    };
+
+    const confirmResetPassword = async () => {
+        if (!confirmResetUser) return;
+
+        try {
+            const newPassword = await usersApi.resetPassword(confirmResetUser.id);
+            setResetPasswordResult({ userId: confirmResetUser.id, username: confirmResetUser.username, password: newPassword });
+            setConfirmResetUser(null);
+        } catch (err: any) {
+            setError(err.message || 'Failed to reset password');
+            setConfirmResetUser(null);
+        }
+    };
+
     if (isLoading) {
         return (
             <div className="page-container">
@@ -116,6 +135,14 @@ export const UsersPage: React.FC = () => {
                                         onClick={() => handleViewUser(user)}
                                     >
                                         Manage Roles
+                                    </button>
+                                    <button
+                                        className="btn btn-sm btn-secondary"
+                                        onClick={() => handleResetPassword(user)}
+                                        style={{ marginLeft: 'var(--spacing-sm)' }}
+                                        title="Reset Password"
+                                    >
+                                        🔑 Reset
                                     </button>
                                 </td>
                             </tr>
@@ -207,6 +234,82 @@ export const UsersPage: React.FC = () => {
                             <p className="text-muted">
                                 User creation coming soon! Currently, users can only register through the /auth/register endpoint.
                             </p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Password Reset Result Modal */}
+            {resetPasswordResult && (
+                <div className="modal-overlay" onClick={() => setResetPasswordResult(null)}>
+                    <div className="modal" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h2 className="modal-title">Password Reset Successfully</h2>
+                            <button className="modal-close" onClick={() => setResetPasswordResult(null)}>
+                                ×
+                            </button>
+                        </div>
+                        <div className="modal-body">
+                            <p>New password for <strong>{resetPasswordResult.username}</strong>:</p>
+                            <div className="password-display">
+                                <code>{resetPasswordResult.password}</code>
+                                <button
+                                    className="btn btn-sm btn-secondary"
+                                    onClick={() => {
+                                        navigator.clipboard.writeText(resetPasswordResult.password);
+                                        alert('Password copied to clipboard!');
+                                    }}
+                                    style={{ marginLeft: 'var(--spacing-md)' }}
+                                >
+                                    📋 Copy
+                                </button>
+                            </div>
+                            <p className="warning" style={{ marginTop: 'var(--spacing-md)', padding: 'var(--spacing-md)', background: 'var(--color-warning-bg)', border: '1px solid var(--color-warning)', borderRadius: 'var(--radius-md)' }}>
+                                ⚠️ Save this password now. It cannot be retrieved later.
+                            </p>
+                            <button
+                                className="btn btn-primary"
+                                onClick={() => setResetPasswordResult(null)}
+                                style={{ marginTop: 'var(--spacing-lg)', width: '100%' }}
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Confirm Reset Password Modal */}
+            {confirmResetUser && (
+                <div className="modal-overlay" onClick={() => setConfirmResetUser(null)}>
+                    <div className="modal" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h2 className="modal-title">Confirm Password Reset</h2>
+                            <button className="modal-close" onClick={() => setConfirmResetUser(null)}>
+                                ×
+                            </button>
+                        </div>
+                        <div className="modal-body">
+                            <p>Generate a new password for <strong>{confirmResetUser.username}</strong>?</p>
+                            <p className="text-muted" style={{ marginTop: 'var(--spacing-md)' }}>
+                                They will need the new password to login.
+                            </p>
+                            <div style={{ display: 'flex', gap: 'var(--spacing-md)', marginTop: 'var(--spacing-lg)' }}>
+                                <button
+                                    className="btn btn-secondary"
+                                    onClick={() => setConfirmResetUser(null)}
+                                    style={{ flex: 1 }}
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    className="btn btn-primary"
+                                    onClick={confirmResetPassword}
+                                    style={{ flex: 1 }}
+                                >
+                                    Reset Password
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

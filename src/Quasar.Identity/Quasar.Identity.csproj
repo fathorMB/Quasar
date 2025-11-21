@@ -9,6 +9,7 @@
     <ProjectReference Include="..\Quasar.Domain\Quasar.Domain.csproj" />
     <ProjectReference Include="..\Quasar.Cqrs\Quasar.Cqrs.csproj" />
     <ProjectReference Include="..\Quasar.EventSourcing.Abstractions\Quasar.EventSourcing.Abstractions.csproj" />
+    <ProjectReference Include="..\Quasar.Security\Quasar.Security.csproj" />
   </ItemGroup>
 </Project>
 
