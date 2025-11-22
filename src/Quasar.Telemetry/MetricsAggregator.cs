@@ -18,7 +18,8 @@ public sealed record MetricsSnapshot(
     List<ExceptionEntry> RecentExceptions,
     TimeSpan Uptime,
     double CpuUsagePercent,
-    long MemoryUsageBytes);
+    long MemoryUsageBytes,
+    long ManagedMemoryBytes);
 
 public sealed record EndpointMetric(string Path, long Count, double AvgLatencyMs);
 
@@ -165,7 +166,8 @@ public sealed class InMemoryMetricsAggregator : IMetricsAggregator
             exceptions,
             uptime,
             _lastCpuUsagePercent,
-            GetMemoryUsage());
+            GetMemoryUsage(),
+            GC.GetTotalMemory(false));
     }
 
     private void UpdateSystemMetrics(DateTimeOffset now)

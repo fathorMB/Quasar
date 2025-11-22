@@ -13,6 +13,7 @@ export interface MetricsSnapshot {
     uptime: string;
     cpuUsagePercent: number;
     memoryUsageBytes: number;
+    managedMemoryBytes: number;
 }
 
 export interface EndpointMetric {

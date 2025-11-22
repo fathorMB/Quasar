@@ -79,6 +79,7 @@ export const MetricsPage: React.FC = () => {
     const recentExceptions = metrics.recentExceptions ?? [];
     const cpuUsage = metrics.cpuUsagePercent ?? 0;
     const memoryUsage = metrics.memoryUsageBytes ?? 0;
+    const managedMemory = metrics.managedMemoryBytes ?? 0;
 
     const errorRate = totalRequests > 0
         ? ((statusCodeCounts[500] || 0) / totalRequests * 100).toFixed(2)
@@ -115,8 +116,12 @@ export const MetricsPage: React.FC = () => {
                         <span className="metric-value-small">{cpuUsage.toFixed(1)}%</span>
                     </div>
                     <div className="metric-row">
-                        <span className="metric-label">RAM</span>
+                        <span className="metric-label">RSS</span>
                         <span className="metric-value-small">{(memoryUsage / 1024 / 1024).toFixed(0)} MB</span>
+                    </div>
+                    <div className="metric-row">
+                        <span className="metric-label">Heap</span>
+                        <span className="metric-value-small">{(managedMemory / 1024 / 1024).toFixed(0)} MB</span>
                     </div>
                 </div>
 
