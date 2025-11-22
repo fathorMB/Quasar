@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { metricsApi, type MetricsSnapshot } from '../api/metrics';
+import { metricsSignalR } from '../api/signalr';
 import { useFeatures } from '../context/FeatureContext';
 import './MetricsPage.css';
 
@@ -9,29 +10,51 @@ export const MetricsPage: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const { hasFeature } = useFeatures();
 
-    const fetchMetrics = async () => {
-        try {
-            setError(null);
-            const data = await metricsApi.getSnapshot();
-            setMetrics(data);
-        } catch (err) {
-            console.error('Failed to fetch metrics:', err);
-            setError(err instanceof Error ? err.message : 'Failed to load metrics');
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
     useEffect(() => {
         if (!hasFeature('telemetry')) {
             setIsLoading(false);
             return;
         }
 
-        fetchMetrics();
-        const interval = setInterval(fetchMetrics, 5000);
-        return () => clearInterval(interval);
+        const init = async () => {
+            try {
+                // Initial fetch
+                const data = await metricsApi.getSnapshot();
+                setMetrics(data);
+                setIsLoading(false);
+
+                // Start SignalR
+                await metricsSignalR.start();
+                const unsubscribe = metricsSignalR.subscribe((snapshot) => {
+                    setMetrics(snapshot);
+                });
+
+                return () => {
+                    unsubscribe();
+                    metricsSignalR.stop();
+                };
+            } catch (err) {
+                console.error('Failed to initialize metrics:', err);
+                setError(err instanceof Error ? err.message : 'Failed to load metrics');
+                setIsLoading(false);
+            }
+        };
+
+        const cleanupPromise = init();
+
+        return () => {
+            cleanupPromise.then(cleanup => cleanup && cleanup());
+        };
     }, [hasFeature]);
+
+    const handleRefresh = async () => {
+        try {
+            const data = await metricsApi.getSnapshot();
+            setMetrics(data);
+        } catch (err) {
+            console.error('Manual refresh failed:', err);
+        }
+    };
 
     if (!hasFeature('telemetry')) {
         return (
@@ -55,7 +78,7 @@ export const MetricsPage: React.FC = () => {
                 <div className="alert alert-danger">
                     {error}
                 </div>
-                <button className="btn btn-primary" onClick={fetchMetrics}>
+                <button className="btn btn-primary" onClick={handleRefresh}>
                     Retry
                 </button>
             </div>
@@ -89,7 +112,7 @@ export const MetricsPage: React.FC = () => {
         <div className="container">
             <div className="header-actions">
                 <h1>Telemetry & Metrics</h1>
-                <button className="btn btn-secondary" onClick={fetchMetrics}>
+                <button className="btn btn-secondary" onClick={handleRefresh}>
                     Refresh
                 </button>
             </div>

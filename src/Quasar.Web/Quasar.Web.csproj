@@ -25,6 +25,7 @@
     <ProjectReference Include="..\Quasar.Persistence.TimeSeries.Timescale\Quasar.Persistence.TimeSeries.Timescale.csproj" />
     <ProjectReference Include="..\Quasar.Scheduling.Quartz\Quasar.Scheduling.Quartz.csproj" />
     <ProjectReference Include="..\Quasar.Telemetry\Quasar.Telemetry.csproj" />
+    <ProjectReference Include="..\Quasar.RealTime.SignalR\Quasar.RealTime.SignalR.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.0" />

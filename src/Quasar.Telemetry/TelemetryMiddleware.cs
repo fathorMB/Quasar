@@ -20,8 +20,9 @@ public sealed class TelemetryMiddleware
         var sw = Stopwatch.StartNew();
         var endpoint = context.Request.Path.Value ?? "/";
         
-        // Skip metrics endpoint to avoid noise
-        if (endpoint.StartsWith("/api/metrics", StringComparison.OrdinalIgnoreCase))
+        // Skip metrics endpoint and SignalR hubs to avoid noise and skewed latency
+        if (endpoint.StartsWith("/api/metrics", StringComparison.OrdinalIgnoreCase) ||
+            endpoint.StartsWith("/hubs/", StringComparison.OrdinalIgnoreCase))
         {
             await _next(context);
             return;

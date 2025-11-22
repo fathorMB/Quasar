@@ -43,6 +43,7 @@ services.AddCors(options =>
 services.AddAuthorization();
 services.AddQuasarMediator();
 services.AddQuasarTelemetry();
+services.AddQuasarMetrics();
 services.AddQuasarEventSourcingCore();
 
 // Identity infrastructure - event store, read models, projections
@@ -144,10 +145,10 @@ app.MapQuasarIdentityEndpoints();
 app.MapQuasarUiEndpoints();
 app.MapQuartzEndpoints();
 app.MapQuasarMetricsEndpoints();
+app.MapQuasarMetricsHub();
 app.MapLoggingEndpoints();
 
 app.UseQuasarReactUi();
-
 
 await app.InitializeReadModelsAsync().ConfigureAwait(false);
 await app.SeedDataAsync().ConfigureAwait(false);
