@@ -82,6 +82,8 @@ export interface Feature {
   details?: string | null;
 }
 
+
+
 // ============================================
 // Error Types
 // ============================================
@@ -89,4 +91,14 @@ export interface Feature {
 export interface ApiError {
   message: string;
   statusCode: number;
+}
+
+export interface Session {
+  sessionId: string;
+  userId: string;
+  username: string;
+  issuedUtc: string;
+  expiresUtc: string;
+  revokedUtc: string | null;
+  isActive: boolean;
 }

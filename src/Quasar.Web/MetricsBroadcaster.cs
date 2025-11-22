@@ -32,19 +32,26 @@ public sealed class MetricsBroadcaster : BackgroundService
     {
         _logger.LogInformation("Starting Metrics Broadcaster");
 
-        using var timer = new PeriodicTimer(_interval);
-
-        while (await timer.WaitForNextTickAsync(stoppingToken))
+        try
         {
-            try
+            using var timer = new PeriodicTimer(_interval);
+
+            while (await timer.WaitForNextTickAsync(stoppingToken))
             {
-                var snapshot = _aggregator.GetSnapshot();
-                await _hubContext.Clients.All.ReceiveSnapshot(snapshot);
+                try
+                {
+                    var snapshot = _aggregator.GetSnapshot();
+                    await _hubContext.Clients.All.ReceiveSnapshot(snapshot);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error broadcasting metrics snapshot");
+                }
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error broadcasting metrics snapshot");
-            }
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogInformation("Metrics Broadcaster stopping");
         }
     }
 }

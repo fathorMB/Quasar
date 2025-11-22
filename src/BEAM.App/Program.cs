@@ -140,6 +140,7 @@ app.UseHttpsRedirection();
 app.UseCors();
 app.UseQuasarTelemetry();
 app.UseAuthentication();
+app.UseMiddleware<SessionValidationMiddleware>();
 app.UseAuthorization();
 app.MapQuasarIdentityEndpoints();
 app.MapQuasarUiEndpoints();

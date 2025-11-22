@@ -123,7 +123,7 @@
 }
 
 /* Table */
-.table {
+. table {
     width: 100%;
     border-collapse: separate;
     border-spacing: 0;
@@ -181,11 +181,18 @@
     color: white;
 }
 
-/* Modal Overlay */
+.badge-danger {
+    background: var(--color-error);
+    color: white;
+}
+
+/* Modal Overlay - Enhanced for better visibility */
 .modal-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.75);
+    background: rgba(0, 0, 0, 0.90);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -193,6 +200,49 @@
     animation: fadeIn var(--transition-base);
 }
 
+/* Modal Content - Better contrast and elevation */
+.modal-content {
+    background: var(--color-bg-primary);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: var(--radius-xl);
+    max-width: 500px;
+    width: 90%;
+    max-height: 90vh;
+    overflow: hidden;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7),
+        0 0 0 1px rgba(255, 255, 255, 0.1);
+    animation: slideUp var(--transition-base);
+}
+
+.modal-header {
+    padding: var(--spacing-xl);
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-bg-secondary);
+}
+
+.modal-header h2 {
+    font-size: var(--font-size-xl);
+    font-weight: 600;
+    color: var(--color-text-primary);
+    margin: 0;
+}
+
+.modal-body {
+    padding: var(--spacing-xl);
+    color: var(--color-text-secondary);
+    line-height: 1.6;
+}
+
+.modal-footer {
+    padding: var(--spacing-xl);
+    border-top: 1px solid var(--color-border);
+    background: var(--color-bg-secondary);
+    display: flex;
+    gap: var(--spacing-md);
+    justify-content: flex-end;
+}
+
+/* Legacy modal support */
 .modal {
     background: var(--color-bg-secondary);
     border: 1px solid var(--color-border);
@@ -204,13 +254,6 @@
     overflow-y: auto;
     box-shadow: var(--shadow-lg);
     animation: slideUp var(--transition-base);
-}
-
-.modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: var(--spacing-lg);
 }
 
 .modal-title {
@@ -296,4 +339,12 @@
     background: rgba(59, 130, 246, 0.1);
     border: 1px solid var(--color-info);
     color: #93c5fd;
+}
+
+.alert-warning {
+    background: rgba(251, 191, 36, 0.1);
+    border: 1px solid var(--color-warning);
+    color: #fcd34d;
+    display: flex;
+    align-items: center;
 }

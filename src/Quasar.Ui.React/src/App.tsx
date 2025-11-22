@@ -12,6 +12,8 @@ import { FeaturesPage } from './pages/FeaturesPage';
 import { JobsPage } from './pages/JobsPage';
 import { LogsPage } from './pages/LogsPage';
 import { MetricsPage } from './pages/MetricsPage';
+import { SessionsPage } from './pages/SessionsPage';
+import { SessionRevokedModal } from './components/SessionRevokedModal';
 import './styles/globals.css';
 import './styles/components.css';
 
@@ -49,6 +51,7 @@ function AppRoutes() {
         <Route path="jobs" element={<JobsPage />} />
         <Route path="logs" element={<LogsPage />} />
         <Route path="metrics" element={<MetricsPage />} />
+        <Route path="sessions" element={<SessionsPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
@@ -56,12 +59,31 @@ function AppRoutes() {
 }
 
 function App() {
+  const [showSessionRevokedModal, setShowSessionRevokedModal] = React.useState(false);
+
+  React.useEffect(() => {
+    const handleSessionRevoked = () => {
+      setShowSessionRevokedModal(true);
+    };
+
+    window.addEventListener('session-revoked', handleSessionRevoked);
+    return () => window.removeEventListener('session-revoked', handleSessionRevoked);
+  }, []);
+
+  const handleModalClose = () => {
+    setShowSessionRevokedModal(false);
+    window.location.href = '/login';
+  };
+
   return (
     <BrowserRouter>
       <UiProvider>
         <AuthProvider>
           <FeatureProvider>
             <AppRoutes />
+            {showSessionRevokedModal && (
+              <SessionRevokedModal onClose={handleModalClose} />
+            )}
           </FeatureProvider>
         </AuthProvider>
       </UiProvider>

@@ -51,6 +51,9 @@ export const MainLayout: React.FC = () => {
                             <Link to="/logs" className="nav-link">
                                 <span>Logs</span>
                             </Link>
+                            <Link to="/sessions" className="nav-link">
+                                <span>Sessions</span>
+                            </Link>
                             {hasFeature('scheduler') && (
                                 <Link to="/jobs" className="nav-link">
                                     <span>Jobs</span>
@@ -79,6 +82,6 @@ export const MainLayout: React.FC = () => {
                     <Outlet />
                 </main>
             </div>
-        </div>
+        </div >
     );
 };

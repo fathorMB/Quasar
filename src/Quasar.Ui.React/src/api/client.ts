@@ -61,10 +61,31 @@ apiClient.interceptors.response.use(
         }
 
         // Transform error to ApiError format
+        const isLoginRequest = error.config?.url?.endsWith('/login');
+        const errorData = error.response?.data as any;
+
+        // Check if this is a session revocation
+        if (error.response?.status === 401 && errorData?.code === 'SESSION_REVOKED') {
+            // Clear tokens
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('refreshToken');
+
+            // Dispatch custom event to show modal
+            window.dispatchEvent(new CustomEvent('session-revoked', {
+                detail: { message: errorData.message }
+            }));
+
+            const apiError: ApiError = {
+                message: errorData.message,
+                statusCode: 401,
+            };
+            return Promise.reject(apiError);
+        }
+
         const apiError: ApiError = {
-            message: error.response?.status === 401
+            message: error.response?.status === 401 && isLoginRequest
                 ? 'Invalid username or password'
-                : ((error.response?.data as any)?.message || error.message || 'An error occurred'),
+                : (errorData?.message || error.message || 'An error occurred'),
             statusCode: error.response?.status || 500,
         };
 

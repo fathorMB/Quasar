@@ -26,7 +26,7 @@ public sealed class JwtOptions
 
 public interface IJwtTokenService
 {
-    (string accessToken, DateTime expiresUtc) CreateAccessToken(Guid userId, string username, IEnumerable<string> roles);
+    (string accessToken, DateTime expiresUtc) CreateAccessToken(Guid userId, Guid sessionId, string username, IEnumerable<string> roles);
     (string refreshToken, DateTime expiresUtc, string hash) CreateRefreshToken(JwtOptions options);
 }
 
@@ -40,7 +40,7 @@ public sealed class JwtTokenService : IJwtTokenService
         _cred = new SigningCredentials(new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_opt.Key)), SecurityAlgorithms.HmacSha256);
     }
 
-    public (string accessToken, DateTime expiresUtc) CreateAccessToken(Guid userId, string username, IEnumerable<string> roles)
+    public (string accessToken, DateTime expiresUtc) CreateAccessToken(Guid userId, Guid sessionId, string username, IEnumerable<string> roles)
     {
         var handler = new JwtSecurityTokenHandler();
         var now = DateTime.UtcNow;
@@ -51,7 +51,8 @@ public sealed class JwtTokenService : IJwtTokenService
             new[]
             {
                 new Claim(JwtRegisteredClaimNames.Sub, userId.ToString()),
-                new Claim(JwtRegisteredClaimNames.UniqueName, username)
+                new Claim(JwtRegisteredClaimNames.UniqueName, username),
+                new Claim("sid", sessionId.ToString())
             }.Concat(roles.Select(r => new Claim(ClaimTypes.Role, r))),
             notBefore: now,
             expires: expires,
@@ -120,6 +121,7 @@ public static class IdentityEndpoints
         services.AddOptions<JwtOptions>();
         if (configure != null) services.Configure(configure);
         services.AddSingleton<IJwtTokenService, JwtTokenService>();
+        services.AddHttpContextAccessor();
         return services;
     }
 
@@ -167,7 +169,6 @@ public static class IdentityEndpoints
                 .Join(roles, ur => ur.RoleId, r => r.Id, (ur, r) => r.Name)
                 .ToArrayAsync()
                 .ConfigureAwait(false);
-            var (access, expires) = tokens.CreateAccessToken(user.Id, user.Username, roleNames);
             var (refresh, refreshExpires, hash) = tokens.CreateRefreshToken(optAccessor.Value);
             var session = await sessions.FirstOrDefaultAsync(s => s.UserId == user.Id).ConfigureAwait(false);
             if (session is null)
@@ -180,6 +181,8 @@ public static class IdentityEndpoints
             session.ExpiresUtc = refreshExpires;
             session.RevokedUtc = null;
             await db.SaveChangesAsync().ConfigureAwait(false);
+
+            var (access, expires) = tokens.CreateAccessToken(user.Id, session.SessionId, user.Username, roleNames);
             return Results.Ok(new { accessToken = access, accessExpiresUtc = expires, refreshToken = refresh, refreshExpiresUtc = refreshExpires });
         });
 
@@ -296,15 +299,42 @@ public static class IdentityEndpoints
             return Results.Ok(perms);
         });
 
-        app.MapGet("/auth/roles", async (ReadModelContext<IdentityReadModelStore> db) =>
+        app.MapGet("/auth/roles", async (
+            ReadModelContext<IdentityReadModelStore> db,
+            ClaimsPrincipal user,
+            Quasar.Security.IAuthorizationService auth) =>
         {
+            var subClaim = user.FindFirst(JwtRegisteredClaimNames.Sub)?.Value 
+                        ?? user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            
+            if (string.IsNullOrEmpty(subClaim) || !Guid.TryParse(subClaim, out var subjectId))
+                return Results.Unauthorized();
+
+            if (!await auth.AuthorizeAsync(subjectId, "identity.manage", "roles").ConfigureAwait(false))
+                return Results.Forbid();
+
             var sets = GetSets(db);
             var roles = await sets.Roles.ToListAsync().ConfigureAwait(false);
             return Results.Ok(roles);
-        });
+        })
+        .RequireAuthorization()
+        .WithName("ListRoles")
+        .WithTags("Identity");
 
-        app.MapGet("/auth/users", async (ReadModelContext<IdentityReadModelStore> db) =>
+        app.MapGet("/auth/users", async (
+            ReadModelContext<IdentityReadModelStore> db,
+            ClaimsPrincipal user,
+            Quasar.Security.IAuthorizationService auth) =>
         {
+            var subClaim = user.FindFirst(JwtRegisteredClaimNames.Sub)?.Value 
+                        ?? user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            
+            if (string.IsNullOrEmpty(subClaim) || !Guid.TryParse(subClaim, out var subjectId))
+                return Results.Unauthorized();
+
+            if (!await auth.AuthorizeAsync(subjectId, "identity.manage", "users").ConfigureAwait(false))
+                return Results.Forbid();
+
             var sets = GetSets(db);
             var users = await sets.Users
                 .Select(u => new
@@ -318,7 +348,10 @@ public static class IdentityEndpoints
                 .ToListAsync()
                 .ConfigureAwait(false);
             return Results.Ok(users);
-        });
+        })
+        .RequireAuthorization()
+        .WithName("ListUsers")
+        .WithTags("Identity");
 
         // Admin: Reset any user's password (requires identity.manage permission)
         app.MapPost("/auth/users/{userId:guid}/reset-password", async (
@@ -333,6 +366,7 @@ public static class IdentityEndpoints
             
             if (string.IsNullOrEmpty(subClaim) || !Guid.TryParse(subClaim, out var subjectId))
             {
+                Console.WriteLine($"[AuthDebug] Unauthorized: subClaim='{subClaim}'. Claims: {string.Join(", ", user.Claims.Select(c => $"{c.Type}={c.Value}"))}");
                 return Results.Unauthorized();
             }
 
@@ -425,13 +459,14 @@ public static class IdentityEndpoints
                 .ToArrayAsync()
                 .ConfigureAwait(false);
 
-            var (access, accessExpires) = tokens.CreateAccessToken(user.Id, user.Username, roleNames);
             var (refresh, refreshExpires, newHash) = tokens.CreateRefreshToken(optAccessor.Value);
 
             session.RefreshTokenHash = newHash;
             session.IssuedUtc = DateTime.UtcNow;
             session.ExpiresUtc = refreshExpires;
             await db.SaveChangesAsync().ConfigureAwait(false);
+
+            var (access, accessExpires) = tokens.CreateAccessToken(user.Id, session.SessionId, user.Username, roleNames);
 
             return Results.Ok(new { accessToken = access, accessExpiresUtc = accessExpires, refreshToken = refresh, refreshExpiresUtc = refreshExpires });
         });
@@ -487,6 +522,69 @@ public static class IdentityEndpoints
 
             return Results.Ok(new { success = false, message = "Role not found." });
         });
+
+        app.MapGet("/auth/sessions", async (
+            ReadModelContext<IdentityReadModelStore> db,
+            ClaimsPrincipal user,
+            Quasar.Security.IAuthorizationService auth) =>
+        {
+            var subClaim = user.FindFirst(JwtRegisteredClaimNames.Sub)?.Value 
+                        ?? user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            
+            if (string.IsNullOrEmpty(subClaim) || !Guid.TryParse(subClaim, out var subjectId))
+                return Results.Unauthorized();
+
+            if (!await auth.AuthorizeAsync(subjectId, "identity.manage", "sessions").ConfigureAwait(false))
+                return Results.Forbid();
+
+            var sets = GetSets(db);
+            var sessions = await sets.Sessions
+                .Join(sets.Users, s => s.UserId, u => u.Id, (s, u) => new
+                {
+                    s.SessionId,
+                    s.UserId,
+                    u.Username,
+                    s.IssuedUtc,
+                    s.ExpiresUtc,
+                    s.RevokedUtc,
+                    IsActive = s.RevokedUtc == null && s.ExpiresUtc > DateTime.UtcNow
+                })
+                .OrderByDescending(x => x.IssuedUtc)
+                .ToListAsync()
+                .ConfigureAwait(false);
+
+            return Results.Ok(sessions);
+        })
+        .RequireAuthorization()
+        .WithName("ListAllSessions")
+        .WithTags("Identity");
+
+        app.MapDelete("/auth/sessions/{sessionId:guid}", async (
+            Guid sessionId,
+            ReadModelContext<IdentityReadModelStore> db,
+            ClaimsPrincipal user,
+            Quasar.Security.IAuthorizationService auth) =>
+        {
+            var subClaim = user.FindFirst(JwtRegisteredClaimNames.Sub)?.Value 
+                        ?? user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            
+            if (string.IsNullOrEmpty(subClaim) || !Guid.TryParse(subClaim, out var subjectId))
+                return Results.Unauthorized();
+
+            if (!await auth.AuthorizeAsync(subjectId, "identity.manage", "sessions").ConfigureAwait(false))
+                return Results.Forbid();
+
+            var sets = GetSets(db);
+            var session = await sets.Sessions.FirstOrDefaultAsync(s => s.SessionId == sessionId).ConfigureAwait(false);
+            if (session is null) return Results.NotFound();
+
+            session.RevokedUtc = DateTime.UtcNow;
+            await db.SaveChangesAsync().ConfigureAwait(false);
+            return Results.Ok();
+        })
+        .RequireAuthorization()
+        .WithName("RevokeSession")
+        .WithTags("Identity");
 
         return app;
     }
