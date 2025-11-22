@@ -1,21 +1,24 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Quasar.Cqrs;
 using Quasar.EventSourcing.Abstractions;
 using Quasar.EventSourcing.InMemory;
 using Quasar.EventSourcing.Outbox;
 using Quasar.EventSourcing.SqlServer;
 using Quasar.EventSourcing.Sqlite;
+using Quasar.Persistence.Abstractions;
 using Quasar.Persistence.Relational.EfCore;
+using Quasar.Persistence.TimeSeries.Timescale;
 using Quasar.Projections.Abstractions;
 using Quasar.Projections.SqlServer;
 using Quasar.Projections.Sqlite;
-using Microsoft.EntityFrameworkCore;
-using System.Data.Common;
-using Microsoft.EntityFrameworkCore.Diagnostics;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Quasar.Security;
-using Quasar.Persistence.Abstractions;
-using Quasar.Persistence.TimeSeries.Timescale;
+using Quasar.Telemetry;
+using System.Data.Common;
+using System.Linq;
+using System.Reflection;
 
 namespace Quasar.Web;
 
@@ -128,7 +131,7 @@ public static class DependencyInjection
         {
             o.UseSqlServer(connectionString);
             o.ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning));
-        });
+        }, ServiceLifetime.Scoped);
 
         services.AddScoped<IReadModelSchemaInitializer<ReadModelContext<TStore>>, SqlServerReadModelSchemaInitializer<ReadModelContext<TStore>>>();
         services.AddSingleton<IReadModelSchemaBootstrapper, ReadModelSchemaBootstrapper<ReadModelContext<TStore>>>();
@@ -141,7 +144,7 @@ public static class DependencyInjection
         }
 
         services.AddReadModelDefinitionsFromAssembliesForStore<TStore>();
-        services.TryAddSingleton<IReadModelSchemaScriptGenerator<ReadModelContext<TStore>>, ReadModelSchemaScriptGenerator<ReadModelContext<TStore>>>();
+        services.TryAddScoped<IReadModelSchemaScriptGenerator<ReadModelContext<TStore>>, ReadModelSchemaScriptGenerator<ReadModelContext<TStore>>>();
 
         return services;
     }
@@ -164,7 +167,7 @@ public static class DependencyInjection
         {
             o.UseSqlite(connectionString);
             o.ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning));
-        });
+        }, ServiceLifetime.Scoped);
 
         services.AddScoped<IReadModelSchemaInitializer<ReadModelContext<TStore>>, SqliteReadModelSchemaInitializer<ReadModelContext<TStore>>>();
         services.AddSingleton<IReadModelSchemaBootstrapper, ReadModelSchemaBootstrapper<ReadModelContext<TStore>>>();
@@ -177,16 +180,37 @@ public static class DependencyInjection
         }
 
         services.AddReadModelDefinitionsFromAssembliesForStore<TStore>();
-        services.TryAddSingleton<IReadModelSchemaScriptGenerator<ReadModelContext<TStore>>, ReadModelSchemaScriptGenerator<ReadModelContext<TStore>>>();
+        services.TryAddScoped<IReadModelSchemaScriptGenerator<ReadModelContext<TStore>>, ReadModelSchemaScriptGenerator<ReadModelContext<TStore>>>();
 
         return services;
     }
 
     /// <summary>
-    /// Placeholder for future projection configuration.
+    /// Scans assemblies and registers all <see cref="IProjection{TEvent}"/> implementations.
+    /// Registered as scoped both as their concrete type and as <see cref="object"/> (for <see cref="PollingProjector"/> resolution).
     /// </summary>
-    public static IServiceCollection AddProjections(this IServiceCollection services)
+    public static IServiceCollection AddProjections(this IServiceCollection services, params Assembly[] assemblies)
     {
+        if (assemblies is null || assemblies.Length == 0)
+        {
+            assemblies = AppDomain.CurrentDomain.GetAssemblies();
+        }
+
+        foreach (var assembly in assemblies)
+        {
+            foreach (var type in SafeGetTypes(assembly))
+            {
+                if (type is null || type.IsAbstract || type.IsInterface)
+                    continue;
+
+                if (!ImplementsProjection(type))
+                    continue;
+
+                services.TryAdd(ServiceDescriptor.Scoped(type, type));
+                services.TryAddEnumerable(ServiceDescriptor.Scoped(typeof(object), type));
+            }
+        }
+
         return services;
     }
 
@@ -378,5 +402,17 @@ public static class DependencyInjection
         builder.Mode = Microsoft.Data.Sqlite.SqliteOpenMode.ReadWriteCreate;
 
         return builder.ToString();
+    }
+
+    private static IEnumerable<Type> SafeGetTypes(Assembly assembly)
+    {
+        try { return assembly.GetTypes(); }
+        catch (ReflectionTypeLoadException ex) { return ex.Types.Where(t => t is not null)!; }
+    }
+
+    private static bool ImplementsProjection(Type type)
+    {
+        return type.GetInterfaces()
+            .Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IProjection<>));
     }
 }

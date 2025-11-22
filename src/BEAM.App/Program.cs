@@ -46,10 +46,15 @@ services.AddCors(options =>
 });
 
 services.AddAuthorization();
-services.AddQuasarMediator();
+
+services.AddQuasar(q =>
+{
+    q.AddMediator();
+    q.AddEventSourcingCore();
+    q.AddProjections(AppDomain.CurrentDomain.GetAssemblies());
+});
 services.AddQuasarTelemetry();
 services.AddQuasarMetrics();
-services.AddQuasarEventSourcingCore();
 
 // Identity infrastructure - event store, read models, projections
 services.AddQuasarIdentitySqliteInfrastructure(configuration.GetConnectionString("QuasarSqlite"));
