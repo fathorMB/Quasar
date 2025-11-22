@@ -11,6 +11,8 @@ export interface MetricsSnapshot {
     topEndpoints: EndpointMetric[];
     recentExceptions: ExceptionEntry[];
     uptime: string;
+    cpuUsagePercent: number;
+    memoryUsageBytes: number;
 }
 
 export interface EndpointMetric {

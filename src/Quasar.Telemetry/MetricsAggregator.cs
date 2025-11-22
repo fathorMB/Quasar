@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -15,7 +16,9 @@ public sealed record MetricsSnapshot(
     Dictionary<int, long> StatusCodeCounts,
     List<EndpointMetric> TopEndpoints,
     List<ExceptionEntry> RecentExceptions,
-    TimeSpan Uptime);
+    TimeSpan Uptime,
+    double CpuUsagePercent,
+    long MemoryUsageBytes);
 
 public sealed record EndpointMetric(string Path, long Count, double AvgLatencyMs);
 
@@ -41,6 +44,25 @@ public sealed class InMemoryMetricsAggregator : IMetricsAggregator
     private const int MaxRecentRequests = 10000;
     private const int MaxRecentExceptions = 50;
     private const int TopEndpointsCount = 10;
+
+    // CPU Usage Tracking
+    private DateTimeOffset _lastCpuTimeCheck = DateTimeOffset.UtcNow;
+    private TimeSpan _lastTotalProcessorTime = TimeSpan.Zero;
+    private double _lastCpuUsagePercent = 0;
+
+    public InMemoryMetricsAggregator()
+    {
+        // Initialize CPU tracking
+        try 
+        {
+            using var process = Process.GetCurrentProcess();
+            _lastTotalProcessorTime = process.TotalProcessorTime;
+        }
+        catch
+        {
+            // Ignore access denied or other errors during init
+        }
+    }
 
     public void RecordRequest(string endpoint, int statusCode, double latencyMs)
     {
@@ -127,6 +149,9 @@ public sealed class InMemoryMetricsAggregator : IMetricsAggregator
         var exceptions = _recentExceptions.ToList();
         
         var uptime = now - _startTime;
+
+        // Calculate System Metrics
+        UpdateSystemMetrics(now);
         
         return new MetricsSnapshot(
             _totalRequests,
@@ -138,7 +163,51 @@ public sealed class InMemoryMetricsAggregator : IMetricsAggregator
             statusCodeCounts,
             topEndpoints,
             exceptions,
-            uptime);
+            uptime,
+            _lastCpuUsagePercent,
+            GetMemoryUsage());
+    }
+
+    private void UpdateSystemMetrics(DateTimeOffset now)
+    {
+        lock (_lock)
+        {
+            // Only update CPU every 500ms to avoid jitter and overhead
+            if ((now - _lastCpuTimeCheck).TotalMilliseconds < 500) return;
+
+            try
+            {
+                using var process = Process.GetCurrentProcess();
+                var currentTotalProcessorTime = process.TotalProcessorTime;
+                var wallTimeDelta = (now - _lastCpuTimeCheck).TotalMilliseconds;
+                var cpuTimeDelta = (currentTotalProcessorTime - _lastTotalProcessorTime).TotalMilliseconds;
+
+                // Calculate usage relative to wall time and processor count
+                // If we have 4 cores, 100% usage of 1 core is 25% total system usage
+                var cpuUsage = (cpuTimeDelta / wallTimeDelta) / Environment.ProcessorCount * 100;
+                
+                _lastCpuUsagePercent = Math.Max(0, Math.Min(100, cpuUsage));
+                _lastTotalProcessorTime = currentTotalProcessorTime;
+                _lastCpuTimeCheck = now;
+            }
+            catch
+            {
+                // Fallback or keep last value on error
+            }
+        }
+    }
+
+    private long GetMemoryUsage()
+    {
+        try
+        {
+            using var process = Process.GetCurrentProcess();
+            return process.WorkingSet64;
+        }
+        catch
+        {
+            return 0;
+        }
     }
     
     private static double GetPercentile(List<double> sortedValues, int percentile)

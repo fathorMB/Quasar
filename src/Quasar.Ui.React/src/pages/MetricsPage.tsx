@@ -13,7 +13,6 @@ export const MetricsPage: React.FC = () => {
         try {
             setError(null);
             const data = await metricsApi.getSnapshot();
-            console.log('API Response:', data);
             setMetrics(data);
         } catch (err) {
             console.error('Failed to fetch metrics:', err);
@@ -78,6 +77,8 @@ export const MetricsPage: React.FC = () => {
     const statusCodeCounts = metrics.statusCodeCounts ?? {};
     const topEndpoints = metrics.topEndpoints ?? [];
     const recentExceptions = metrics.recentExceptions ?? [];
+    const cpuUsage = metrics.cpuUsagePercent ?? 0;
+    const memoryUsage = metrics.memoryUsageBytes ?? 0;
 
     const errorRate = totalRequests > 0
         ? ((statusCodeCounts[500] || 0) / totalRequests * 100).toFixed(2)
@@ -98,6 +99,24 @@ export const MetricsPage: React.FC = () => {
                     <div className="metric-value">{totalRequests.toLocaleString()}</div>
                     <div className="metric-subtitle">
                         Last minute: {requestsLastMinute} | Last hour: {requestsLastHour}
+                    </div>
+                </div>
+
+                <div className="metric-card">
+                    <h3>System Resources</h3>
+                    <div className="metric-row">
+                        <span className="metric-label">CPU</span>
+                        <div className="progress-bar-container">
+                            <div
+                                className="progress-bar-fill"
+                                style={{ width: `${Math.min(cpuUsage, 100)}%`, backgroundColor: cpuUsage > 80 ? '#ff4444' : '#00cc88' }}
+                            />
+                        </div>
+                        <span className="metric-value-small">{cpuUsage.toFixed(1)}%</span>
+                    </div>
+                    <div className="metric-row">
+                        <span className="metric-label">RAM</span>
+                        <span className="metric-value-small">{(memoryUsage / 1024 / 1024).toFixed(0)} MB</span>
                     </div>
                 </div>
 

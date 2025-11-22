@@ -92,7 +92,7 @@ services.AddQuasarJwtAuthentication(options =>
 services.AddQuasarUi(ui =>
 {
     ui.ApplicationName = "BEAM";
-    ui.Theme = "orange";
+    ui.Theme = "dark";
     ui.LogoSymbol = "B";
 });
 services.AddTransient<HeartbeatJob>();
