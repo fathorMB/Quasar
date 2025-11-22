@@ -124,6 +124,12 @@ public static class DependencyInjection
             o.ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning));
         });
 
+        services.AddDbContextFactory<ReadModelContext<TStore>>(o =>
+        {
+            o.UseSqlServer(connectionString);
+            o.ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning));
+        });
+
         services.AddScoped<IReadModelSchemaInitializer<ReadModelContext<TStore>>, SqlServerReadModelSchemaInitializer<ReadModelContext<TStore>>>();
         services.AddSingleton<IReadModelSchemaBootstrapper, ReadModelSchemaBootstrapper<ReadModelContext<TStore>>>();
         services.AddHostedService<ReadModelSchemaInitializerHostedService<ReadModelContext<TStore>>>();
@@ -133,6 +139,9 @@ public static class DependencyInjection
             services.AddScoped<ReadModelContext>(sp => sp.GetRequiredService<ReadModelContext<TStore>>());
             services.AddScoped(typeof(IReadRepository<>), typeof(EfReadRepository<>));
         }
+
+        services.AddReadModelDefinitionsFromAssembliesForStore<TStore>();
+        services.TryAddSingleton<IReadModelSchemaScriptGenerator<ReadModelContext<TStore>>, ReadModelSchemaScriptGenerator<ReadModelContext<TStore>>>();
 
         return services;
     }
@@ -151,6 +160,12 @@ public static class DependencyInjection
             o.ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning));
         });
 
+        services.AddDbContextFactory<ReadModelContext<TStore>>(o =>
+        {
+            o.UseSqlite(connectionString);
+            o.ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning));
+        });
+
         services.AddScoped<IReadModelSchemaInitializer<ReadModelContext<TStore>>, SqliteReadModelSchemaInitializer<ReadModelContext<TStore>>>();
         services.AddSingleton<IReadModelSchemaBootstrapper, ReadModelSchemaBootstrapper<ReadModelContext<TStore>>>();
         services.AddHostedService<ReadModelSchemaInitializerHostedService<ReadModelContext<TStore>>>();
@@ -160,6 +175,9 @@ public static class DependencyInjection
             services.AddScoped<ReadModelContext>(sp => sp.GetRequiredService<ReadModelContext<TStore>>());
             services.AddScoped(typeof(IReadRepository<>), typeof(EfReadRepository<>));
         }
+
+        services.AddReadModelDefinitionsFromAssembliesForStore<TStore>();
+        services.TryAddSingleton<IReadModelSchemaScriptGenerator<ReadModelContext<TStore>>, ReadModelSchemaScriptGenerator<ReadModelContext<TStore>>>();
 
         return services;
     }
