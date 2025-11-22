@@ -20,6 +20,11 @@ var builder = WebApplication.CreateBuilder(args);
 var configuration = builder.Configuration;
 var services = builder.Services;
 var featureRegistry = new FeatureRegistry();
+
+// Register features for UI menu visibility
+featureRegistry.Add(new FeatureInfo("scheduler", "Job Scheduler", "Infrastructure", "Quartz.NET job scheduling and management"));
+featureRegistry.Add(new FeatureInfo("telemetry", "Telemetry & Metrics", "Monitoring", "Application telemetry and performance metrics"));
+
 services.AddSingleton(featureRegistry);
 builder.Host.UseQuasarSerilog(configuration, "Logging", opts =>
 {

@@ -197,7 +197,8 @@ public static class IdentityEndpoints
                 await db.SaveChangesAsync().ConfigureAwait(false);
             }
             return Results.Ok(new { roleId });
-        });
+        })
+        .RequireAuthorization();
 
         app.MapPost("/auth/roles/{roleId:guid}/permissions", async (IMediator mediator, ReadModelContext<IdentityReadModelStore> db, Guid roleId, GrantPermissionRequest dto) =>
         {
@@ -213,7 +214,8 @@ public static class IdentityEndpoints
                 }
             }
             return result ? Results.Ok() : Results.NotFound();
-        });
+        })
+        .RequireAuthorization();
 
         app.MapDelete("/auth/roles/{roleId:guid}/permissions/{permission}", async (IMediator mediator, ReadModelContext<IdentityReadModelStore> db, Guid roleId, string permission) =>
         {
@@ -230,7 +232,8 @@ public static class IdentityEndpoints
                 }
             }
             return result ? Results.Ok() : Results.NotFound();
-        });
+        })
+        .RequireAuthorization();
 
         app.MapPost("/auth/users/{userId:guid}/roles", async (IMediator mediator, ReadModelContext<IdentityReadModelStore> db, Guid userId, AssignUserRoleRequest dto) =>
         {
@@ -246,7 +249,8 @@ public static class IdentityEndpoints
                 }
             }
             return result ? Results.Ok() : Results.NotFound();
-        });
+        })
+        .RequireAuthorization();
 
         app.MapDelete("/auth/users/{userId:guid}/roles/{roleId:guid}", async (IMediator mediator, ReadModelContext<IdentityReadModelStore> db, Guid userId, Guid roleId) =>
         {
@@ -263,7 +267,8 @@ public static class IdentityEndpoints
                 }
             }
             return result ? Results.Ok() : Results.NotFound();
-        });
+        })
+        .RequireAuthorization();
 
         app.MapGet("/auth/users/{userId:guid}/roles", async (ReadModelContext<IdentityReadModelStore> db, Guid userId) =>
         {
@@ -274,7 +279,8 @@ public static class IdentityEndpoints
                 .ToListAsync()
                 .ConfigureAwait(false);
             return Results.Ok(roles);
-        });
+        })
+        .RequireAuthorization();
 
         app.MapGet("/auth/users/{userId:guid}/permissions", async (ReadModelContext<IdentityReadModelStore> db, Guid userId) =>
         {
@@ -286,7 +292,8 @@ public static class IdentityEndpoints
                 .ToListAsync()
                 .ConfigureAwait(false);
             return Results.Ok(permissions);
-        });
+        })
+        .RequireAuthorization();
 
         app.MapGet("/auth/roles/{roleId:guid}/permissions", async (ReadModelContext<IdentityReadModelStore> db, Guid roleId) =>
         {
@@ -297,7 +304,8 @@ public static class IdentityEndpoints
                 .ToListAsync()
                 .ConfigureAwait(false);
             return Results.Ok(perms);
-        });
+        })
+        .RequireAuthorization();
 
         app.MapGet("/auth/roles", async (
             ReadModelContext<IdentityReadModelStore> db,
@@ -425,8 +433,20 @@ public static class IdentityEndpoints
         .WithName("ResetOwnPassword")
         .WithTags("Identity");
 
-        app.MapGet("/auth/acl", async (ReadModelContext<IdentityReadModelStore> db) =>
+        app.MapGet("/auth/acl", async (
+            ReadModelContext<IdentityReadModelStore> db,
+            ClaimsPrincipal user,
+            Quasar.Security.IAuthorizationService auth) =>
         {
+            var subClaim = user.FindFirst(JwtRegisteredClaimNames.Sub)?.Value 
+                        ?? user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            
+            if (string.IsNullOrEmpty(subClaim) || !Guid.TryParse(subClaim, out var subjectId))
+                return Results.Unauthorized();
+
+            if (!await auth.AuthorizeAsync(subjectId, "identity.manage", "acl").ConfigureAwait(false))
+                return Results.Forbid();
+
             var sets = GetSets(db);
             var assignments = await sets.UserRoles
                 .Join(sets.Users, ur => ur.UserId, u => u.Id, (ur, u) => new { ur, u })
@@ -440,7 +460,8 @@ public static class IdentityEndpoints
                 .ToListAsync()
                 .ConfigureAwait(false);
             return Results.Ok(assignments);
-        });
+        })
+        .RequireAuthorization();
 
         app.MapPost("/auth/token/refresh", async (IJwtTokenService tokens, ReadModelContext<IdentityReadModelStore> db, IOptions<JwtOptions> optAccessor, RefreshRequest dto) =>
         {
@@ -497,7 +518,8 @@ public static class IdentityEndpoints
                 return Results.Ok();
             }
             return Results.NotFound();
-        });
+        })
+        .RequireAuthorization();
 
         app.MapDelete("/auth/roles/{roleId:guid}", async (IMediator mediator, ReadModelContext<IdentityReadModelStore> db, Guid roleId) =>
         {
@@ -521,7 +543,8 @@ public static class IdentityEndpoints
             }
 
             return Results.Ok(new { success = false, message = "Role not found." });
-        });
+        })
+        .RequireAuthorization();
 
         app.MapGet("/auth/sessions", async (
             ReadModelContext<IdentityReadModelStore> db,

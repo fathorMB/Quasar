@@ -21,7 +21,8 @@ public static class UiEndpoints
 
         app.MapGet("/api/features", (Quasar.Features.FeatureRegistry registry) => Results.Ok(registry.GetAll()))
            .WithName("GetFeatures")
-           .WithTags("Administration");
+           .WithTags("Administration")
+           .RequireAuthorization();
 
         return app;
     }

@@ -18,7 +18,8 @@ public static class LoggingEndpointExtensions
     {
         endpoints.MapGet(prefix + "/recent", GetRecentLogs)
             .WithName("GetRecentLogs")
-            .WithTags("Diagnostics");
+            .WithTags("Diagnostics")
+            .RequireAuthorization();
 
         return endpoints;
     }

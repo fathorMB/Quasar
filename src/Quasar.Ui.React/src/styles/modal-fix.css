@@ -1,0 +1,22 @@
+/* Modal Close Button Positioning Fix */
+.modal-header {
+    position: relative;
+}
+
+.modal {
+    position: relative;
+}
+
+.modal-title {
+    padding-right: 3rem;
+}
+
+.modal-header h2 {
+    padding-right: 3rem;
+}
+
+.modal-close {
+    position: absolute !important;
+    top: 1.5rem !important;
+    right: 1.5rem !important;
+}

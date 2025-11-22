@@ -22,11 +22,11 @@ public static class QuartzEndpointExtensions
     /// </summary>
     public static IEndpointRouteBuilder MapQuartzEndpoints(this IEndpointRouteBuilder endpoints, string prefix = "/quartz")
     {
-        endpoints.MapGet(prefix + "/jobs", ListQuartzJobs).WithName("ListQuartzJobs").WithTags("Quartz");
-        endpoints.MapPost(prefix + "/jobs/{group}/{name}/trigger", TriggerQuartzJob).WithName("TriggerQuartzJob").WithTags("Quartz");
-        endpoints.MapPost(prefix + "/jobs/{group}/{name}/pause", PauseQuartzJob).WithName("PauseQuartzJob").WithTags("Quartz");
-        endpoints.MapPost(prefix + "/jobs/{group}/{name}/resume", ResumeQuartzJob).WithName("ResumeQuartzJob").WithTags("Quartz");
-        endpoints.MapGet(prefix + "/history", ListQuartzHistory).WithName("ListQuartzHistory").WithTags("Quartz");
+        endpoints.MapGet(prefix + "/jobs", ListQuartzJobs).WithName("ListQuartzJobs").WithTags("Quartz").RequireAuthorization();
+        endpoints.MapPost(prefix + "/jobs/{group}/{name}/trigger", TriggerQuartzJob).WithName("TriggerQuartzJob").WithTags("Quartz").RequireAuthorization();
+        endpoints.MapPost(prefix + "/jobs/{group}/{name}/pause", PauseQuartzJob).WithName("PauseQuartzJob").WithTags("Quartz").RequireAuthorization();
+        endpoints.MapPost(prefix + "/jobs/{group}/{name}/resume", ResumeQuartzJob).WithName("ResumeQuartzJob").WithTags("Quartz").RequireAuthorization();
+        endpoints.MapGet(prefix + "/history", ListQuartzHistory).WithName("ListQuartzHistory").WithTags("Quartz").RequireAuthorization();
 
         return endpoints;
     }
