@@ -19,4 +19,10 @@ public sealed class UiSettings
     /// The symbol/letter used in the sidebar logo badge.
     /// </summary>
     public string LogoSymbol { get; set; } = "Q";
+
+    /// <summary>
+    /// Optional URL for an app-provided UI bundle that registers custom routes/menu.
+    /// If set, the shell will load this module at runtime before mounting.
+    /// </summary>
+    public string? CustomBundleUrl { get; set; }
 }

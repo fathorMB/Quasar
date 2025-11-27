@@ -267,6 +267,8 @@ public static class DependencyInjection
 
     /// <summary>
     /// Configures Quasar Identity with SQLite infrastructure (event store, read models, projections).
+    /// <summary>
+    /// Configures Quasar Identity with SQLite infrastructure (event store, read models, projections).
     /// Automatically registers event type map, initializes schema, and wires up projections.
     /// </summary>
     /// <param name="services">The service collection.</param>
@@ -305,7 +307,14 @@ public static class DependencyInjection
         configureEventStore?.Invoke(sqliteOptions);
 
         // Initialize schema synchronously (required before DI completes)
-        SqliteEventStoreInitializer.EnsureSchemaAsync(sqliteOptions).GetAwaiter().GetResult();
+        try
+        {
+            SqliteEventStoreInitializer.EnsureSchemaAsync(sqliteOptions).GetAwaiter().GetResult();
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"[Quasar] ERROR Initializing Event Store Schema: {ex}");
+        }
 
         services.UseSqliteEventStore(sqliteOptions);
         services.UseSqliteCommandTransaction();

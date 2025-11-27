@@ -3,8 +3,8 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <!-- Point to the shared React workspace (Quasar.Ui.React) so builds can pull its dist into wwwroot -->
-    <SpaRoot>..\Quasar.Ui.React\</SpaRoot>
+    <!-- Point to the BEAM.App React workspace (BEAM.App.Ui.React) so builds can pull its dist into wwwroot -->
+    <SpaRoot>..\BEAM.App.Ui.React\</SpaRoot>
     <SpaRootFull>$(MSBuildThisFileDirectory)$(SpaRoot)</SpaRootFull>
     <SpaDist>$(SpaRoot)dist\</SpaDist>
     <SpaDistFull>$(SpaRootFull)dist\</SpaDistFull>

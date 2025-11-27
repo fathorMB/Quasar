@@ -1,8 +1,9 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import { UiProvider } from './context/UiContext';
+import { UiProvider, useUi } from './context/UiContext';
 import { FeatureProvider } from './context/FeatureContext';
+import { useFeatures } from './context/FeatureContext';
 import './styles/modal-fix.css';
 import { MainLayout } from './layouts/MainLayout';
 import { LoginPage } from './pages/LoginPage';
@@ -19,10 +20,14 @@ import './styles/globals.css';
 import './styles/components.css';
 
 // Protected Route wrapper
-const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { isAuthenticated, isLoading } = useAuth();
+const ProtectedRoute: React.FC<{ children: React.ReactNode; roles?: string[]; feature?: string }> = ({ children, roles, feature }) => {
+  const { isAuthenticated, isLoading, user } = useAuth();
+  const { hasFeature } = useFeatures();
+  const { settings } = useUi();
 
-  if (isLoading) {
+  const ready = settings?.customBundleUrl === undefined || settings?.customBundleUrl === null || settings?.customBundleUrl === '' || (window as any).__QUASAR_BUNDLE_LOADED__ === true;
+
+  if (isLoading || !ready) {
     return (
       <div className="flex items-center justify-center w-full h-full">
         <div className="spinner" style={{ width: '40px', height: '40px' }}></div>
@@ -30,10 +35,22 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
     );
   }
 
+  if (roles && roles.length > 0 && !roles.some(r => user?.roles?.includes(r))) {
+    return <Navigate to="/" replace />;
+  }
+
+  if (feature && !hasFeature(feature)) {
+    return <Navigate to="/" replace />;
+  }
+
   return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />;
 };
 
 function AppRoutes() {
+  const { customRoutes } = useUi();
+
+  const customIndex = customRoutes.find(r => r.index);
+
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
@@ -45,7 +62,15 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       >
-        <Route index element={<DashboardPage />} />
+        <Route
+          index
+          element={
+            customIndex ? (() => {
+              const Element = customIndex.component;
+              return <Element />;
+            })() : <DashboardPage />
+          }
+        />
         <Route path="users" element={<UsersPage />} />
         <Route path="roles" element={<RolesPage />} />
         <Route path="features" element={<FeaturesPage />} />
@@ -53,6 +78,20 @@ function AppRoutes() {
         <Route path="logs" element={<LogsPage />} />
         <Route path="metrics" element={<MetricsPage />} />
         <Route path="sessions" element={<SessionsPage />} />
+        {customRoutes.map((route, idx) => {
+          const Element = route.component;
+          return (
+            <Route
+              key={`custom-route-${idx}-${route.path}`}
+              path={route.path}
+              element={
+                <ProtectedRoute roles={route.roles} feature={route.feature}>
+                  <Element />
+                </ProtectedRoute>
+              }
+            />
+          );
+        })}
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

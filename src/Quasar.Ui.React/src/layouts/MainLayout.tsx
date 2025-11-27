@@ -8,7 +8,7 @@ import './MainLayout.css';
 
 export const MainLayout: React.FC = () => {
     const { user, logout } = useAuth();
-    const { settings } = useUi();
+    const { settings, customMenu } = useUi();
     const { hasFeature } = useFeatures();
     const navigate = useNavigate();
 
@@ -28,13 +28,26 @@ export const MainLayout: React.FC = () => {
                     </div>
                 </div>
 
+
                 <nav className="sidebar-nav">
-                    <div className="nav-section">
-                        <h3 className="nav-section-title">Menu</h3>
-                        <Link to="/" className="nav-link">
-                            <span>Dashboard</span>
-                        </Link>
-                    </div>
+                    {customMenu.map((section, idx) => (
+                        <div className="nav-section" key={`custom-${idx}`}>
+                            {section.title && <h3 className="nav-section-title">{section.title}</h3>}
+                            {section.items.map((item, i) => {
+                                if (item.roles && !item.roles.some(r => user?.roles?.includes(r))) {
+                                    return null;
+                                }
+                                if (item.feature && !hasFeature(item.feature)) {
+                                    return null;
+                                }
+                                return (
+                                    <Link to={item.path} className="nav-link" key={`custom-item-${i}-${item.path}`}>
+                                        <span>{item.label}</span>
+                                    </Link>
+                                );
+                            })}
+                        </div>
+                    ))}
 
                     {user?.roles?.includes('administrator') && (
                         <div className="nav-section">
@@ -82,6 +95,6 @@ export const MainLayout: React.FC = () => {
                     <Outlet />
                 </main>
             </div>
-        </div >
+        </div>
     );
 };
