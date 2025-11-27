@@ -58,6 +58,37 @@ public class OutboxTests
     }
 
     [Fact]
+    public async Task EfCoreOutboxStorePersistsAndDeserializesMetadata()
+    {
+        var options = new DbContextOptionsBuilder<OutboxDbContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .Options;
+
+        await using var context = new OutboxDbContext(options);
+        var store = new EfCoreOutboxStore(context);
+
+        var metadata = new Dictionary<string, string> { { "key", "value" } };
+        var message = new OutboxMessage(
+            Guid.NewGuid(),
+            FakeAggregate.StreamId,
+            1,
+            new FakeEvent(Guid.NewGuid()),
+            DateTime.UtcNow,
+            "fake.event",
+            "{}",
+            Metadata: metadata);
+
+        await store.EnqueueAsync(new[] { message });
+
+        var pending = await store.GetPendingAsync(10, 5);
+        
+        Assert.Single(pending);
+        var loaded = pending[0];
+        Assert.NotNull(loaded.Metadata);
+        Assert.Equal("value", loaded.Metadata!["key"]);
+    }
+
+    [Fact]
     public async Task EfCoreInboxStoreRejectsDuplicates()
     {
         var options = new DbContextOptionsBuilder<OutboxDbContext>()
