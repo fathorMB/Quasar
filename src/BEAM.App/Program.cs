@@ -25,6 +25,8 @@ using BEAM.App.Projections;
 using Quasar.EventSourcing.Abstractions;
 using Quasar.Cqrs;
 using Quasar.Core;
+using Quasar.Projections.Abstractions;
+using Quasar.RealTime.SignalR;
 
 var builder = WebApplication.CreateBuilder(args);
 var configuration = builder.Configuration;
@@ -105,6 +107,17 @@ services.UseSqliteProjectionCheckpoints(() => new SqliteConnection(sqliteConnect
 
 services.AddScoped<object, DeviceProjection>();
 services.AddPollingProjector("DeviceProjector", new[] { DeviceConstants.DeviceStreamId }, TimeSpan.FromMilliseconds(500));
+
+// Add live projections for real-time read model updates
+services.AddLiveProjections();
+services.AddLiveProjection<DeviceLiveProjection, DeviceRegistered>();
+services.AddLiveProjection<DeviceLiveProjection, DeviceActivated>();
+services.AddLiveProjection<DeviceLiveProjection, DeviceDeactivated>();
+services.AddLiveProjection<DeviceLiveProjection, DeviceConnectionStateChanged>();
+
+// Setup SignalR for real-time broadcasting
+services.AddLiveReadModelHub();
+services.AddLiveReadModelNotifier();
 
 // Device command handlers
 services.AddScoped<ICommandHandler<RegisterDeviceCommand, Result<Guid>>, RegisterDeviceHandler>();
@@ -219,6 +232,8 @@ app.MapQuasarMetricsEndpoints();
 app.MapQuasarMetricsHub();
 app.MapLoggingEndpoints();
 
+// Configure live read model SignalR hub
+app.MapHub<LiveReadModelBroadcastHub>("/hubs/live-models");
 
 // Device API endpoints
 app.MapPost("/api/devices/register", async (IMediator mediator, RegisterDeviceRequest request) =>
@@ -281,6 +296,9 @@ app.UseQuasarReactUi();
 
 // Initialize Read Models (Devices)
 await app.InitializeReadModelsAsync().ConfigureAwait(false);
+
+// Configure live projections after all services are initialized
+app.Services.ConfigureLiveProjections();
 
 await app.SeedDataAsync().ConfigureAwait(false);
 await app.RunAsync().ConfigureAwait(false);

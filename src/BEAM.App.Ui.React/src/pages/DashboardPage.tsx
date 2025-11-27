@@ -1,26 +1,28 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { devicesApi } from '../api/devices';
+import { useLiveReadModelCollection } from '../hooks/useLiveReadModel';
 import type { Device } from '../api/devices';
 
 export const DashboardPage: React.FC = () => {
-    const [devices, setDevices] = useState<Device[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const initialLoadedRef = useRef(false);
 
-    useEffect(() => {
-        loadDevices();
-        const id = setInterval(() => {
-            loadDevices();
-        }, 5000);
-        return () => clearInterval(id);
-    }, []);
+    // Set up real-time updates via live projections
+    const { models: devices, addOrUpdate } = useLiveReadModelCollection<Device>(
+        'DeviceReadModel'
+    );
 
-    const loadDevices = async () => {
+    // Load initial devices on mount
+    const loadDevices = useCallback(async () => {
         try {
             setLoading(true);
             setError(null);
             const result = await devicesApi.list(1, 100);
-            setDevices(result.items);
+            // Populate the live collection with initial data
+            result.items.forEach(device => {
+                addOrUpdate(device);
+            });
         } catch (err: any) {
             const errorMessage = err.response?.status === 404
                 ? 'Device API not available. Make sure BEAM.App is running with the latest code.'
@@ -29,7 +31,15 @@ export const DashboardPage: React.FC = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [addOrUpdate]);
+
+    // Initial load on mount - only once
+    useEffect(() => {
+        if (!initialLoadedRef.current) {
+            initialLoadedRef.current = true;
+            loadDevices();
+        }
+    }, [loadDevices]);
 
     const formatDate = (dateString: string | null) => {
         if (!dateString) return 'Never';
@@ -110,22 +120,12 @@ export const DashboardPage: React.FC = () => {
                                                 <span
                                                     className="badge"
                                                     style={{
-                                                        background: device.isActive ? 'var(--color-success)' : 'var(--color-border)',
-                                                        color: device.isActive ? '#06120a' : 'var(--color-text-secondary)',
+                                                        background: device.isConnected ? '#10b981' : '#ef4444',
+                                                        color: '#ffffff',
                                                         fontWeight: 700,
                                                     }}
                                                 >
-                                                    {device.isActive ? 'Active' : 'Inactive'}
-                                                </span>
-                                                <span
-                                                    className="badge"
-                                                    style={{
-                                                        background: device.isConnected ? 'var(--color-primary)' : 'rgba(255,255,255,0.08)',
-                                                        color: device.isConnected ? '#0c0b0b' : 'var(--color-text-secondary)',
-                                                        fontWeight: 700,
-                                                    }}
-                                                >
-                                                    {device.isConnected ? 'Connected' : 'Offline'}
+                                                    {device.isConnected ? '🟢 Connected' : '🔴 Offline'}
                                                 </span>
                                             </div>
                                         </td>

@@ -19,7 +19,7 @@ public sealed class BeamReadModelDefinition : ReadModelDefinition<BeamReadModelS
 {
     public override void Configure(ModelBuilder builder)
     {
-        builder.Entity<DeviceReadModel>(e =>
+        builder.Entity<BEAM.App.Domain.Devices.DeviceReadModel>(e =>
         {
             e.HasKey(x => x.Id);
             e.ToTable("Devices");
