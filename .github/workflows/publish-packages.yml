@@ -59,15 +59,15 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Restore dependencies
-        run: dotnet restore src/Quasar.sln
+        run: dotnet restore src/Quasar.Framework.slnf
 
       - name: Build solution
-        run: dotnet build src/Quasar.sln --configuration Release --no-restore
+        run: dotnet build src/Quasar.Framework.slnf --configuration Release --no-restore
 
       - name: Pack library projects
         run: |
           mkdir -p artifacts
-          dotnet pack src/Quasar.sln --configuration Release --no-build \
+          dotnet pack src/Quasar.Framework.slnf --configuration Release --no-build \
             -p:PackageVersion=$PACKAGE_VERSION \
             -p:ContinuousIntegrationBuild=true \
             -p:IncludeSymbols=false \

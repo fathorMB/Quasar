@@ -1,0 +1,43 @@
+{
+  "solution": {
+    "path": "Quasar.sln",
+    "projects": [
+      "Quasar.Web\\Quasar.Web.csproj",
+      "Quasar.Core\\Quasar.Core.csproj",
+      "Quasar.Domain\\Quasar.Domain.csproj",
+      "Quasar.EventSourcing.Abstractions\\Quasar.EventSourcing.Abstractions.csproj",
+      "Quasar.Security\\Quasar.Security.csproj",
+      "Quasar.Persistence.Abstractions\\Quasar.Persistence.Abstractions.csproj",
+      "Quasar.Persistence.TimeSeries.Timescale\\Quasar.Persistence.TimeSeries.Timescale.csproj",
+      "Quasar.Persistence.Relational.EfCore\\Quasar.Persistence.Relational.EfCore.csproj",
+      "Quasar.Projections.Abstractions\\Quasar.Projections.Abstractions.csproj",
+      "Quasar.Persistence.Document.Mongo\\Quasar.Persistence.Document.Mongo.csproj",
+      "Quasar.EventSourcing.SqlServer\\Quasar.EventSourcing.SqlServer.csproj",
+      "Quasar.EventSourcing.InMemory\\Quasar.EventSourcing.InMemory.csproj",
+      "Quasar.Tests\\Quasar.Tests.csproj",
+      "Quasar.Samples.BasicApi\\Quasar.Samples.BasicApi.csproj",
+      "Quasar.EventSourcing.Sqlite\\Quasar.EventSourcing.Sqlite.csproj",
+      "Quasar.Projections.SqlServer\\Quasar.Projections.SqlServer.csproj",
+      "Quasar.Projections.Sqlite\\Quasar.Projections.Sqlite.csproj",
+      "Quasar.Identity\\Quasar.Identity.csproj",
+      "Quasar.Identity.Persistence\\Quasar.Identity.Persistence.csproj",
+      "Quasar.Identity.Persistence.Relational.EfCore\\Quasar.Identity.Persistence.Relational.EfCore.csproj",
+      "Quasar.Identity.Web\\Quasar.Identity.Web.csproj",
+      "Quasar.Logging\\Quasar.Logging.csproj",
+      "Quasar.Seeding\\Quasar.Seeding.csproj",
+      "Quasar.RealTime\\Quasar.RealTime.csproj",
+      "Quasar.Sagas\\Quasar.Sagas.csproj",
+      "Quasar.RealTime.SignalR\\Quasar.RealTime.SignalR.csproj",
+      "Quasar.Scheduling.Quartz\\Quasar.Scheduling.Quartz.csproj",
+      "Quasar.Telemetry\\Quasar.Telemetry.csproj",
+      "Quasar.Auditing\\Quasar.Auditing.csproj",
+      "Quasar.EventSourcing.Outbox\\Quasar.EventSourcing.Outbox.csproj",
+      "Quasar.EventSourcing.Outbox.EfCore\\Quasar.EventSourcing.Outbox.EfCore.csproj",
+      "Quasar.EventSourcing.Outbox.Kafka\\Quasar.EventSourcing.Outbox.Kafka.csproj",
+      "Quasar.EventSourcing.Outbox.RabbitMq\\Quasar.EventSourcing.Outbox.RabbitMq.csproj",
+      "Quasar.Sagas.Persistence.Relational.EfCore\\Quasar.Sagas.Persistence.Relational.EfCore.csproj",
+      "Quasar.Cqrs\\Quasar.Cqrs.csproj",
+      "Quasar.Discovery\\Quasar.Discovery.csproj"
+    ]
+  }
+}
