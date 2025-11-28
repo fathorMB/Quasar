@@ -11,6 +11,7 @@ namespace BEAM.Emulator
         private readonly DeviceRegistrationClient _apiClient = new();
         private DeviceConnection? _deviceConnection;
         private Guid _deviceId = Guid.NewGuid();
+        private string? _deviceToken;
         private string? _currentServerBase;
 
         public MainForm()
@@ -113,11 +114,23 @@ namespace BEAM.Emulator
             }
 
             btnRegister.Enabled = false;
-            Log("Registering device...");
-
+            
             try
             {
                 var selectedServer = _discoveredServers[lstServers.SelectedIndex];
+                var serverUrl = selectedServer.Endpoints.Http;
+
+                Log("Logging in as Admin...");
+                var adminToken = await _apiClient.LoginAsync(serverUrl, "admin", "ChangeMe123!");
+
+                if (string.IsNullOrEmpty(adminToken))
+                {
+                    Log("Admin login failed. Cannot register.");
+                    MessageBox.Show("Admin login failed", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                Log("Registering device...");
 
                 var deviceInfo = new DeviceInfo(
                     _deviceId,
@@ -125,16 +138,18 @@ namespace BEAM.Emulator
                     cmbDeviceType.Text,
                     txtMacAddress.Text);
 
-                var result = await _apiClient.RegisterDeviceAsync(selectedServer.Endpoints.Http, deviceInfo);
+                var result = await _apiClient.RegisterDeviceAsync(serverUrl, adminToken, deviceInfo);
 
                 if (result != null)
                 {
-                    _currentServerBase = selectedServer.Endpoints.Http;
+                    _currentServerBase = serverUrl;
+                    _deviceToken = result.Token;
                     Log("Device registered successfully!");
                     Log($"  Server: {selectedServer.ServiceName}");
                     Log($"  Device ID: {result.DeviceId}");
                     Log($"  Device Name: {txtDeviceName.Text}");
                     Log($"  Device Type: {cmbDeviceType.Text}");
+                    Log("  Token received.");
 
                     MessageBox.Show(
                         $"Device registered successfully!\nDevice ID: {result.DeviceId}",
@@ -174,6 +189,12 @@ namespace BEAM.Emulator
                 return;
             }
 
+            if (string.IsNullOrEmpty(_deviceToken))
+            {
+                MessageBox.Show("Please register the device first to get a token.", "Token Required", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
             var serverBase = _currentServerBase ?? _discoveredServers[lstServers.SelectedIndex].Endpoints.Http;
 
             try
@@ -210,7 +231,7 @@ namespace BEAM.Emulator
                     });
                 };
 
-                await _deviceConnection.ConnectAsync(serverBase, _deviceId);
+                await _deviceConnection.ConnectAsync(serverBase, _deviceId, _deviceToken);
             }
             catch (Exception ex)
             {

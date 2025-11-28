@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.IO;
+using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.IdentityModel.Tokens;
@@ -127,6 +128,7 @@ services.AddLiveReadModelNotifier();
 
 // Device connection management
 services.AddSingleton<IDeviceConnectionManager, DeviceConnectionManager>();
+services.AddSingleton<IDeviceTokenService, DeviceTokenService>();
 services.AddHostedService<DeviceHeartbeatMonitor>();
 
 // Device command handlers
@@ -144,6 +146,7 @@ services.AddScoped<IQueryHandler<ListDevicesQuery, PagedResult<DeviceReadModel>>
 services.AddScoped<IValidator<RegisterDeviceCommand>, RegisterDeviceValidator>();
 
 var jwtOptions = ResolveJwtOptions(configuration);
+services.AddSingleton(jwtOptions);
 services.AddQuasarIdentity(options =>
 {
     options.Issuer = jwtOptions.Issuer;
@@ -251,26 +254,39 @@ app.MapHub<LiveReadModelBroadcastHub>("/hubs/live-models");
 app.MapHub<DeviceHub>("/hubs/devices");
 
 // Device API endpoints
-app.MapPost("/api/devices/register", async (IMediator mediator, RegisterDeviceRequest request) =>
+app.MapPost("/api/devices/register", async (IMediator mediator, IDeviceTokenService tokenService, ClaimsPrincipal user, RegisterDeviceRequest request) =>
 {
     if (request == null)
         return Results.BadRequest("Request body is required");
 
+    var userId = Guid.Empty;
+    if (user.Identity?.IsAuthenticated == true)
+    {
+        if (Guid.TryParse(user.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var id))
+        {
+            userId = id;
+        }
+    }
+
     var command = new RegisterDeviceCommand(
-        Guid.Empty, // No auth required for device registration in MVP
+        userId,
         request.DeviceId ?? Guid.NewGuid(),
         request.DeviceName ?? "Unknown Device",
         request.DeviceType ?? "Unknown",
         request.MacAddress ?? "00:00:00:00:00:00");
 
     var result = await mediator.Send(command);
-    return result.IsSuccess
-        ? Results.Ok(new { deviceId = result.Value })
-        : Results.BadRequest(new { error = result.Error?.Message });
+    if (result.IsSuccess)
+    {
+        var token = tokenService.GenerateToken(result.Value);
+        return Results.Ok(new { deviceId = result.Value, token });
+    }
+
+    return Results.BadRequest(new { error = result.Error?.Message });
 })
 .WithName("RegisterDevice")
 .WithTags("Devices")
-.AllowAnonymous();
+.RequireAuthorization();
 
 
 

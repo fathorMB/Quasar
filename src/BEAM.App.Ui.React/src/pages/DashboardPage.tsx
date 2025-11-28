@@ -43,7 +43,14 @@ export const DashboardPage: React.FC = () => {
 
     const formatDate = (dateString: string | null) => {
         if (!dateString) return 'Never';
-        return new Date(dateString).toLocaleString();
+        const date = new Date(dateString);
+        return new Intl.DateTimeFormat('en-US', {
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false
+        }).format(date);
     };
 
     return (
@@ -87,22 +94,22 @@ export const DashboardPage: React.FC = () => {
                     </div>
                 ) : (
                     <div className="table-container">
-                        <table>
+                        <table style={{ tableLayout: 'fixed', width: '100%', borderCollapse: 'collapse' }}>
                             <thead>
                                 <tr>
-                                    <th style={{ width: '24%' }}>Device</th>
-                                    <th style={{ width: '13%' }}>Type</th>
-                                    <th style={{ width: '16%' }}>MAC</th>
-                                    <th style={{ width: '16%' }}>Status</th>
-                                    <th style={{ width: '11%' }}>Registered</th>
-                                    <th style={{ width: '11%' }}>Last Seen</th>
-                                    <th style={{ width: '9%' }}>Actions</th>
+                                    <th style={{ width: '25%', textAlign: 'left' }}>Device</th>
+                                    <th style={{ width: '10%', textAlign: 'left' }}>Type</th>
+                                    <th style={{ width: '15%', textAlign: 'left' }}>MAC</th>
+                                    <th style={{ width: '10%', textAlign: 'left' }}>Status</th>
+                                    <th style={{ width: '15%', textAlign: 'left' }}>Registered</th>
+                                    <th style={{ width: '15%', textAlign: 'left' }}>Last Seen</th>
+                                    <th style={{ width: '10%', textAlign: 'right' }}>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {devices.map((device) => (
                                     <tr key={device.id}>
-                                        <td>
+                                        <td style={{ verticalAlign: 'top' }}>
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                                 <div style={{ fontWeight: 700 }}>{device.deviceName}</div>
                                                 <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', wordBreak: 'break-all' }}>
@@ -110,13 +117,13 @@ export const DashboardPage: React.FC = () => {
                                                 </div>
                                             </div>
                                         </td>
-                                        <td>
+                                        <td style={{ verticalAlign: 'top' }}>
                                             <code style={{ fontWeight: 600 }}>{device.deviceType}</code>
                                         </td>
-                                        <td>
+                                        <td style={{ verticalAlign: 'top' }}>
                                             <code style={{ letterSpacing: '0.03em' }}>{device.macAddress}</code>
                                         </td>
-                                        <td>
+                                        <td style={{ verticalAlign: 'top' }}>
                                             <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                                                 <span
                                                     className="badge"
@@ -130,9 +137,9 @@ export const DashboardPage: React.FC = () => {
                                                 </span>
                                             </div>
                                         </td>
-                                        <td style={{ whiteSpace: 'nowrap' }}>{formatDate(device.registeredAt)}</td>
-                                        <td style={{ whiteSpace: 'nowrap' }}>{formatDate(device.lastSeenAt || null)}</td>
-                                        <td>
+                                        <td style={{ whiteSpace: 'nowrap', verticalAlign: 'top' }}>{formatDate(device.registeredAt)}</td>
+                                        <td style={{ whiteSpace: 'nowrap', verticalAlign: 'top' }}>{formatDate(device.lastSeenAt || null)}</td>
+                                        <td style={{ textAlign: 'right', verticalAlign: 'top' }}>
                                             <button
                                                 className="btn btn-primary btn-sm"
                                                 onClick={(e) => {

@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using Quasar.Cqrs;
 using Quasar.Core;
@@ -23,6 +24,7 @@ public interface IDeviceClient
 /// SignalR hub for real-time communication with IoT devices.
 /// Handles device connections, heartbeats, and configuration push.
 /// </summary>
+[Authorize]
 public class DeviceHub : Hub<IDeviceClient>
 {
     private readonly IDeviceConnectionManager _connectionManager;
@@ -43,8 +45,13 @@ public class DeviceHub : Hub<IDeviceClient>
     /// Registers a device with the hub.
     /// Called by the device when first connecting.
     /// </summary>
-    public async Task RegisterDevice(Guid deviceId)
+    public async Task RegisterDevice()
     {
+        if (!Guid.TryParse(Context.UserIdentifier, out var deviceId))
+        {
+            throw new HubException("Invalid device identity");
+        }
+
         var connectionId = Context.ConnectionId;
         _logger.LogInformation("Device {DeviceId} registering with connection {ConnectionId}", deviceId, connectionId);
 
@@ -64,8 +71,13 @@ public class DeviceHub : Hub<IDeviceClient>
     /// Receives a heartbeat from a device.
     /// Updates the device's last seen timestamp.
     /// </summary>
-    public async Task SendHeartbeat(Guid deviceId)
+    public async Task SendHeartbeat()
     {
+        if (!Guid.TryParse(Context.UserIdentifier, out var deviceId))
+        {
+            return;
+        }
+
         await _connectionManager.UpdateLastSeenAsync(deviceId);
 
         // Update connection state to ensure it's marked as online

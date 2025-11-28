@@ -27,13 +27,16 @@ public class DeviceConnection : IAsyncDisposable
 
     public bool IsConnected => _isConnected;
 
-    public async Task ConnectAsync(string baseUrl, Guid deviceId)
+    public async Task ConnectAsync(string baseUrl, Guid deviceId, string token)
     {
         _deviceId = deviceId;
         var hubUrl = $"{baseUrl.TrimEnd('/')}/hubs/devices";
 
         _connection = new HubConnectionBuilder()
-            .WithUrl(hubUrl)
+            .WithUrl(hubUrl, options =>
+            {
+                options.AccessTokenProvider = () => Task.FromResult<string?>(token);
+            })
             .WithAutomaticReconnect()
             .Build();
 
@@ -53,7 +56,7 @@ public class DeviceConnection : IAsyncDisposable
             ConnectionStateChanged?.Invoke(true);
             LogMessage?.Invoke($"Reconnected. Connection ID: {connectionId}");
             // Re-register device after reconnection
-            return _connection.InvokeAsync("RegisterDevice", _deviceId);
+            return _connection.InvokeAsync("RegisterDevice");
         };
 
         _connection.Closed += error =>
@@ -71,7 +74,7 @@ public class DeviceConnection : IAsyncDisposable
             ConnectionStateChanged?.Invoke(true);
             LogMessage?.Invoke("Connected to Device Hub.");
 
-            await _connection.InvokeAsync("RegisterDevice", _deviceId);
+            await _connection.InvokeAsync("RegisterDevice");
             LogMessage?.Invoke($"Registered device {_deviceId}");
 
             // Start heartbeat
@@ -112,7 +115,7 @@ public class DeviceConnection : IAsyncDisposable
             {
                 try
                 {
-                    await _connection.InvokeAsync("SendHeartbeat", _deviceId);
+                    await _connection.InvokeAsync("SendHeartbeat");
                     LogMessage?.Invoke("Heartbeat sent.");
                 }
                 catch (Exception ex)
