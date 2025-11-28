@@ -123,3 +123,105 @@ public sealed class UpdateDeviceConnectionStateHandler : ICommandHandler<UpdateD
         }
     }
 }
+
+/// <summary>
+/// Handles device name update commands.
+/// </summary>
+public sealed class UpdateDeviceNameHandler : ICommandHandler<UpdateDeviceNameCommand, Result>
+{
+    private readonly IEventSourcedRepository<DeviceAggregate> _repository;
+    private readonly IQueryHandler<ListDevicesQuery, PagedResult<DeviceReadModel>> _listDevicesHandler;
+    private readonly ILogger<UpdateDeviceNameHandler> _logger;
+
+    public UpdateDeviceNameHandler(
+        IEventSourcedRepository<DeviceAggregate> repository,
+        IQueryHandler<ListDevicesQuery, PagedResult<DeviceReadModel>> listDevicesHandler,
+        ILogger<UpdateDeviceNameHandler> logger)
+    {
+        _repository = repository;
+        _listDevicesHandler = listDevicesHandler;
+        _logger = logger;
+    }
+
+    public async Task<Result> Handle(UpdateDeviceNameCommand command, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            // Check for unique name constraint
+            var existingDevices = await _listDevicesHandler.Handle(new ListDevicesQuery(1, 1000), cancellationToken);
+            if (existingDevices.Items.Any(d => d.DeviceName.Equals(command.NewName, StringComparison.OrdinalIgnoreCase) && d.Id != command.DeviceId))
+            {
+                _logger.LogWarning("Device name '{Name}' already exists", command.NewName);
+                return Result.Failure(new Error("device.name_already_exists", $"A device with the name '{command.NewName}' already exists"));
+            }
+
+            var aggregate = await _repository.GetAsync(DeviceConstants.DeviceStreamId, cancellationToken);
+            aggregate.UpdateDeviceName(command.DeviceId, command.NewName);
+            await _repository.SaveAsync(aggregate, cancellationToken);
+
+            _logger.LogInformation("Device name updated: {DeviceId} => {NewName}", command.DeviceId, command.NewName);
+            return Result.Success();
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex, "Device {DeviceId} not found for name update", command.DeviceId);
+            return Result.Failure(new Error("device.not_found", "Device not found"));
+        }
+        catch (ArgumentException ex)
+        {
+            _logger.LogWarning(ex, "Invalid device name for {DeviceId}", command.DeviceId);
+            return Result.Failure(new Error("device.invalid_name", ex.Message));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating device name {DeviceId}", command.DeviceId);
+            return Result.Failure(new Error("device.name_update_failed", "Failed to update device name"));
+        }
+    }
+}
+
+/// <summary>
+/// Handles device heartbeat interval update commands.
+/// </summary>
+public sealed class UpdateDeviceHeartbeatIntervalHandler : ICommandHandler<UpdateDeviceHeartbeatIntervalCommand, Result>
+{
+    private readonly IEventSourcedRepository<DeviceAggregate> _repository;
+    private readonly ILogger<UpdateDeviceHeartbeatIntervalHandler> _logger;
+
+    public UpdateDeviceHeartbeatIntervalHandler(
+        IEventSourcedRepository<DeviceAggregate> repository,
+        ILogger<UpdateDeviceHeartbeatIntervalHandler> logger)
+    {
+        _repository = repository;
+        _logger = logger;
+    }
+
+    public async Task<Result> Handle(UpdateDeviceHeartbeatIntervalCommand command, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var aggregate = await _repository.GetAsync(DeviceConstants.DeviceStreamId, cancellationToken);
+            aggregate.UpdateHeartbeatInterval(command.DeviceId, command.IntervalSeconds);
+            await _repository.SaveAsync(aggregate, cancellationToken);
+
+            _logger.LogInformation("Device heartbeat interval updated: {DeviceId} => {Interval}s", command.DeviceId, command.IntervalSeconds);
+            return Result.Success();
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex, "Device {DeviceId} not found for heartbeat interval update", command.DeviceId);
+            return Result.Failure(new Error("device.not_found", "Device not found"));
+        }
+        catch (ArgumentException ex)
+        {
+            _logger.LogWarning(ex, "Invalid heartbeat interval for {DeviceId}", command.DeviceId);
+            return Result.Failure(new Error("device.invalid_interval", ex.Message));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating device heartbeat interval {DeviceId}", command.DeviceId);
+            return Result.Failure(new Error("device.heartbeat_interval_update_failed", "Failed to update heartbeat interval"));
+        }
+    }
+}
+

@@ -9,6 +9,7 @@ export interface Device {
     isConnected: boolean;
     registeredAt: string;
     lastSeenAt?: string;
+    heartbeatIntervalSeconds: number;
 }
 
 export interface PagedResult<T> {
@@ -29,5 +30,13 @@ export const devicesApi = {
     async get(id: string): Promise<Device> {
         const response = await axios.get(`/api/devices/${id}`);
         return response.data;
+    },
+
+    async updateName(id: string, newName: string): Promise<void> {
+        await axios.put(`/api/devices/${id}/name`, { newName });
+    },
+
+    async updateHeartbeatInterval(id: string, intervalSeconds: number): Promise<void> {
+        await axios.put(`/api/devices/${id}/heartbeat-interval`, { intervalSeconds });
     }
 };

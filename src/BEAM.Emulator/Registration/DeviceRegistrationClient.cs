@@ -52,30 +52,7 @@ public sealed class DeviceRegistrationClient : IDisposable
         }
     }
 
-    /// <summary>
-    /// Sends a heartbeat / connection update for a device.
-    /// </summary>
-    public async Task<(bool ok, string? error)> SendHeartbeatAsync(string serverUrl, Guid deviceId, bool isConnected = true)
-    {
-        try
-        {
-            var endpoint = new Uri(new Uri(serverUrl), "/api/devices/heartbeat");
-            var payload = new { deviceId, isConnected };
-            var response = await _httpClient.PostAsJsonAsync(endpoint, payload);
-            if (!response.IsSuccessStatusCode)
-            {
-                var body = await response.Content.ReadAsStringAsync();
-                return (false, $"HTTP {(int)response.StatusCode} {response.ReasonPhrase}: {body}");
-            }
-            return (true, null);
-        }
-        catch (Exception ex)
-        {
-            var msg = $"Heartbeat error: {ex.Message}";
-            Console.WriteLine(msg);
-            return (false, msg);
-        }
-    }
+
 
     public void Dispose()
     {

@@ -27,6 +27,8 @@ using Quasar.Cqrs;
 using Quasar.Core;
 using Quasar.Projections.Abstractions;
 using Quasar.RealTime.SignalR;
+using BEAM.App.Hubs;
+using BEAM.App.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 var configuration = builder.Configuration;
@@ -86,6 +88,8 @@ IEventTypeMap typeMap = new DictionaryEventTypeMap(new[]
     ("device.activated", typeof(DeviceActivated)),
     ("device.deactivated", typeof(DeviceDeactivated)),
     ("device.connection_state_changed", typeof(DeviceConnectionStateChanged)),
+    ("device.name_updated", typeof(DeviceNameUpdated)),
+    ("device.heartbeat_interval_updated", typeof(DeviceHeartbeatIntervalUpdated)),
     // Identity events
     ("identity.user_registered", typeof(Quasar.Identity.UserRegistered)),
     ("identity.user_password_set", typeof(Quasar.Identity.UserPasswordSet)),
@@ -114,15 +118,23 @@ services.AddLiveProjection<DeviceLiveProjection, DeviceRegistered>();
 services.AddLiveProjection<DeviceLiveProjection, DeviceActivated>();
 services.AddLiveProjection<DeviceLiveProjection, DeviceDeactivated>();
 services.AddLiveProjection<DeviceLiveProjection, DeviceConnectionStateChanged>();
+services.AddLiveProjection<DeviceLiveProjection, DeviceNameUpdated>();
+services.AddLiveProjection<DeviceLiveProjection, DeviceHeartbeatIntervalUpdated>();
 
 // Setup SignalR for real-time broadcasting
 services.AddLiveReadModelHub();
 services.AddLiveReadModelNotifier();
 
+// Device connection management
+services.AddSingleton<IDeviceConnectionManager, DeviceConnectionManager>();
+services.AddHostedService<DeviceHeartbeatMonitor>();
+
 // Device command handlers
 services.AddScoped<ICommandHandler<RegisterDeviceCommand, Result<Guid>>, RegisterDeviceHandler>();
 services.AddScoped<ICommandHandler<ActivateDeviceCommand, Result>, ActivateDeviceHandler>();
 services.AddScoped<ICommandHandler<UpdateDeviceConnectionStateCommand, Result>, UpdateDeviceConnectionStateHandler>();
+services.AddScoped<ICommandHandler<UpdateDeviceNameCommand, Result>, UpdateDeviceNameHandler>();
+services.AddScoped<ICommandHandler<UpdateDeviceHeartbeatIntervalCommand, Result>, UpdateDeviceHeartbeatIntervalHandler>();
 
 // Device query handlers
 services.AddScoped<IQueryHandler<GetDeviceQuery, DeviceReadModel?>, GetDeviceHandler>();
@@ -235,6 +247,9 @@ app.MapLoggingEndpoints();
 // Configure live read model SignalR hub
 app.MapHub<LiveReadModelBroadcastHub>("/hubs/live-models");
 
+// Configure device SignalR hub for real-time configuration push
+app.MapHub<DeviceHub>("/hubs/devices");
+
 // Device API endpoints
 app.MapPost("/api/devices/register", async (IMediator mediator, RegisterDeviceRequest request) =>
 {
@@ -257,24 +272,7 @@ app.MapPost("/api/devices/register", async (IMediator mediator, RegisterDeviceRe
 .WithTags("Devices")
 .AllowAnonymous();
 
-app.MapPost("/api/devices/heartbeat", async (IMediator mediator, HeartbeatRequest request) =>
-{
-    if (request == null || request.DeviceId == Guid.Empty)
-        return Results.BadRequest("DeviceId is required");
 
-    var command = new UpdateDeviceConnectionStateCommand(
-        Guid.Empty, // anonymous
-        request.DeviceId,
-        request.IsConnected ?? true);
-
-    var result = await mediator.Send(command);
-    return result.IsSuccess
-        ? Results.Ok()
-        : Results.BadRequest(new { error = result.Error?.Message });
-})
-.WithName("DeviceHeartbeat")
-.WithTags("Devices")
-.AllowAnonymous();
 
 app.MapGet("/api/devices", async (IMediator mediator, int page = 1, int pageSize = 20) =>
 {
@@ -291,6 +289,44 @@ app.MapGet("/api/devices/{id:guid}", async (IMediator mediator, Guid id) =>
 })
 .WithName("GetDevice")
 .WithTags("Devices");
+
+app.MapPut("/api/devices/{id:guid}/name", async (IMediator mediator, Guid id, UpdateDeviceNameRequest request) =>
+{
+    if (request == null || string.IsNullOrWhiteSpace(request.NewName))
+        return Results.BadRequest(new { error = "New name is required" });
+
+    var command = new UpdateDeviceNameCommand(
+        Guid.Empty, // anonymous
+        id,
+        request.NewName);
+
+    var result = await mediator.Send(command);
+    return result.IsSuccess
+        ? Results.Ok()
+        : Results.BadRequest(new {  error = result.Error?.Message });
+})
+.WithName("UpdateDeviceName")
+.WithTags("Devices")
+.AllowAnonymous();
+
+app.MapPut("/api/devices/{id:guid}/heartbeat-interval", async (IMediator mediator, Guid id, UpdateHeartbeatIntervalRequest request) =>
+{
+    if (request == null || request.IntervalSeconds < 5 || request.IntervalSeconds > 3600)
+        return Results.BadRequest(new { error = "Interval must be between 5 and 3600 seconds" });
+
+    var command = new UpdateDeviceHeartbeatIntervalCommand(
+        Guid.Empty, // anonymous
+        id,
+        request.IntervalSeconds);
+
+    var result = await mediator.Send(command);
+    return result.IsSuccess
+        ? Results.Ok()
+        : Results.BadRequest(new { error = result.Error?.Message });
+})
+.WithName("UpdateDeviceHeartbeatInterval")
+.WithTags("Devices")
+.AllowAnonymous();
 
 app.UseQuasarReactUi();
 
@@ -365,4 +401,6 @@ sealed class AdminSeedOptions
 
 // Request DTOs for device endpoints
 sealed record RegisterDeviceRequest(Guid? DeviceId, string? DeviceName, string? DeviceType, string? MacAddress);
-sealed record HeartbeatRequest(Guid DeviceId, bool? IsConnected);
+
+sealed record UpdateDeviceNameRequest(string NewName);
+sealed record UpdateHeartbeatIntervalRequest(int IntervalSeconds);

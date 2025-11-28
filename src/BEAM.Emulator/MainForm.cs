@@ -1,3 +1,4 @@
+using BEAM.Emulator.Device;
 using BEAM.Emulator.Discovery;
 using BEAM.Emulator.Registration;
 
@@ -8,19 +9,13 @@ namespace BEAM.Emulator
         private List<DiscoveryResponse> _discoveredServers = new();
         private DiscoveryClient? _discoveryClient;
         private readonly DeviceRegistrationClient _apiClient = new();
+        private DeviceConnection? _deviceConnection;
         private Guid _deviceId = Guid.NewGuid();
-        private readonly System.Windows.Forms.Timer _heartbeatTimer;
-        private bool _heartbeatRunning;
         private string? _currentServerBase;
 
         public MainForm()
         {
             InitializeComponent();
-            _heartbeatTimer = new System.Windows.Forms.Timer
-            {
-                Interval = 5000
-            };
-            _heartbeatTimer.Tick += async (_, _) => await SendHeartbeatAsync();
         }
 
         private void MainForm_Load(object sender, EventArgs e)
@@ -30,6 +25,9 @@ namespace BEAM.Emulator
             Log($"Device ID: {_deviceId}");
             Log($"MAC Address: {txtMacAddress.Text}");
             Log("Click 'Discover Servers' to find BEAM.App instances on the network");
+            
+            btnStartHeartbeat.Text = "Connect";
+            btnStopHeartbeat.Text = "Disconnect";
         }
 
         private void btnGenerate_Click(object sender, EventArgs e)
@@ -161,32 +159,7 @@ namespace BEAM.Emulator
             }
         }
 
-        private async Task SendHeartbeatAsync(bool? isConnectedOverride = null)
-        {
-            if (!_heartbeatRunning && isConnectedOverride is null)
-            {
-                return;
-            }
 
-            if (lstServers.SelectedIndex < 0 && string.IsNullOrEmpty(_currentServerBase))
-            {
-                Log("No server selected for heartbeat.");
-                return;
-            }
-
-            var serverBase = _currentServerBase ?? _discoveredServers[lstServers.SelectedIndex].Endpoints.Http;
-            var isConnected = isConnectedOverride ?? true;
-
-            var (ok, err) = await _apiClient.SendHeartbeatAsync(serverBase, _deviceId, isConnected);
-            if (ok)
-            {
-                Log($"Heartbeat sent ({(isConnected ? "online" : "offline")})");
-            }
-            else
-            {
-                Log($"Heartbeat failed: {err ?? "unknown error"}");
-            }
-        }
 
         private async void btnStartHeartbeat_Click(object sender, EventArgs e)
         {
@@ -196,41 +169,87 @@ namespace BEAM.Emulator
                 return;
             }
 
-            if (_heartbeatRunning)
+            if (_deviceConnection != null && _deviceConnection.IsConnected)
             {
                 return;
             }
 
-            _heartbeatRunning = true;
-            _heartbeatTimer.Start();
-            await SendHeartbeatAsync(true);
-            Log("Heartbeat started (every 5s)");
+            var serverBase = _currentServerBase ?? _discoveredServers[lstServers.SelectedIndex].Endpoints.Http;
+
+            try
+            {
+                btnStartHeartbeat.Enabled = false;
+                Log($"Connecting to {serverBase}...");
+
+                _deviceConnection = new DeviceConnection();
+                
+                // Subscribe to events
+                _deviceConnection.LogMessage += Log;
+                _deviceConnection.ConnectionStateChanged += isConnected => 
+                {
+                    this.Invoke(() => 
+                    {
+                        btnStartHeartbeat.Enabled = !isConnected;
+                        btnStopHeartbeat.Enabled = isConnected;
+                        Log(isConnected ? "Status: Connected" : "Status: Disconnected");
+                    });
+                };
+                _deviceConnection.ConfigurationReceived += config =>
+                {
+                    this.Invoke(() =>
+                    {
+                        if (!string.IsNullOrEmpty(config.DeviceName))
+                        {
+                            txtDeviceName.Text = config.DeviceName;
+                            Log($"Updated device name to: {config.DeviceName}");
+                        }
+                        if (config.HeartbeatIntervalSeconds.HasValue)
+                        {
+                            Log($"Updated heartbeat interval to: {config.HeartbeatIntervalSeconds}s");
+                        }
+                    });
+                };
+
+                await _deviceConnection.ConnectAsync(serverBase, _deviceId);
+            }
+            catch (Exception ex)
+            {
+                Log($"Connection failed: {ex.Message}");
+                btnStartHeartbeat.Enabled = true;
+                _deviceConnection = null;
+            }
         }
 
         private async void btnStopHeartbeat_Click(object sender, EventArgs e)
         {
-            if (!_heartbeatRunning)
+            if (_deviceConnection == null)
             {
                 return;
             }
 
-            _heartbeatRunning = false;
-            _heartbeatTimer.Stop();
-            await SendHeartbeatAsync(false);
-            Log("Heartbeat stopped (sent offline)");
+            await _deviceConnection.DisconnectAsync();
+            _deviceConnection = null;
         }
 
         private void Log(string message)
         {
+            if (txtLog.InvokeRequired)
+            {
+                txtLog.Invoke(() => Log(message));
+                return;
+            }
             var timestamp = DateTime.Now.ToString("HH:mm:ss");
             txtLog.AppendText($"[{timestamp}] {message}\r\n");
         }
 
-        protected override void OnFormClosing(FormClosingEventArgs e)
+        protected override async void OnFormClosing(FormClosingEventArgs e)
         {
             _discoveryClient?.Dispose();
             _apiClient.Dispose();
-            _heartbeatTimer.Dispose();
+            if (_deviceConnection != null)
+            {
+                await _deviceConnection.DisposeAsync();
+            }
             base.OnFormClosing(e);
         }
     }

@@ -90,12 +90,13 @@ export const DashboardPage: React.FC = () => {
                         <table>
                             <thead>
                                 <tr>
-                                    <th style={{ width: '26%' }}>Device</th>
-                                    <th style={{ width: '15%' }}>Type</th>
-                                    <th style={{ width: '18%' }}>MAC</th>
-                                    <th style={{ width: '18%' }}>Status</th>
-                                    <th style={{ width: '12%' }}>Registered</th>
+                                    <th style={{ width: '24%' }}>Device</th>
+                                    <th style={{ width: '13%' }}>Type</th>
+                                    <th style={{ width: '16%' }}>MAC</th>
+                                    <th style={{ width: '16%' }}>Status</th>
+                                    <th style={{ width: '11%' }}>Registered</th>
                                     <th style={{ width: '11%' }}>Last Seen</th>
+                                    <th style={{ width: '9%' }}>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -131,6 +132,21 @@ export const DashboardPage: React.FC = () => {
                                         </td>
                                         <td style={{ whiteSpace: 'nowrap' }}>{formatDate(device.registeredAt)}</td>
                                         <td style={{ whiteSpace: 'nowrap' }}>{formatDate(device.lastSeenAt || null)}</td>
+                                        <td>
+                                            <button
+                                                className="btn btn-primary btn-sm"
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    const url = `/device/${device.id}`;
+                                                    window.history.pushState({}, '', url);
+                                                    // Trigger popstate to notify router
+                                                    window.dispatchEvent(new PopStateEvent('popstate'));
+                                                }}
+                                                style={{ fontSize: '0.875rem' }}
+                                            >
+                                                Configure
+                                            </button>
+                                        </td>
                                     </tr>
                                 ))}
                             </tbody>

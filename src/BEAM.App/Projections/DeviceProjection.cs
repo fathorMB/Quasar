@@ -13,7 +13,9 @@ public sealed class DeviceProjection :
     IProjection<DeviceRegistered>,
     IProjection<DeviceActivated>,
     IProjection<DeviceDeactivated>,
-    IProjection<DeviceConnectionStateChanged>
+    IProjection<DeviceConnectionStateChanged>,
+    IProjection<DeviceNameUpdated>,
+    IProjection<DeviceHeartbeatIntervalUpdated>
 {
     private readonly ReadModelContext<BeamReadModelStore> _db;
     private readonly DbSet<DeviceReadModel> _devices;
@@ -82,5 +84,39 @@ public sealed class DeviceProjection :
         device.IsActive = @event.IsConnected;
         device.LastSeenAt = @event.Timestamp;
         await _db.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task HandleAsync(DeviceNameUpdated @event, CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Projection: Processing DeviceNameUpdated for {DeviceId}", @event.DeviceId);
+        
+        var device = await _devices.FirstOrDefaultAsync(d => d.Id == @event.DeviceId, cancellationToken);
+        if (device == null)
+        {
+            _logger.LogWarning("Projection: Device {DeviceId} not found for name update", @event.DeviceId);
+            return;
+        }
+
+        device.DeviceName = @event.NewName;
+        await _db.SaveChangesAsync(cancellationToken);
+        
+        _logger.LogInformation("Projection: Device {DeviceId} name updated to {NewName}", @event.DeviceId, @event.NewName);
+    }
+
+    public async Task HandleAsync(DeviceHeartbeatIntervalUpdated @event, CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Projection: Processing DeviceHeartbeatIntervalUpdated for {DeviceId}", @event.DeviceId);
+        
+        var device = await _devices.FirstOrDefaultAsync(d => d.Id == @event.DeviceId, cancellationToken);
+        if (device == null)
+        {
+            _logger.LogWarning("Projection: Device {DeviceId} not found for heartbeat interval update", @event.DeviceId);
+            return;
+        }
+
+        device.HeartbeatIntervalSeconds = @event.IntervalSeconds;
+        await _db.SaveChangesAsync(cancellationToken);
+        
+        _logger.LogInformation("Projection: Device {DeviceId} heartbeat interval updated to {Interval}s", @event.DeviceId, @event.IntervalSeconds);
     }
 }

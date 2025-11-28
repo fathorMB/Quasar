@@ -78,6 +78,34 @@ public sealed class DeviceAggregate : AggregateRoot
         ApplyChange(new DeviceConnectionStateChanged(deviceId, isConnected, DateTimeOffset.UtcNow));
     }
 
+    /// <summary>
+    /// Updates the device's name.
+    /// </summary>
+    public void UpdateDeviceName(Guid deviceId, string newName)
+    {
+        if (!_registeredDeviceIds.Contains(deviceId))
+            throw new InvalidOperationException($"Device {deviceId} is not registered.");
+
+        if (string.IsNullOrWhiteSpace(newName))
+            throw new ArgumentException("Device name cannot be empty.", nameof(newName));
+
+        ApplyChange(new DeviceNameUpdated(deviceId, newName, DateTimeOffset.UtcNow));
+    }
+
+    /// <summary>
+    /// Updates the device's heartbeat interval.
+    /// </summary>
+    public void UpdateHeartbeatInterval(Guid deviceId, int intervalSeconds)
+    {
+        if (!_registeredDeviceIds.Contains(deviceId))
+            throw new InvalidOperationException($"Device {deviceId} is not registered.");
+
+        if (intervalSeconds < 5 || intervalSeconds > 3600)
+            throw new ArgumentException("Heartbeat interval must be between 5 and 3600 seconds.", nameof(intervalSeconds));
+
+        ApplyChange(new DeviceHeartbeatIntervalUpdated(deviceId, intervalSeconds, DateTimeOffset.UtcNow));
+    }
+
     // Event handlers (private) - called during replay and new events
     private void When(DeviceRegistered @event)
     {
@@ -96,6 +124,16 @@ public sealed class DeviceAggregate : AggregateRoot
     }
 
     private void When(DeviceConnectionStateChanged @event)
+    {
+        // No state change needed for MVP registry
+    }
+
+    private void When(DeviceNameUpdated @event)
+    {
+        // No state change needed for MVP registry
+    }
+
+    private void When(DeviceHeartbeatIntervalUpdated @event)
     {
         // No state change needed for MVP registry
     }

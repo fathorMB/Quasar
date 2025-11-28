@@ -35,6 +35,22 @@ public sealed record UpdateDeviceConnectionStateCommand(
     bool IsConnected) : ICommand<Result>;
 
 /// <summary>
+/// Command to update a device's name.
+/// </summary>
+public sealed record UpdateDeviceNameCommand(
+    Guid SubjectId,
+    Guid DeviceId,
+    string NewName) : ICommand<Result>;
+
+/// <summary>
+/// Command to update a device's heartbeat interval.
+/// </summary>
+public sealed record UpdateDeviceHeartbeatIntervalCommand(
+    Guid SubjectId,
+    Guid DeviceId,
+    int IntervalSeconds) : ICommand<Result>;
+
+/// <summary>
 /// Query to get a single device by ID.
 /// </summary>
 public sealed record GetDeviceQuery(Guid DeviceId) : IQuery<DeviceReadModel?>;
@@ -66,6 +82,7 @@ public sealed class DeviceReadModel
     public bool IsConnected { get; set; }
     public DateTimeOffset RegisteredAt { get; set; }
     public DateTimeOffset? LastSeenAt { get; set; }
+    public int HeartbeatIntervalSeconds { get; set; } = 60; // Default 60 seconds
 }
 
 /// <summary>
