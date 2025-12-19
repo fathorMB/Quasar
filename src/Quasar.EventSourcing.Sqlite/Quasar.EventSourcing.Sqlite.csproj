@@ -10,6 +10,6 @@
     <ProjectReference Include="..\Quasar.Cqrs\Quasar.Cqrs.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.0" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.1" />
   </ItemGroup>
 </Project>

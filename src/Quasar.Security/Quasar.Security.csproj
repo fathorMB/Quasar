@@ -7,6 +7,6 @@
   <ItemGroup>
     <ProjectReference Include="..\Quasar.Core\Quasar.Core.csproj" />
     <ProjectReference Include="..\Quasar.Cqrs\Quasar.Cqrs.csproj" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.1" />
   </ItemGroup>
 </Project>
