@@ -1,4 +1,6 @@
 using System.IO;
+using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 using System.Text;
 using Microsoft.IdentityModel.Tokens;
 using Quasar.Features;
@@ -12,6 +14,13 @@ using Quasar.Seeding;
 using Quasar.Web;
 using Quasar.EventSourcing.Abstractions;
 using Quasar.Cqrs;
+using Quasar.Core;
+using NRGTycoon.App.Domain.Companies;
+using NRGTycoon.App.Handlers.Companies;
+using NRGTycoon.App.ReadModels;
+using NRGTycoon.App.Projections;
+using Quasar.Projections.Abstractions;
+using NRGTycoon.App;
 
 var builder = WebApplication.CreateBuilder(args);
 var configuration = builder.Configuration;
@@ -33,7 +42,7 @@ services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
-        policy.WithOrigins("http://localhost:5173", "http://localhost:5174")
+        policy.WithOrigins("http://localhost:5173", "http://localhost:5174", "http://localhost:5175", "http://localhost:5292")
             .AllowAnyMethod()
             .AllowAnyHeader()
             .AllowCredentials();
@@ -49,19 +58,12 @@ services.AddQuasar(q =>
     q.AddProjections(AppDomain.CurrentDomain.GetAssemblies());
 });
 
-// Configure UI settings - NRG Tycoon branding
-services.AddSingleton(new UiSettings
-{
-    ApplicationName = "NRG Tycoon",
-    Theme = "dark",
-    LogoSymbol = "⚡",
-    CustomBundleUrl = null // No custom UI bundle yet
-});
+// UI settings are configured below in AddQuasarUi
 
-// Event type mapping - identity events only for now
-// Game events will be added later
+// Event type mapping - identity + company events
 IEventTypeMap typeMap = new DictionaryEventTypeMap(new[]
 {
+    // Identity events
     ("identity.user_registered", typeof(Quasar.Identity.UserRegistered)),
     ("identity.user_password_set", typeof(Quasar.Identity.UserPasswordSet)),
     ("identity.user_role_assigned", typeof(Quasar.Identity.UserRoleAssigned)),
@@ -69,13 +71,40 @@ IEventTypeMap typeMap = new DictionaryEventTypeMap(new[]
     ("identity.role_created", typeof(Quasar.Identity.RoleCreated)),
     ("identity.role_renamed", typeof(Quasar.Identity.RoleRenamed)),
     ("identity.role_permission_granted", typeof(Quasar.Identity.RolePermissionGranted)),
-    ("identity.role_permission_revoked", typeof(Quasar.Identity.RolePermissionRevoked))
+    ("identity.role_permission_revoked", typeof(Quasar.Identity.RolePermissionRevoked)),
+    // Company events
+    ("company.created", typeof(CompanyCreated)),
+    ("company.name_updated", typeof(CompanyNameUpdated)),
+    ("company.balance_movement_recorded", typeof(BalanceMovementRecorded))
 });
 services.AddQuasarEventSerializer(typeMap);
 
 // Identity infrastructure - event store, read models, projections
 services.AddQuasarIdentitySqliteInfrastructure(sqliteConnectionString);
+
+// Game read models
+// Game read models
+var readModelConnectionString = ResolveSqliteConnectionString("Data Source=data/nrgtycoon_read.db");
+services.UseEfCoreSqliteReadModels<NRGTycoonReadModelStore>(readModelConnectionString);
 services.UseSqliteProjectionCheckpoints(() => new SqliteConnection(sqliteConnectionString));
+
+// Add polling projector for company events (for potential catch-ups)
+// Polling projector restored to populate new Read Model DB
+services.AddPollingProjector("CompanyProjector", Array.Empty<Guid>(), TimeSpan.FromMilliseconds(500));
+
+// Add live projections for real-time read model updates
+services.AddLiveProjections();
+services.AddLiveProjection<CompanyProjection, CompanyCreated>();
+services.AddLiveProjection<CompanyProjection, CompanyNameUpdated>();
+services.AddLiveProjection<CompanyProjection, BalanceMovementRecorded>();
+
+// Command handlers
+services.AddScoped<ICommandHandler<CreateCompanyCommand, Result<Guid>>, CreateCompanyHandler>();
+services.AddScoped<ICommandHandler<UpdateCompanyNameCommand, Result>, UpdateCompanyNameHandler>();
+services.AddScoped<ICommandHandler<RecordBalanceMovementCommand, Result>, RecordBalanceMovementHandler>();
+
+// Query handlers
+services.AddScoped<IQueryHandler<GetCompanyDashboardQuery, CompanyDashboardDto?>, GetCompanyDashboardHandler>();
 
 var jwtOptions = ResolveJwtOptions(configuration);
 services.AddSingleton(jwtOptions);
@@ -100,7 +129,14 @@ services.AddQuasarIdentitySeed(seed =>
         }
     });
 
+    // Player role - for regular game players
+    seed.WithRole("player", role =>
+    {
+        role.Permissions.Add("game.play");
+    });
+
     seed.WithUser(admin.Username, admin.Email, admin.Password, admin.RoleName);
+    seed.WithUser("player", "player@nrgtycoon.local", "ChangeMe123!", "player");
 });
 
 services.AddQuasarJwtAuthentication(options =>
@@ -115,6 +151,32 @@ services.AddQuasarJwtAuthentication(options =>
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtOptions.Key)),
         ValidateLifetime = true
     };
+    
+    options.IncludeErrorDetails = true;
+    options.Events = new Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerEvents
+    {
+        OnAuthenticationFailed = context =>
+        {
+            var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
+            logger.LogError("JWT Auth Failed: {Message} ({ExceptionType})", context.Exception.Message, context.Exception.GetType().Name);
+            return Task.CompletedTask;
+        },
+        OnTokenValidated = context =>
+        {
+             var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
+             logger.LogInformation("JWT Validated. User: {User}, Claims: {Claims}", 
+                context.Principal?.Identity?.Name, 
+                string.Join(", ", context.Principal?.Claims.Select(c => c.Type + "=" + c.Value) ?? Array.Empty<string>()));
+             return Task.CompletedTask;
+        },
+        OnChallenge = context =>
+        {
+            var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
+            logger.LogWarning("JWT Challenge: {Error} - {Desc}. Failure: {Fail}", 
+                context.Error, context.ErrorDescription, context.AuthenticateFailure?.Message);
+            return Task.CompletedTask;
+        }
+    };
 });
 
 services.AddQuasarUi(ui =>
@@ -122,9 +184,16 @@ services.AddQuasarUi(ui =>
     ui.ApplicationName = "NRG Tycoon";
     ui.Theme = "dark";
     ui.LogoSymbol = "⚡";
+    ui.CustomBundleUrl = "/nrg-ui/nrg-ui.js";
 });
 
 var app = builder.Build();
+
+app.MapGet("/api/debug/me", (ClaimsPrincipal user) => 
+{
+    return Results.Ok(user.Claims.Select(c => new { c.Type, c.Value }));
+}).RequireAuthorization();
+app.Services.ConfigureLiveProjections();
 featureRegistry.LoadFromAssemblies(AppDomain.CurrentDomain.GetAssemblies(), app.Services);
 
 if (!app.Environment.IsDevelopment())
@@ -142,6 +211,57 @@ app.MapQuasarIdentityEndpoints();
 app.MapQuasarUiEndpoints();
 app.MapLoggingEndpoints();
 
+// ========== Company API Endpoints ==========
+
+// Create company (first-time setup)
+app.MapPost("/api/company", async (IMediator mediator, ClaimsPrincipal user, CreateCompanyRequest request, ILogger<Program> logger) =>
+{
+    logger.LogInformation("POST /api/company called. User: {User}, Name: {Name}", user.Identity?.Name, request.Name);
+    var userId = user.FindFirstValue(ClaimTypes.NameIdentifier);
+    if (string.IsNullOrEmpty(userId) || !Guid.TryParse(userId, out var ownerId))
+        return Results.Unauthorized();
+
+    var result = await mediator.Send(new CreateCompanyCommand(ownerId, request.Name));
+    return result.IsSuccess
+        ? Results.Ok(new { companyId = result.Value })
+        : Results.BadRequest(new { error = result.Error?.Message });
+})
+.WithName("CreateCompany")
+.WithTags("Company")
+.RequireAuthorization();
+
+// Update company name
+app.MapPut("/api/company/name", async (IMediator mediator, ClaimsPrincipal user, UpdateCompanyNameRequest request) =>
+{
+    var userId = user.FindFirstValue(ClaimTypes.NameIdentifier);
+    if (string.IsNullOrEmpty(userId) || !Guid.TryParse(userId, out var ownerId))
+        return Results.Unauthorized();
+
+    var result = await mediator.Send(new UpdateCompanyNameCommand(ownerId, request.NewName));
+    return result.IsSuccess
+        ? Results.Ok()
+        : Results.BadRequest(new { error = result.Error?.Message });
+})
+.WithName("UpdateCompanyName")
+.WithTags("Company")
+.RequireAuthorization();
+
+// Get company dashboard
+app.MapGet("/api/company/dashboard", async (IMediator mediator, ClaimsPrincipal user) =>
+{
+    var userId = user.FindFirstValue(ClaimTypes.NameIdentifier);
+    if (string.IsNullOrEmpty(userId) || !Guid.TryParse(userId, out var ownerId))
+        return Results.Unauthorized();
+
+    var dashboard = await mediator.Send(new GetCompanyDashboardQuery(ownerId));
+    return dashboard != null
+        ? Results.Ok(dashboard)
+        : Results.NotFound(new { message = "Company not found. Please create your company first." });
+})
+.WithName("GetCompanyDashboard")
+.WithTags("Company")
+.RequireAuthorization();
+
 app.UseQuasarReactUi();
 
 // Initialize Read Models (schema creation)
@@ -149,6 +269,8 @@ await app.InitializeReadModelsAsync().ConfigureAwait(false);
 
 await app.SeedDataAsync().ConfigureAwait(false);
 await app.RunAsync().ConfigureAwait(false);
+
+// ========== Helper Methods ==========
 
 static JwtOptions ResolveJwtOptions(IConfiguration configuration)
 {
@@ -202,13 +324,4 @@ static AdminSeedOptions ResolveAdminSeedOptions(IConfiguration configuration)
     }
 
     return admin;
-}
-
-sealed class AdminSeedOptions
-{
-    public string Username { get; set; } = "admin";
-    public string Email { get; set; } = "admin@nrgtycoon.local";
-    public string Password { get; set; } = "ChangeMe123!";
-    public string RoleName { get; set; } = "administrator";
-    public IList<string> Permissions { get; set; } = new List<string> { "identity.manage", "game.admin" };
 }

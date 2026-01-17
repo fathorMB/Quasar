@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useUi } from '../context/UiContext';
 import { usersApi } from '../api';
 import './Header.css';
 
@@ -49,12 +50,43 @@ export const Header: React.FC = () => {
         };
     }, []);
 
+    const { pathname } = useLocation();
+    const { customMenu } = useUi();
+
+    const getPageTitle = () => {
+        // Check custom menu first (with direct window fallback)
+        const menuItems = customMenu.length > 0
+            ? customMenu
+            : ((window as any).__QUASAR_CUSTOM_MENU__ || []);
+
+        const customItem = (menuItems as any[])
+            .flatMap((section: any) => section.items)
+            .find((item: any) => item.path === pathname);
+
+        if (customItem) return customItem.label;
+
+        // Fallback/Default routes
+        switch (pathname) {
+            case '/': return 'Dashboard'; // Fallback if not overridden
+            case '/users': return 'Users';
+            case '/roles': return 'Roles';
+            case '/features': return 'Features';
+            case '/jobs': return 'Jobs';
+            case '/logs': return 'Logs';
+            case '/metrics': return 'Metrics';
+            case '/sessions': return 'Sessions';
+            default: return 'Dashboard';
+        }
+    };
+
+    const title = getPageTitle();
+
     return (
         <>
             <header className="app-header">
                 <div className="header-left">
                     {/* Placeholder for page title or breadcrumbs if needed later */}
-                    <h2 className="page-title">Dashboard</h2>
+                    <h2 className="page-title">{title}</h2>
                 </div>
 
                 <div className="header-right">

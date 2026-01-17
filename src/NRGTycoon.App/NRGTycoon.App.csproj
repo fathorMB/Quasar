@@ -3,6 +3,13 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <!-- Point to the NRGTycoon React workspace so builds can pull its dist into wwwroot -->
+    <SpaRoot>..\NRGTycoon.App.Ui.React\</SpaRoot>
+    <SpaRootFull>$(MSBuildThisFileDirectory)$(SpaRoot)</SpaRootFull>
+    <SpaDist>$(SpaRoot)dist\</SpaDist>
+    <SpaDistFull>$(SpaRootFull)dist\</SpaDistFull>
+    <SpaBuildOnBuild>true</SpaBuildOnBuild>
+    <SpaBuildOnPublish>true</SpaBuildOnPublish>
   </PropertyGroup>
 
   <ItemGroup>
@@ -16,5 +23,41 @@
     <ProjectReference Include="..\Quasar.Projections.Sqlite\Quasar.Projections.Sqlite.csproj" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.1" />
   </ItemGroup>
+
+  <!-- Ensure npm dependencies are installed -->
+  <Target Name="EnsureSpaNodeModules" BeforeTargets="Build;Publish" Condition="( '$(SpaBuildOnBuild)' == 'true' or '$(SpaBuildOnPublish)' == 'true' ) and Exists('$(SpaRootFull)package.json') and !Exists('$(SpaRootFull)node_modules')">
+    <Message Text="Installing React UI dependencies (npm ci) under $(SpaRootFull)" Importance="High" />
+    <Exec Command="npm ci" WorkingDirectory="$(SpaRootFull)" />
+  </Target>
+
+  <!-- Build SPA on .NET build -->
+  <Target Name="BuildSpaOnBuild" AfterTargets="Build" Condition="'$(SpaBuildOnBuild)' == 'true' and Exists('$(SpaRootFull)package.json')">
+    <Message Text="Building React UI (npm run build) under $(SpaRootFull)" Importance="High" />
+    <Exec Command="npm run build" WorkingDirectory="$(SpaRootFull)" />
+  </Target>
+
+  <!-- Build SPA on publish -->
+  <Target Name="BuildSpaOnPublish" BeforeTargets="Publish" Condition="'$(SpaBuildOnPublish)' == 'true' and Exists('$(SpaRootFull)package.json')">
+    <Message Text="Building React UI for publish (npm run build) under $(SpaRootFull)" Importance="High" />
+    <Exec Command="npm run build" WorkingDirectory="$(SpaRootFull)" />
+  </Target>
+
+  <!-- Copy SPA dist to wwwroot/nrg-ui on build -->
+  <Target Name="CopySpaOnBuild" AfterTargets="BuildSpaOnBuild" Condition="Exists('$(SpaDistFull)')">
+    <ItemGroup>
+      <SpaAssets Include="$(SpaDistFull)**\*.*" />
+    </ItemGroup>
+    <MakeDir Directories="wwwroot\nrg-ui" Condition="!Exists('wwwroot\nrg-ui')" />
+    <Copy SourceFiles="@(SpaAssets)" DestinationFiles="@(SpaAssets->'wwwroot/nrg-ui/%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
+  </Target>
+
+  <!-- Copy SPA dist to publish output -->
+  <Target Name="CopySpaOnPublish" AfterTargets="BuildSpaOnPublish" Condition="Exists('$(SpaDistFull)')">
+    <ItemGroup>
+      <SpaPublishAssets Include="$(SpaDistFull)**\*.*" />
+    </ItemGroup>
+    <MakeDir Directories="$(PublishDir)wwwroot\nrg-ui" />
+    <Copy SourceFiles="@(SpaPublishAssets)" DestinationFiles="@(SpaPublishAssets->'$(PublishDir)wwwroot/nrg-ui/%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
+  </Target>
 
 </Project>
