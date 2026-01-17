@@ -1,3 +1,4 @@
+import "leaflet/dist/leaflet.css";
 import { DashboardPage } from "./pages/DashboardPage";
 import { ResourcesPage } from "./pages/ResourcesPage";
 import type { CustomNavSection, CustomRoute } from "./types";

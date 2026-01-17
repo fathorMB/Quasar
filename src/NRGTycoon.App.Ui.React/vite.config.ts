@@ -29,6 +29,7 @@ export default defineConfig({
             formats: ["umd"],
             fileName: () => "nrg-ui.js",
         },
+        cssCodeSplit: false, // Generate a single CSS file
         outDir: resolve(__dirname, "dist"),
         emptyOutDir: true,
         rollupOptions: {
@@ -39,6 +40,7 @@ export default defineConfig({
                     "react-dom": "ReactDOM",
                     "react-router-dom": "ReactRouterDOM",
                 },
+                assetFileNames: "nrg-ui.css", // Name the CSS file
             },
         },
     },

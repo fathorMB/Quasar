@@ -37,22 +37,41 @@
     <Exec Command="npm ci" WorkingDirectory="$(SpaRootFull)" />
   </Target>
 
+  <!-- Build SPA on build -->
   <Target Name="BuildSpaOnBuild" AfterTargets="Build" Condition="'$(SpaBuildOnBuild)' == 'true' and Exists('$(SpaRootFull)package.json')">
     <Message Text="Building React UI (npm run build) under $(SpaRootFull)" Importance="High" />
     <Exec Command="npm run build" WorkingDirectory="$(SpaRootFull)" />
   </Target>
 
-  <Target Name="BuildSpaOnPublish" BeforeTargets="Publish" Condition="'$(SpaBuildOnPublish)' == 'true' and Exists('$(SpaRootFull)package.json')">
-    <Message Text="Building React UI for publish (npm run build) under $(SpaRootFull)" Importance="High" />
-    <Exec Command="npm run build" WorkingDirectory="$(SpaRootFull)" />
+  <!-- Build Shell (Quasar.Ui.React) -->
+  <Target Name="BuildShellOnBuild" BeforeTargets="BuildSpaOnBuild">
+    <Message Text="Building UI Shell (Quasar.Ui.React)" Importance="High" />
+    <Exec Command="npm run build" WorkingDirectory="..\Quasar.Ui.React\" />
   </Target>
 
-  <Target Name="CopySpaOnBuild" AfterTargets="BuildSpaOnBuild" Condition="Exists('$(SpaIndexFull)') and Exists('$(SpaDistFull)')">
+  <!-- Clean wwwroot to avoid stale assets -->
+  <Target Name="CleanWwwroot" BeforeTargets="Build">
+    <Message Text="Cleaning wwwroot assets..." Importance="High" />
+    <RemoveDir Directories="wwwroot\assets;wwwroot\beam-ui" />
+    <Delete Files="wwwroot\index.html;wwwroot\vite.svg" />
+  </Target>
+
+  <!-- Copy Shell dist to wwwroot -->
+  <Target Name="CopyShellOnBuild" AfterTargets="BuildShellOnBuild">
+    <ItemGroup>
+      <ShellAssets Include="..\Quasar.Ui.React\dist\**\*.*" />
+    </ItemGroup>
+    <Message Text="Copying UI Shell assets to wwwroot" Importance="High" />
+    <Copy SourceFiles="@(ShellAssets)" DestinationFiles="@(ShellAssets->'wwwroot/%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
+  </Target>
+
+  <!-- Copy SPA dist to wwwroot/beam-ui on build -->
+  <Target Name="CopySpaOnBuild" AfterTargets="BuildSpaOnBuild" Condition="Exists('$(SpaDistFull)')">
     <ItemGroup>
       <SpaAssets Include="$(SpaDistFull)**\*.*" />
     </ItemGroup>
-    <MakeDir Directories="wwwroot" Condition="!Exists('wwwroot')" />
-    <Copy SourceFiles="@(SpaAssets)" DestinationFiles="@(SpaAssets->'wwwroot/%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
+    <MakeDir Directories="wwwroot\beam-ui" Condition="!Exists('wwwroot\beam-ui')" />
+    <Copy SourceFiles="@(SpaAssets)" DestinationFiles="@(SpaAssets->'wwwroot/beam-ui/%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
   </Target>
 
   <Target Name="CopySpaOnPublish" AfterTargets="BuildSpaOnPublish" Condition="Exists('$(SpaIndexFull)') and Exists('$(SpaDistFull)')">

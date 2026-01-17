@@ -8,7 +8,7 @@ public sealed class UiSettings
     /// <summary>
     /// The application name displayed in the UI (e.g., header, sidebar).
     /// </summary>
-    public string ApplicationName { get; set; } = "BEAM";
+    public string ApplicationName { get; set; } = "Quasar";
 
     /// <summary>
     /// The theme to apply. Valid values: "dark", "orange", "green".

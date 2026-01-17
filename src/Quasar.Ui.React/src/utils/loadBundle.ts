@@ -35,6 +35,18 @@ function ensureProcessEnv() {
 }
 
 async function loadModule(url: string) {
+    // Load CSS file first (replace .js with .css)
+    const cssUrl = url.replace(/\.js$/, '.css');
+    try {
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = cssUrl;
+        document.head.appendChild(link);
+        console.log('Loaded custom CSS:', cssUrl);
+    } catch (err) {
+        console.warn('Failed to load custom CSS', cssUrl, err);
+    }
+
     // Use dynamic import to execute the module and register globals.
     try {
         await import(/* @vite-ignore */ url);

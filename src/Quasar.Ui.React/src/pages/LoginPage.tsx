@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useUi } from '../context/UiContext';
 import { useNavigate } from 'react-router-dom';
 import '../styles/globals.css';
 import '../styles/components.css';
@@ -11,6 +12,7 @@ export const LoginPage: React.FC = () => {
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const { login } = useAuth();
+    const { settings } = useUi();
     const navigate = useNavigate();
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -34,9 +36,9 @@ export const LoginPage: React.FC = () => {
                 <div className="login-card card card-gradient">
                     <div className="login-header">
                         <div className="login-logo">
-                            <div className="logo-icon">Q</div>
+                            <div className="logo-icon">{settings?.logoSymbol || 'Q'}</div>
                             <div className="logo-text">
-                                <h1>BEAM</h1>
+                                <h1>{settings?.applicationName || 'Quasar'}</h1>
                                 <p className="text-muted">Identity Server</p>
                             </div>
                         </div>

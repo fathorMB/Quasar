@@ -1,68 +1,24 @@
-import React, { useState, useEffect, Suspense, lazy, useCallback, useRef } from "react";
+import React, { useState, useEffect } from "react";
+import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import { getCompanyDashboard } from "../api/company";
 import type { CompanyDashboard } from "../types";
+import L from "leaflet";
 
-// Lazy load Globe to avoid SSR/Initial load issues with heavy 3D libs
-const Globe = lazy(() => import("react-globe.gl"));
+// Fix default marker icon issue with Leaflet
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+    iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+    iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+    shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+});
 
 export const ResourcesPage: React.FC = () => {
     const [dashboard, setDashboard] = useState<CompanyDashboard | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [countries, setCountries] = useState<any[]>([]);
-    const [cities, setCities] = useState<any[]>([]);
-    const [altitude, setAltitude] = useState(2.5);
-    const lastAltitudeRef = useRef(2.5);
-    const requestRef = useRef<number | null>(null);
-
-    // Throttled altitude update to prevent excessive re-renders during zoom/interaction
-    const throttledSetAltitude = useCallback((newAlt: number) => {
-        lastAltitudeRef.current = newAlt;
-        if (requestRef.current !== null) return;
-
-        requestRef.current = requestAnimationFrame(() => {
-            setAltitude(lastAltitudeRef.current);
-            requestRef.current = null;
-        });
-    }, []);
-
-    useEffect(() => {
-        return () => {
-            if (requestRef.current !== null) cancelAnimationFrame(requestRef.current);
-        };
-    }, []);
 
     useEffect(() => {
         loadDashboard();
-
-        // Use Official unpkg datasets for better reliability
-        fetch("https://unpkg.com/globe.gl/example/datasets/ne_110m_admin_0_countries.geojson")
-            .then(res => res.json())
-            .then(data => {
-                if (data.features) {
-                    setCountries(data.features);
-                }
-            })
-            .catch(err => console.error("Failed to load borders:", err));
-
-        // Load More Cities (Lower pop filter for more density)
-        fetch("https://unpkg.com/globe.gl/example/datasets/ne_110m_populated_places_simple.geojson")
-            .then(res => res.json())
-            .then(data => {
-                if (data.features) {
-                    const cityList = data.features
-                        .filter((c: any) => c.properties.pop_max > 500000) // Lower filter (500k) for density
-                        .map((c: any) => ({
-                            lat: c.geometry.coordinates[1],
-                            lng: c.geometry.coordinates[0],
-                            name: c.properties.name,
-                            size: 0.15, // Baseline size
-                            dotRadius: 0.08
-                        }));
-                    setCities(cityList);
-                }
-            })
-            .catch(err => console.error("Failed to load cities:", err));
     }, []);
 
     async function loadDashboard() {
@@ -85,8 +41,15 @@ export const ResourcesPage: React.FC = () => {
         }).format(val);
     };
 
-    // Scaling labels based on altitude
-    const getLabelSize = () => Math.max(0.1, 0.3 * altitude);
+    // Sample resource locations for demonstration
+    const resourceLocations = [
+        { lat: 29.7604, lng: -95.3698, name: "Houston Oil Field", type: "oil" },
+        { lat: 33.4484, lng: -112.0740, name: "Phoenix Gas Reserve", type: "gas" },
+        { lat: 47.6062, lng: -122.3321, name: "Seattle Uranium Mine", type: "uranium" },
+        { lat: 51.5074, lng: -0.1278, name: "London Energy Hub", type: "oil" },
+        { lat: 35.6762, lng: 139.6503, name: "Tokyo Power Plant", type: "uranium" },
+        { lat: -33.8688, lng: 151.2093, name: "Sydney Gas Field", type: "gas" },
+    ];
 
     if (loading) {
         return (
@@ -97,42 +60,30 @@ export const ResourcesPage: React.FC = () => {
     }
 
     return (
-        <div style={{ position: "relative", width: "100%", height: "calc(100vh - 100px)", overflow: "hidden", background: "#000" }}>
-            {/* 3D Globe Container */}
-            <div style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }}>
-                <Suspense fallback={<div className="flex items-center justify-center h-full">Loading Earth...</div>}>
-                    <Globe
-                        globeTileEngineUrl={(x, y, l) => `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${l}/${y}/${x}`}
-                        backgroundImageUrl="//unpkg.com/three-globe/example/img/night-sky.png"
-                        atmosphereColor="#3a228a"
-                        atmosphereAltitude={0.15}
-                        onZoom={({ altitude }) => throttledSetAltitude(altitude)}
-
-                        // Country Borders
-                        polygonsData={countries}
-                        polygonAltitude={0.006} // Keep borders nearly flush with surface
-                        polygonSideColor={() => "rgba(0, 0, 0, 0)"}
-                        polygonCapColor={() => "rgba(255, 255, 255, 0.04)"}
-                        polygonStrokeColor={() => "#ffffff"}
-                        polygonsTransitionDuration={0} // Performance boost
-                        polygonLabel={({ properties: d }: any) => `
-                            <b>${d.ADMIN} (${d.ISO_A2})</b>
-                        `}
-
-                        // Cities
-                        labelsData={cities}
-                        labelLat={(d: any) => d.lat}
-                        labelLng={(d: any) => d.lng}
-                        labelText={(d: any) => d.name}
-                        labelSize={getLabelSize}
-                        labelDotRadius={0.1}
-                        labelColor={() => "rgba(255, 255, 255, 1.0)"}
-                        labelResolution={2}
-                        labelIncludeDot={true}
-                        labelsTransitionDuration={0} // Performance boost
-                    />
-                </Suspense>
-            </div>
+        <div style={{ position: "relative", width: "100%", height: "calc(100vh - 100px)", overflow: "hidden" }}>
+            {/* Map Container */}
+            <MapContainer
+                center={[20, 0]}
+                zoom={2}
+                style={{ width: "100%", height: "100%" }}
+                zoomControl={true}
+            >
+                <TileLayer
+                    attribution='&copy; <a href="https://carto.com/">CartoDB</a>'
+                    url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+                />
+                {resourceLocations.map((location, idx) => (
+                    <Marker key={idx} position={[location.lat, location.lng]}>
+                        <Popup>
+                            <div style={{ color: "#1e293b" }}>
+                                <strong>{location.name}</strong>
+                                <br />
+                                Type: {location.type}
+                            </div>
+                        </Popup>
+                    </Marker>
+                ))}
+            </MapContainer>
 
             {/* Resources HUD Overlay */}
             <div style={{
@@ -142,12 +93,13 @@ export const ResourcesPage: React.FC = () => {
                 right: "20px",
                 display: "flex",
                 justifyContent: "space-between",
-                pointerEvents: "none"
+                pointerEvents: "none",
+                zIndex: 1000
             }}>
                 <div style={{ display: "flex", gap: "16px", pointerEvents: "auto" }}>
                     {/* Oil Counter */}
                     <div className="card" style={{
-                        background: "rgba(15, 23, 42, 0.7)",
+                        background: "rgba(15, 23, 42, 0.9)",
                         backdropFilter: "blur(8px)",
                         border: "1px solid rgba(148, 163, 184, 0.2)",
                         padding: "12px 20px",
@@ -168,7 +120,7 @@ export const ResourcesPage: React.FC = () => {
 
                     {/* Gas Counter */}
                     <div className="card" style={{
-                        background: "rgba(15, 23, 42, 0.7)",
+                        background: "rgba(15, 23, 42, 0.9)",
                         backdropFilter: "blur(8px)",
                         border: "1px solid rgba(148, 163, 184, 0.2)",
                         padding: "12px 20px",
@@ -189,7 +141,7 @@ export const ResourcesPage: React.FC = () => {
 
                     {/* Uranium Counter */}
                     <div className="card" style={{
-                        background: "rgba(15, 23, 42, 0.7)",
+                        background: "rgba(15, 23, 42, 0.9)",
                         backdropFilter: "blur(8px)",
                         border: "1px solid rgba(148, 163, 184, 0.2)",
                         padding: "12px 20px",
@@ -209,9 +161,9 @@ export const ResourcesPage: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Map Legend/Focus Info */}
+                {/* Map Legend */}
                 <div className="card" style={{
-                    background: "rgba(15, 23, 42, 0.7)",
+                    background: "rgba(15, 23, 42, 0.9)",
                     backdropFilter: "blur(8px)",
                     border: "1px solid rgba(148, 163, 184, 0.2)",
                     padding: "12px 20px",
@@ -228,7 +180,7 @@ export const ResourcesPage: React.FC = () => {
 
             {/* Error Message */}
             {error && (
-                <div style={{ position: "absolute", bottom: "20px", left: "50%", transform: "translateX(-50%)" }}>
+                <div style={{ position: "absolute", bottom: "20px", left: "50%", transform: "translateX(-50%)", zIndex: 1000 }}>
                     <div className="alert alert-error">{error}</div>
                 </div>
             )}
