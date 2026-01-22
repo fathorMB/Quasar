@@ -10,6 +10,8 @@
     <SpaDistFull>$(SpaRootFull)dist\</SpaDistFull>
     <SpaBuildOnBuild>true</SpaBuildOnBuild>
     <SpaBuildOnPublish>true</SpaBuildOnPublish>
+    <NpmCommand Condition="$([MSBuild]::IsOSPlatform('Windows'))">npm.cmd</NpmCommand>
+    <NpmCommand Condition="!$([MSBuild]::IsOSPlatform('Windows'))">npm</NpmCommand>
   </PropertyGroup>
 
   <ItemGroup>
@@ -26,20 +28,25 @@
 
   <!-- Ensure npm dependencies are installed -->
   <Target Name="EnsureSpaNodeModules" BeforeTargets="Build;Publish" Condition="( '$(SpaBuildOnBuild)' == 'true' or '$(SpaBuildOnPublish)' == 'true' ) and Exists('$(SpaRootFull)package.json') and !Exists('$(SpaRootFull)node_modules')">
-    <Message Text="Installing React UI dependencies (npm ci) under $(SpaRootFull)" Importance="High" />
-    <Exec Command="npm ci" WorkingDirectory="$(SpaRootFull)" />
+    <Message Text="Installing React UI dependencies ($(NpmCommand) ci) under $(SpaRootFull)" Importance="High" />
+    <Exec Command="$(NpmCommand) ci" WorkingDirectory="$(SpaRootFull)" />
+  </Target>
+
+  <Target Name="EnsureShellNodeModules" BeforeTargets="Build;Publish" Condition="( '$(SpaBuildOnBuild)' == 'true' or '$(SpaBuildOnPublish)' == 'true' ) and !Exists('..\Quasar.Ui.React\node_modules')">
+    <Message Text="Installing UI Shell dependencies ($(NpmCommand) ci)" Importance="High" />
+    <Exec Command="$(NpmCommand) ci" WorkingDirectory="..\Quasar.Ui.React\" />
   </Target>
 
   <!-- Build SPA on build -->
   <Target Name="BuildSpaOnBuild" AfterTargets="Build" Condition="'$(SpaBuildOnBuild)' == 'true' and Exists('$(SpaRootFull)package.json')">
-    <Message Text="Building React UI (npm run build) under $(SpaRootFull)" Importance="High" />
-    <Exec Command="npm run build" WorkingDirectory="$(SpaRootFull)" />
+    <Message Text="Building React UI ($(NpmCommand) run build) under $(SpaRootFull)" Importance="High" />
+    <Exec Command="$(NpmCommand) run build" WorkingDirectory="$(SpaRootFull)" />
   </Target>
 
   <!-- Build Shell (Quasar.Ui.React) -->
   <Target Name="BuildShellOnBuild" BeforeTargets="BuildSpaOnBuild">
     <Message Text="Building UI Shell (Quasar.Ui.React)" Importance="High" />
-    <Exec Command="npm run build" WorkingDirectory="..\Quasar.Ui.React\" />
+    <Exec Command="$(NpmCommand) run build" WorkingDirectory="..\Quasar.Ui.React\" />
   </Target>
 
   <!-- Clean wwwroot to avoid stale assets -->
