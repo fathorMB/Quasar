@@ -116,7 +116,7 @@ public static class DependencyInjection
     /// <summary>
     /// Configures EF Core-backed read models using SQL Server.
     /// </summary>
-    public static IServiceCollection UseEfCoreSqlServerReadModels<TStore>(this IServiceCollection services, string connectionString, bool registerRepositories = true)
+    public static IServiceCollection UseEfCoreSqlServerReadModels<TStore>(this IServiceCollection services, string connectionString, bool registerRepositories = true, bool registerSchemaServices = true)
         where TStore : class, IReadModelStoreMarker
     {
         services.TryAddSingleton<IReadModelModelSource, ReadModelModelSource>();
@@ -133,9 +133,12 @@ public static class DependencyInjection
             o.ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning));
         }, ServiceLifetime.Scoped);
 
-        services.AddScoped<IReadModelSchemaInitializer<ReadModelContext<TStore>>, SqlServerReadModelSchemaInitializer<ReadModelContext<TStore>>>();
-        services.AddSingleton<IReadModelSchemaBootstrapper, ReadModelSchemaBootstrapper<ReadModelContext<TStore>>>();
-        services.AddHostedService<ReadModelSchemaInitializerHostedService<ReadModelContext<TStore>>>();
+        if (registerSchemaServices)
+        {
+            services.AddScoped<IReadModelSchemaInitializer<ReadModelContext<TStore>>, SqlServerReadModelSchemaInitializer<ReadModelContext<TStore>>>();
+            services.AddSingleton<IReadModelSchemaBootstrapper, ReadModelSchemaBootstrapper<ReadModelContext<TStore>>>();
+            services.AddHostedService<ReadModelSchemaInitializerHostedService<ReadModelContext<TStore>>>();
+        }
 
         if (registerRepositories)
         {
@@ -152,7 +155,7 @@ public static class DependencyInjection
     /// <summary>
     /// Configures EF Core-backed read models using SQLite.
     /// </summary>
-    public static IServiceCollection UseEfCoreSqliteReadModels<TStore>(this IServiceCollection services, string connectionString, bool registerRepositories = true)
+    public static IServiceCollection UseEfCoreSqliteReadModels<TStore>(this IServiceCollection services, string connectionString, bool registerRepositories = true, bool registerSchemaServices = true)
         where TStore : class, IReadModelStoreMarker
     {
         services.TryAddSingleton<IReadModelModelSource, ReadModelModelSource>();
@@ -169,9 +172,12 @@ public static class DependencyInjection
             o.ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning));
         }, ServiceLifetime.Scoped);
 
-        services.AddScoped<IReadModelSchemaInitializer<ReadModelContext<TStore>>, SqliteReadModelSchemaInitializer<ReadModelContext<TStore>>>();
-        services.AddSingleton<IReadModelSchemaBootstrapper, ReadModelSchemaBootstrapper<ReadModelContext<TStore>>>();
-        services.AddHostedService<ReadModelSchemaInitializerHostedService<ReadModelContext<TStore>>>();
+        if (registerSchemaServices)
+        {
+            services.AddScoped<IReadModelSchemaInitializer<ReadModelContext<TStore>>, SqliteReadModelSchemaInitializer<ReadModelContext<TStore>>>();
+            services.AddSingleton<IReadModelSchemaBootstrapper, ReadModelSchemaBootstrapper<ReadModelContext<TStore>>>();
+            services.AddHostedService<ReadModelSchemaInitializerHostedService<ReadModelContext<TStore>>>();
+        }
 
         if (registerRepositories)
         {
@@ -280,7 +286,8 @@ public static class DependencyInjection
     public static IServiceCollection AddQuasarIdentitySqliteInfrastructure(
         this IServiceCollection services,
         string? connectionString = null,
-        Action<SqliteEventStoreOptions>? configureEventStore = null)
+        Action<SqliteEventStoreOptions>? configureEventStore = null,
+        bool initializeSchema = true)
     {
         // Resolve connection string with fallback to configuration
         if (string.IsNullOrWhiteSpace(connectionString))
@@ -307,13 +314,16 @@ public static class DependencyInjection
         configureEventStore?.Invoke(sqliteOptions);
 
         // Initialize schema synchronously (required before DI completes)
-        try
+        if (initializeSchema)
         {
-            SqliteEventStoreInitializer.EnsureSchemaAsync(sqliteOptions).GetAwaiter().GetResult();
-        }
-        catch (Exception ex)
-        {
-            Console.Error.WriteLine($"[Quasar] ERROR Initializing Event Store Schema: {ex}");
+            try
+            {
+                SqliteEventStoreInitializer.EnsureSchemaAsync(sqliteOptions).GetAwaiter().GetResult();
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"[Quasar] ERROR Initializing Event Store Schema: {ex}");
+            }
         }
 
         services.UseSqliteEventStore(sqliteOptions);
@@ -322,7 +332,8 @@ public static class DependencyInjection
         // Read models
         services.UseEfCoreSqliteReadModels<Quasar.Identity.Persistence.Relational.EfCore.IdentityReadModelStore>(
             resolvedConnectionString,
-            registerRepositories: false);
+            registerRepositories: false,
+            registerSchemaServices: initializeSchema);
 
         // Projections
         services.AddScoped<object, Quasar.Identity.Persistence.Relational.EfCore.IdentityProjections>();
@@ -343,7 +354,8 @@ public static class DependencyInjection
     public static IServiceCollection AddQuasarIdentitySqlServerInfrastructure(
         this IServiceCollection services,
         string? connectionString = null,
-        Action<SqlEventStoreOptions>? configureEventStore = null)
+        Action<SqlEventStoreOptions>? configureEventStore = null,
+        bool initializeSchema = true)
     {
         // Resolve connection string with  fallback to configuration
         if (string.IsNullOrWhiteSpace(connectionString))
@@ -374,7 +386,10 @@ public static class DependencyInjection
         configureEventStore?.Invoke(sqlServerOptions);
 
         // Initialize schema synchronously
-        SqlEventStoreInitializer.EnsureSchemaAsync(sqlServerOptions).GetAwaiter().GetResult();
+        if (initializeSchema)
+        {
+            SqlEventStoreInitializer.EnsureSchemaAsync(sqlServerOptions).GetAwaiter().GetResult();
+        }
 
         services.UseSqlServerEventStore(sqlServerOptions);
         services.UseSqlServerCommandTransaction();
@@ -382,7 +397,8 @@ public static class DependencyInjection
         // Read models
         services.UseEfCoreSqlServerReadModels<Quasar.Identity.Persistence.Relational.EfCore.IdentityReadModelStore>(
             connectionString,
-            registerRepositories: false);
+            registerRepositories: false,
+            registerSchemaServices: initializeSchema);
 
         // Projections
         services.AddScoped<object, Quasar.Identity.Persistence.Relational.EfCore.IdentityProjections>();
