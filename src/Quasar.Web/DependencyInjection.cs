@@ -60,7 +60,13 @@ public static class DependencyInjection
     /// </summary>
     public static IServiceCollection AddQuasarEventSerializer(this IServiceCollection services, IEventTypeMap typeMap)
     {
-        services.AddSingleton<IEventSerializer>(sp => new SystemTextJsonEventSerializer(typeMap));
+        services.AddSingleton(typeMap);
+        services.Replace(ServiceDescriptor.Singleton<IEventSerializer>(sp =>
+        {
+            var maps = sp.GetServices<IEventTypeMap>();
+            if (maps.Count() == 1) return new SystemTextJsonEventSerializer(maps.First());
+            return new SystemTextJsonEventSerializer(new CompositeEventTypeMap(maps));
+        }));
         return services;
     }
 
@@ -299,12 +305,8 @@ public static class DependencyInjection
 
         var resolvedConnectionString = ResolveSqliteConnectionString(connectionString);
 
-        // Register event type map only if no serializer exists
-        var existingSerializer = services.FirstOrDefault(d => d.ServiceType == typeof(IEventSerializer));
-        if (existingSerializer == null)
-        {
-            services.AddQuasarEventSerializer(Quasar.Identity.IdentityEventTypeMap.Create());
-        }
+        // Register event type map (additive)
+        services.AddQuasarEventSerializer(Quasar.Identity.IdentityEventTypeMap.Create());
 
         // Event store configuration
         var sqliteOptions = new SqliteEventStoreOptions
@@ -371,12 +373,8 @@ public static class DependencyInjection
             }
         }
 
-        // Register event type map only if no serializer exists
-        var existingSerializer = services.FirstOrDefault(d => d.ServiceType == typeof(IEventSerializer));
-        if (existingSerializer == null)
-        {
-            services.AddQuasarEventSerializer(Quasar.Identity.IdentityEventTypeMap.Create());
-        }
+        // Register event type map (additive)
+        services.AddQuasarEventSerializer(Quasar.Identity.IdentityEventTypeMap.Create());
 
         // Event store configuration
         var sqlServerOptions = new SqlEventStoreOptions

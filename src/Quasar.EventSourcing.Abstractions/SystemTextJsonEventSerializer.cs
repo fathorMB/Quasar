@@ -37,6 +37,46 @@ public sealed class DictionaryEventTypeMap : IEventTypeMap
             : throw new InvalidOperationException($"Event type '{eventType.FullName}' is not mapped.");
 }
 
+public sealed class CompositeEventTypeMap : IEventTypeMap
+{
+    private readonly IEnumerable<IEventTypeMap> _maps;
+
+    public CompositeEventTypeMap(IEnumerable<IEventTypeMap> maps)
+    {
+        _maps = maps;
+    }
+
+    public CompositeEventTypeMap(params IEventTypeMap[] maps) : this((IEnumerable<IEventTypeMap>)maps) { }
+
+    public Type Resolve(string typeName)
+    {
+        foreach (var map in _maps)
+        {
+            try
+            {
+                var type = map.Resolve(typeName);
+                if (type != null) return type;
+            }
+            catch (InvalidOperationException) { }
+        }
+        throw new InvalidOperationException($"Unknown event type '{typeName}'.");
+    }
+
+    public string GetName(Type eventType)
+    {
+        foreach (var map in _maps)
+        {
+            try
+            {
+                var name = map.GetName(eventType);
+                if (name != null) return name;
+            }
+            catch (InvalidOperationException) { }
+        }
+        throw new InvalidOperationException($"Event type '{eventType.FullName}' is not mapped.");
+    }
+}
+
 public sealed class SystemTextJsonEventSerializer : IEventSerializer
 {
     private readonly JsonSerializerOptions _options;
