@@ -91,7 +91,7 @@ export const MainLayout: React.FC = () => {
             {/* Main Content Wrapper */}
             <div className="content-wrapper">
                 <Header />
-                <main className="main-content">
+                <main className={`main-content ${(Outlet as any)?.type?.layoutOptions?.noPadding ? 'no-padding' : ''}`}>
                     <Outlet />
                 </main>
             </div>

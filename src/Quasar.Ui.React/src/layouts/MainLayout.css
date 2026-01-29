@@ -107,6 +107,11 @@
     padding: var(--spacing-xl);
 }
 
+.main-content.no-padding {
+    padding: 0;
+    overflow: hidden;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .main-layout {

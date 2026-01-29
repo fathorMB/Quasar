@@ -90,3 +90,29 @@ jobs:
             echo "Publishing $package"
             dotnet nuget push "$package" --api-key "$NUGET_API_KEY" --source "$NUGET_SOURCE" --skip-duplicate
           done
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@fathormb'
+
+      - name: Install UI Shell dependencies
+        run: npm ci
+        working-directory: src/Quasar.Ui.React
+
+      - name: Update Quasar UI Version
+        run: |
+          npm version ${{ env.PACKAGE_VERSION }} --no-git-tag-version
+        working-directory: src/Quasar.Ui.React
+
+      - name: Build UI Shell
+        run: npm run build
+        working-directory: src/Quasar.Ui.React
+
+      - name: Publish UI Shell to GitHub Packages
+        run: npm publish
+        working-directory: src/Quasar.Ui.React
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

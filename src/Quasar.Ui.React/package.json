@@ -1,7 +1,12 @@
 {
-  "name": "quasar-ui-react",
-  "private": true,
-  "version": "0.0.0",
+  "name": "@fathormb/quasar-ui-react",
+  "version": "0.15.5",
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "files": [
+    "dist"
+  ],
   "type": "module",
   "scripts": {
     "dev": "vite",
