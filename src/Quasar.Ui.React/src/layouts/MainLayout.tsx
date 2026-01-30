@@ -49,7 +49,7 @@ export const MainLayout: React.FC = () => {
                         </div>
                     ))}
 
-                    {user?.roles?.includes('administrator') && (
+                    {user?.roles?.includes('administrator') && settings?.showAdminMenu !== false && (
                         <div className="nav-section">
                             <h3 className="nav-section-title">Administration</h3>
                             <Link to="/users" className="nav-link">

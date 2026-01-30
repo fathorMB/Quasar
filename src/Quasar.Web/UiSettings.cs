@@ -25,4 +25,10 @@ public sealed class UiSettings
     /// If set, the shell will load this module at runtime before mounting.
     /// </summary>
     public string? CustomBundleUrl { get; set; }
+
+    /// <summary>
+    /// Whether to show the framework's Administration menu section (Users, Roles, Logs, etc.).
+    /// Defaults to true. Set to false for player-facing applications.
+    /// </summary>
+    public bool ShowAdminMenu { get; set; } = true;
 }
