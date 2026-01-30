@@ -1,6 +1,6 @@
 {
   "name": "@fathormb/quasar-ui-react",
-  "version": "0.15.5",
+  "version": "1.0.0",
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"
   },
