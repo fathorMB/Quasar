@@ -14,7 +14,7 @@ public interface IDomainEvent { }
 /// </summary>
 public abstract class AggregateRoot
 {
-    private static readonly ConcurrentDictionary<Type, MethodInfo?> WhenCache = new();
+    private static readonly ConcurrentDictionary<(Type AggregateType, Type EventType), MethodInfo?> WhenCache = new();
     
     private readonly List<IDomainEvent> _uncommitted = new();
 
@@ -59,8 +59,9 @@ public abstract class AggregateRoot
     {
         var eventType = @event.GetType();
 
-        var when = WhenCache.GetOrAdd(eventType, eType =>
-            GetType().GetMethod("When", BindingFlags.Instance | BindingFlags.NonPublic, new[] { eType })
+        var aggregateType = GetType();
+        var when = WhenCache.GetOrAdd((aggregateType, eventType), key =>
+            key.AggregateType.GetMethod("When", BindingFlags.Instance | BindingFlags.NonPublic, new[] { key.EventType })
         );
 
         when?.Invoke(this, new object[] { @event });
