@@ -16,7 +16,9 @@ class NotificationSignalR {
         if (this.connection) return;
 
         this.connection = new signalR.HubConnectionBuilder()
-            .withUrl('/hubs/notifications')
+            .withUrl('/hubs/notifications', {
+                accessTokenFactory: () => localStorage.getItem('accessToken') || ''
+            })
             .withAutomaticReconnect()
             .build();
 
