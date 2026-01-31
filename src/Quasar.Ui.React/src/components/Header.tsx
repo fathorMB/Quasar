@@ -7,7 +7,6 @@ import { NotificationBell } from './NotificationBell';
 import './Header.css';
 
 export const Header: React.FC = () => {
-    console.log('[DEBUG] Header Mounting');
     const { user, logout } = useAuth();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [newPassword, setNewPassword] = useState<string | null>(null);

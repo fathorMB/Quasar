@@ -4,7 +4,6 @@ import { notificationSignalR } from '../api/notification';
 import './NotificationBell.css';
 
 export const NotificationBell: React.FC = () => {
-    console.log('[DEBUG] NotificationBell Mounting');
     const { notifications, unreadCount, addNotification, markAsRead, markAllAsRead } = useNotifications();
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
