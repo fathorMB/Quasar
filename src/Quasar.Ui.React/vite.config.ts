@@ -1,9 +1,17 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import dts from 'vite-plugin-dts'
+import { resolve } from 'path'
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    dts({
+      tsconfigPath: './tsconfig.app.json',
+      insertTypesEntry: true
+    })
+  ],
   server: {
     port: 5173,
     proxy: {
@@ -20,9 +28,23 @@ export default defineConfig({
     }
   },
   build: {
-    // Keep the SPA build inside this project so BEAM.App's MSBuild targets
-    // can find the expected dist/ folder to copy into its wwwroot.
-    outDir: 'dist',
+    lib: {
+      entry: resolve(__dirname, 'src/index.ts'),
+      name: 'QuasarUiReact',
+      fileName: (format) => `index.${format}.js`
+    },
+    rollupOptions: {
+      external: ['react', 'react-dom', 'react-router-dom', '@microsoft/signalr', 'axios'],
+      output: {
+        globals: {
+          react: 'React',
+          'react-dom': 'ReactDOM',
+          'react-router-dom': 'ReactRouterDOM',
+          '@microsoft/signalr': 'signalR',
+          axios: 'axios'
+        }
+      }
+    },
     emptyOutDir: true,
   },
 })
