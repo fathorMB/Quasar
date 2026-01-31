@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useUi } from '../context/UiContext';
 import { usersApi } from '../api';
+import { NotificationBell } from './NotificationBell';
 import './Header.css';
 
 export const Header: React.FC = () => {
@@ -90,6 +91,7 @@ export const Header: React.FC = () => {
                 </div>
 
                 <div className="header-right">
+                    <NotificationBell />
                     <div className="user-profile">
                         <div className="user-info">
                             <span className="user-name">{user?.username || 'Guest'}</span>

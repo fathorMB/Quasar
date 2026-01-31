@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { UiProvider, useUi } from './context/UiContext';
 import { FeatureProvider } from './context/FeatureContext';
 import { useFeatures } from './context/FeatureContext';
+import { NotificationProvider } from './context/NotificationContext';
 import './styles/modal-fix.css';
 import { MainLayout } from './layouts/MainLayout';
 import { LoginPage } from './pages/LoginPage';
@@ -120,10 +121,12 @@ function App() {
       <UiProvider>
         <AuthProvider>
           <FeatureProvider>
-            <AppRoutes />
-            {showSessionRevokedModal && (
-              <SessionRevokedModal onClose={handleModalClose} />
-            )}
+            <NotificationProvider>
+              <AppRoutes />
+              {showSessionRevokedModal && (
+                <SessionRevokedModal onClose={handleModalClose} />
+              )}
+            </NotificationProvider>
           </FeatureProvider>
         </AuthProvider>
       </UiProvider>
