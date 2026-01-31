@@ -18,7 +18,7 @@ public interface ISignalRDispatcher<TClient, in TPayload>
 /// <summary>
 /// Bridges the generic real-time notifier abstraction with SignalR hubs.
 /// </summary>
-public sealed class SignalRNotifier<THub, TClient, TPayload> : IRealTimeNotifier<TPayload>
+public sealed class SignalRNotifier<THub, TClient, TPayload> : ITargetedRealTimeNotifier<TPayload>
     where THub : RealTimeHub<TClient>
     where TClient : class
 {
@@ -37,4 +37,12 @@ public sealed class SignalRNotifier<THub, TClient, TPayload> : IRealTimeNotifier
     /// <inheritdoc />
     public Task NotifyAsync(TPayload payload, CancellationToken cancellationToken = default)
         => _dispatcher.DispatchAsync(_context.Clients.All, payload, cancellationToken);
+        
+    /// <inheritdoc />
+    public Task NotifyUserAsync(string userId, TPayload payload, CancellationToken cancellationToken = default)
+        => _dispatcher.DispatchAsync(_context.Clients.User(userId), payload, cancellationToken);
+
+    /// <inheritdoc />
+    public Task NotifyGroupAsync(string groupName, TPayload payload, CancellationToken cancellationToken = default)
+        => _dispatcher.DispatchAsync(_context.Clients.Group(groupName), payload, cancellationToken);
 }

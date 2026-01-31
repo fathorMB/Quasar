@@ -1,7 +1,7 @@
 import xe, { createContext as U, useState as j, useContext as M, useEffect as S, useRef as re } from "react";
 import W from "axios";
 import * as be from "@microsoft/signalr";
-import { useNavigate as ne, useLocation as je, Link as R, Outlet as X } from "react-router-dom";
+import { useNavigate as ne, useLocation as je, Link as T, Outlet as X } from "react-router-dom";
 var I = { exports: {} }, A = {};
 var Z;
 function Ne() {
@@ -54,7 +54,7 @@ function ke() {
         ), e.$$typeof) {
           case y:
             return "Portal";
-          case T:
+          case R:
             return e.displayName || "Context";
           case k:
             return (e._context.displayName || "Context") + ".Consumer";
@@ -63,7 +63,7 @@ function ke() {
             return e = e.displayName, e || (e = a.displayName || a.name || "", e = e !== "" ? "ForwardRef(" + e + ")" : "ForwardRef"), e;
           case he:
             return a = e.displayName || null, a !== null ? a : t(e.type) || "Memo";
-          case L:
+          case F:
             a = e._payload, e = e._init;
             try {
               return t(e(a));
@@ -94,7 +94,7 @@ function ke() {
     }
     function u(e) {
       if (e === _) return "<>";
-      if (typeof e == "object" && e !== null && e.$$typeof === L)
+      if (typeof e == "object" && e !== null && e.$$typeof === F)
         return "<...>";
       try {
         var a = t(e);
@@ -104,7 +104,7 @@ function ke() {
       }
     }
     function c() {
-      var e = F.A;
+      var e = L.A;
       return e === null ? null : e.getOwner();
     }
     function o() {
@@ -217,12 +217,12 @@ React keys must be passed directly to JSX without using spread:
       );
     }
     function d(e) {
-      v(e) ? e._store && (e._store.validated = 1) : typeof e == "object" && e !== null && e.$$typeof === L && (e._payload.status === "fulfilled" ? v(e._payload.value) && e._payload.value._store && (e._payload.value._store.validated = 1) : e._store && (e._store.validated = 1));
+      v(e) ? e._store && (e._store.validated = 1) : typeof e == "object" && e !== null && e.$$typeof === F && (e._payload.status === "fulfilled" ? v(e._payload.value) && e._payload.value._store && (e._payload.value._store.validated = 1) : e._store && (e._store.validated = 1));
     }
     function v(e) {
       return typeof e == "object" && e !== null && e.$$typeof === N;
     }
-    var b = xe, N = Symbol.for("react.transitional.element"), y = Symbol.for("react.portal"), _ = Symbol.for("react.fragment"), q = Symbol.for("react.strict_mode"), $ = Symbol.for("react.profiler"), k = Symbol.for("react.consumer"), T = Symbol.for("react.context"), C = Symbol.for("react.forward_ref"), me = Symbol.for("react.suspense"), fe = Symbol.for("react.suspense_list"), he = Symbol.for("react.memo"), L = Symbol.for("react.lazy"), pe = Symbol.for("react.activity"), ge = Symbol.for("react.client.reference"), F = b.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE, z = Object.prototype.hasOwnProperty, ve = Array.isArray, Y = console.createTask ? console.createTask : function() {
+    var b = xe, N = Symbol.for("react.transitional.element"), y = Symbol.for("react.portal"), _ = Symbol.for("react.fragment"), q = Symbol.for("react.strict_mode"), $ = Symbol.for("react.profiler"), k = Symbol.for("react.consumer"), R = Symbol.for("react.context"), C = Symbol.for("react.forward_ref"), me = Symbol.for("react.suspense"), fe = Symbol.for("react.suspense_list"), he = Symbol.for("react.memo"), F = Symbol.for("react.lazy"), pe = Symbol.for("react.activity"), ge = Symbol.for("react.client.reference"), L = b.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE, z = Object.prototype.hasOwnProperty, ve = Array.isArray, Y = console.createTask ? console.createTask : function() {
       return null;
     };
     b = {
@@ -235,7 +235,7 @@ React keys must be passed directly to JSX without using spread:
       o
     )(), B = Y(u(o)), H = {};
     P.Fragment = _, P.jsx = function(e, a, h) {
-      var p = 1e4 > F.recentlyCreatedOwnerStacks++;
+      var p = 1e4 > L.recentlyCreatedOwnerStacks++;
       return n(
         e,
         a,
@@ -245,7 +245,7 @@ React keys must be passed directly to JSX without using spread:
         p ? Y(u(e)) : B
       );
     }, P.jsxs = function(e, a, h) {
-      var p = 1e4 > F.recentlyCreatedOwnerStacks++;
+      var p = 1e4 > L.recentlyCreatedOwnerStacks++;
       return n(
         e,
         a,
@@ -416,18 +416,18 @@ const se = {
   delete: async (t) => {
     await x.delete(`/users/${t}`);
   }
-}, Re = {
+}, Te = {
   async list() {
     return (await x.get("/api/features", { baseURL: "/" })).data;
   },
   async listDirect() {
     return (await W.get("/api/features", {
-      headers: Te(),
+      headers: Re(),
       withCredentials: !0
     })).data;
   }
 };
-function Te() {
+function Re() {
   const t = localStorage.getItem("accessToken");
   return t ? { Authorization: `Bearer ${t}` } : {};
 }
@@ -526,12 +526,12 @@ const ie = U(void 0), ce = () => {
   if (!t)
     throw new Error("useUi must be used within a UiProvider");
   return t;
-}, de = U(void 0), Le = ({ children: t }) => {
+}, de = U(void 0), Fe = ({ children: t }) => {
   const [r, i] = j([]), [u, c] = j(!0);
   S(() => {
     (async () => {
       try {
-        const l = await Re.list();
+        const l = await Te.list();
         i(l);
       } catch (l) {
         console.error("Failed to fetch features:", l);
@@ -553,7 +553,9 @@ class Se {
   listeners = [];
   async start() {
     if (!this.connection) {
-      this.connection = new be.HubConnectionBuilder().withUrl("/hubs/notifications").withAutomaticReconnect().build(), this.connection.on("ReceiveNotification", (r) => {
+      this.connection = new be.HubConnectionBuilder().withUrl("/hubs/notifications", {
+        accessTokenFactory: () => localStorage.getItem("accessToken") || ""
+      }).withAutomaticReconnect().build(), this.connection.on("ReceiveNotification", (r) => {
         this.listeners.forEach((i) => i(r));
       });
       try {
@@ -651,16 +653,16 @@ const te = new Se(), Ce = () => {
     }
   };
   S(() => {
-    const k = (T) => {
-      d.current && !d.current.contains(T.target) && u(!1);
+    const k = (R) => {
+      d.current && !d.current.contains(R.target) && u(!1);
     };
     return document.addEventListener("mousedown", k), () => {
       document.removeEventListener("mousedown", k);
     };
   }, []);
   const { pathname: y } = je(), { customMenu: _ } = ue(), $ = (() => {
-    const T = (_.length > 0 ? _ : window.__QUASAR_CUSTOM_MENU__ || []).flatMap((C) => C.items).find((C) => C.path === y);
-    if (T) return T.label;
+    const R = (_.length > 0 ? _ : window.__QUASAR_CUSTOM_MENU__ || []).flatMap((C) => C.items).find((C) => C.path === y);
+    if (R) return R.label;
     switch (y) {
       case "/":
         return "Dashboard";
@@ -776,7 +778,7 @@ const te = new Se(), Ce = () => {
       ] })
     ] }) })
   ] });
-}, Fe = ({ children: t }) => {
+}, Le = ({ children: t }) => {
   const { user: r, logout: i } = ce(), { settings: u, customMenu: c } = ue(), { hasFeature: o } = Ee(), m = ne(), l = async () => {
     await i(), m("/login");
   };
@@ -789,17 +791,17 @@ const te = new Se(), Ce = () => {
       /* @__PURE__ */ s.jsxs("nav", { className: "sidebar-nav", children: [
         c.map((f, w) => /* @__PURE__ */ s.jsxs("div", { className: "nav-section", children: [
           f.title && /* @__PURE__ */ s.jsx("h3", { className: "nav-section-title", children: f.title }),
-          f.items.map((n, d) => n.roles && !n.roles.some((v) => r?.roles?.includes(v)) || n.feature && !o(n.feature) ? null : /* @__PURE__ */ s.jsx(R, { to: n.path, className: "nav-link", children: /* @__PURE__ */ s.jsx("span", { children: n.label }) }, `custom-item-${d}-${n.path}`))
+          f.items.map((n, d) => n.roles && !n.roles.some((v) => r?.roles?.includes(v)) || n.feature && !o(n.feature) ? null : /* @__PURE__ */ s.jsx(T, { to: n.path, className: "nav-link", children: /* @__PURE__ */ s.jsx("span", { children: n.label }) }, `custom-item-${d}-${n.path}`))
         ] }, `custom-${w}`)),
         r?.roles?.includes("administrator") && u?.showAdminMenu !== !1 && /* @__PURE__ */ s.jsxs("div", { className: "nav-section", children: [
           /* @__PURE__ */ s.jsx("h3", { className: "nav-section-title", children: "Administration" }),
-          /* @__PURE__ */ s.jsx(R, { to: "/users", className: "nav-link", children: /* @__PURE__ */ s.jsx("span", { children: "Users" }) }),
-          /* @__PURE__ */ s.jsx(R, { to: "/roles", className: "nav-link", children: /* @__PURE__ */ s.jsx("span", { children: "Roles" }) }),
-          /* @__PURE__ */ s.jsx(R, { to: "/features", className: "nav-link", children: /* @__PURE__ */ s.jsx("span", { children: "Features" }) }),
-          /* @__PURE__ */ s.jsx(R, { to: "/logs", className: "nav-link", children: /* @__PURE__ */ s.jsx("span", { children: "Logs" }) }),
-          /* @__PURE__ */ s.jsx(R, { to: "/sessions", className: "nav-link", children: /* @__PURE__ */ s.jsx("span", { children: "Sessions" }) }),
-          o("scheduler") && /* @__PURE__ */ s.jsx(R, { to: "/jobs", className: "nav-link", children: /* @__PURE__ */ s.jsx("span", { children: "Jobs" }) }),
-          o("telemetry") && /* @__PURE__ */ s.jsx(R, { to: "/metrics", className: "nav-link", children: /* @__PURE__ */ s.jsx("span", { children: "Metrics" }) })
+          /* @__PURE__ */ s.jsx(T, { to: "/users", className: "nav-link", children: /* @__PURE__ */ s.jsx("span", { children: "Users" }) }),
+          /* @__PURE__ */ s.jsx(T, { to: "/roles", className: "nav-link", children: /* @__PURE__ */ s.jsx("span", { children: "Roles" }) }),
+          /* @__PURE__ */ s.jsx(T, { to: "/features", className: "nav-link", children: /* @__PURE__ */ s.jsx("span", { children: "Features" }) }),
+          /* @__PURE__ */ s.jsx(T, { to: "/logs", className: "nav-link", children: /* @__PURE__ */ s.jsx("span", { children: "Logs" }) }),
+          /* @__PURE__ */ s.jsx(T, { to: "/sessions", className: "nav-link", children: /* @__PURE__ */ s.jsx("span", { children: "Sessions" }) }),
+          o("scheduler") && /* @__PURE__ */ s.jsx(T, { to: "/jobs", className: "nav-link", children: /* @__PURE__ */ s.jsx("span", { children: "Jobs" }) }),
+          o("telemetry") && /* @__PURE__ */ s.jsx(T, { to: "/metrics", className: "nav-link", children: /* @__PURE__ */ s.jsx("span", { children: "Metrics" }) })
         ] })
       ] }),
       /* @__PURE__ */ s.jsx("div", { className: "sidebar-footer", children: /* @__PURE__ */ s.jsx("button", { onClick: l, className: "btn btn-secondary w-full btn-sm", children: "Sign Out" }) })
@@ -812,9 +814,9 @@ const te = new Se(), Ce = () => {
 };
 export {
   Me as AuthProvider,
-  Le as FeatureProvider,
+  Fe as FeatureProvider,
   Ae as Header,
-  Fe as MainLayout,
+  Le as MainLayout,
   Ce as NotificationBell,
   Ue as NotificationProvider,
   $e as UiProvider,

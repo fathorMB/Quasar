@@ -27,7 +27,10 @@ public static class SignalRServiceCollectionExtensions
     {
         services.AddSignalR();
         services.AddSingleton<ISignalRDispatcher<TClient, TPayload>, TDispatcher>();
-        services.AddSingleton<IRealTimeNotifier<TPayload>, SignalRNotifier<THub, TClient, TPayload>>();
+        
+        services.AddSingleton<SignalRNotifier<THub, TClient, TPayload>>();
+        services.AddSingleton<IRealTimeNotifier<TPayload>>(sp => sp.GetRequiredService<SignalRNotifier<THub, TClient, TPayload>>());
+        services.AddSingleton<ITargetedRealTimeNotifier<TPayload>>(sp => sp.GetRequiredService<SignalRNotifier<THub, TClient, TPayload>>());
         return services;
     }
 }

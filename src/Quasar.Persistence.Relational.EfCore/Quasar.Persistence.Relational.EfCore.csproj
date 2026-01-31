@@ -6,6 +6,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Quasar.Persistence.Abstractions\Quasar.Persistence.Abstractions.csproj" />
+    <ProjectReference Include="..\Quasar.RealTime\Quasar.RealTime.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.1" />
