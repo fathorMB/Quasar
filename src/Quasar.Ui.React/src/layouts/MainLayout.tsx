@@ -6,7 +6,7 @@ import { useFeatures } from '../context/FeatureContext';
 import { Header } from '../components/Header';
 import './MainLayout.css';
 
-export const MainLayout: React.FC = () => {
+export const MainLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
     const { user, logout } = useAuth();
     const { settings, customMenu } = useUi();
     const { hasFeature } = useFeatures();
@@ -92,7 +92,7 @@ export const MainLayout: React.FC = () => {
             <div className="content-wrapper">
                 <Header />
                 <main className={`main-content ${(Outlet as any)?.type?.layoutOptions?.noPadding ? 'no-padding' : ''}`}>
-                    <Outlet />
+                    {children || <Outlet />}
                 </main>
             </div>
         </div>
