@@ -20,10 +20,34 @@ interface NotificationContextType {
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
 
+import { fetchUnreadNotifications, markNotificationAsRead, markAllNotificationsAsRead } from '../api/notification';
+
 export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [notifications, setNotifications] = useState<Notification[]>([]);
 
     const unreadCount = notifications.filter(n => !n.read).length;
+
+    // Fetch initial notifications
+    React.useEffect(() => {
+        const load = async () => {
+            const data = await fetchUnreadNotifications();
+            const mapped = data.map(n => ({
+                id: n.id,
+                title: n.title,
+                message: n.message,
+                type: n.type,
+                timestamp: new Date(n.createdAt),
+                read: n.isRead
+            }));
+            setNotifications(prev => {
+                // Merge with existing (in case SignalR beat us to it)
+                const existingIds = new Set(prev.map(p => p.id));
+                const newItems = mapped.filter(m => !existingIds.has(m.id));
+                return [...newItems, ...prev].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+            });
+        };
+        load();
+    }, []);
 
     const addNotification = (n: Omit<Notification, 'id' | 'timestamp' | 'read'>) => {
         const newNotification: Notification = {
@@ -36,10 +60,12 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
     };
 
     const markAsRead = (id: string) => {
+        markNotificationAsRead(id);
         setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
     };
 
     const markAllAsRead = () => {
+        markAllNotificationsAsRead();
         setNotifications(prev => prev.map(n => ({ ...n, read: true })));
     };
 

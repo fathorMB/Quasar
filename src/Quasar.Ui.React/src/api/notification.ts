@@ -51,3 +51,66 @@ class NotificationSignalR {
 }
 
 export const notificationSignalR = new NotificationSignalR();
+
+export interface ApiNotification {
+    id: string;
+    userId: string;
+    title: string;
+    message: string;
+    type: 'info' | 'success' | 'warning' | 'error';
+    isRead: boolean;
+    createdAt: string;
+}
+
+export const fetchUnreadNotifications = async (): Promise<ApiNotification[]> => {
+    const token = localStorage.getItem('accessToken');
+    if (!token) return [];
+
+    try {
+        const response = await fetch('/api/player/notifications', {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (response.status === 401) return [];
+        if (!response.ok) throw new Error('Failed to fetch notifications');
+
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching notifications:', error);
+        return [];
+    }
+};
+
+export const markNotificationAsRead = async (id: string): Promise<void> => {
+    const token = localStorage.getItem('accessToken');
+    if (!token) return;
+
+    try {
+        await fetch(`/api/player/notifications/${id}/read`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+    } catch (error) {
+        console.error('Error marking notification as read:', error);
+    }
+};
+
+export const markAllNotificationsAsRead = async (): Promise<void> => {
+    const token = localStorage.getItem('accessToken');
+    if (!token) return;
+
+    try {
+        await fetch('/api/player/notifications/read-all', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+    } catch (error) {
+        console.error('Error marking all notifications as read:', error);
+    }
+};
