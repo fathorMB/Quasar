@@ -36,8 +36,10 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
             timestamp: n.createdAt ? new Date(n.createdAt) : new Date(),
             read: false,
         };
+        console.log('[Notification] addNotification called, id:', newNotification.id, 'title:', newNotification.title);
         setNotifications(prev => {
             const exists = prev.some(p => p.id === newNotification.id);
+            console.log('[Notification] setNotifications: exists=', exists, 'prevCount=', prev.length, 'prevIds=', prev.map(p => p.id));
             if (exists) return prev;
             return [newNotification, ...prev].slice(0, 50);
         });
@@ -61,6 +63,7 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
 
             // Fetch missed notifications
             const data = await fetchUnreadNotifications();
+            console.log('[Notification] fetchUnread returned', data.length, 'items, ids:', data.map(n => n.id));
             if (mounted) {
                 const mapped = data.map(n => ({
                     id: n.id,
@@ -73,6 +76,7 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
                 setNotifications(prev => {
                     const existingIds = new Set(prev.map(p => p.id));
                     const newItems = mapped.filter(m => !existingIds.has(m.id));
+                    console.log('[Notification] fetchUnread merge: existingIds=', [...existingIds], 'newItems=', newItems.length);
                     return [...newItems, ...prev].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
                 });
             }

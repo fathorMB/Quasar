@@ -26,17 +26,20 @@ class NotificationSignalR {
             .build();
 
         this.connection.on('ReceiveNotification', (raw: any) => {
+            console.log('[SignalR] RAW ReceiveNotification:', JSON.stringify(raw));
             // Normalize casing: SignalR sends PascalCase, we want camelCase
             const notification: SignalRNotification = {
                 id: raw.id || raw.Id || '',
                 title: raw.title || raw.Title || '',
                 message: raw.message || raw.Message || '',
-                type: (raw.type || raw.Type || 'info').toLowerCase(),
+                type: (raw.type || raw.Type || 'info').toLowerCase() as SignalRNotification['type'],
                 createdAt: raw.createdAt || raw.CreatedAt || new Date().toISOString(),
             };
+            console.log('[SignalR] Normalized notification id:', notification.id, 'recentIds:', [...this.recentIds], 'listeners:', this.listeners.length);
 
             // Dedup: skip if we already delivered this notification ID recently
             if (notification.id && this.recentIds.has(notification.id)) {
+                console.log('[SignalR] DEDUP: Skipping already-seen notification', notification.id);
                 return;
             }
             if (notification.id) {
@@ -45,6 +48,7 @@ class NotificationSignalR {
                 setTimeout(() => this.recentIds.delete(notification.id), 10000);
             }
 
+            console.log('[SignalR] Forwarding to', this.listeners.length, 'listeners');
             this.listeners.forEach(listener => listener(notification));
         });
 
@@ -71,7 +75,8 @@ class NotificationSignalR {
     }
 
     public subscribe(callback: NotificationCallback) {
-        this.listeners.push(callback);
+        // Replace (not accumulate) — only one NotificationProvider subscribes
+        this.listeners = [callback];
         return () => {
             this.listeners = this.listeners.filter(l => l !== callback);
         };
