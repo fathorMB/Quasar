@@ -29,14 +29,18 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
 
     const unreadCount = notifications.filter(n => !n.read).length;
 
-    const addNotification = React.useCallback((n: Omit<Notification, 'id' | 'timestamp' | 'read'>) => {
+    const addNotification = React.useCallback((n: Omit<Notification, 'id' | 'timestamp' | 'read'> & { id?: string, createdAt?: string }) => {
         const newNotification: Notification = {
             ...n,
-            id: Math.random().toString(36).substring(2, 9),
-            timestamp: new Date(),
+            id: n.id || Math.random().toString(36).substring(2, 9),
+            timestamp: n.createdAt ? new Date(n.createdAt) : new Date(),
             read: false,
         };
-        setNotifications(prev => [newNotification, ...prev].slice(0, 50)); // Keep last 50
+        setNotifications(prev => {
+            const exists = prev.some(p => p.id === newNotification.id);
+            if (exists) return prev;
+            return [newNotification, ...prev].slice(0, 50);
+        });
     }, []);
 
     // Load and Connect effect
@@ -77,9 +81,11 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
 
         const unsubscribe = notificationSignalR.subscribe((n) => {
             addNotification({
+                id: n.id,
                 title: n.title,
                 message: n.message,
-                type: n.type
+                type: n.type,
+                createdAt: n.createdAt
             });
         });
 

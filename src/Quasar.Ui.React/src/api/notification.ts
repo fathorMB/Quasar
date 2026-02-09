@@ -1,9 +1,11 @@
 import * as signalR from '@microsoft/signalr';
 
 export interface SignalRNotification {
+    id: string;
     title: string;
     message: string;
     type: 'info' | 'success' | 'warning' | 'error';
+    createdAt: string;
 }
 
 type NotificationCallback = (notification: SignalRNotification) => void;
