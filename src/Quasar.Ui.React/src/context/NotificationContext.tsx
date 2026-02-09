@@ -79,13 +79,14 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
 
         load();
 
-        const unsubscribe = notificationSignalR.subscribe((n) => {
+        const unsubscribe = notificationSignalR.subscribe((n: any) => {
+            console.error('SignalR Notification Received:', n);
             addNotification({
-                id: n.id,
-                title: n.title,
-                message: n.message,
-                type: n.type,
-                createdAt: n.createdAt
+                id: n.id || n.Id,
+                title: n.title || n.Title,
+                message: n.message || n.Message,
+                type: (n.type || n.Type || 'info').toLowerCase(),
+                createdAt: n.createdAt || n.CreatedAt
             });
         });
 
