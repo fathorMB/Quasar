@@ -50,12 +50,13 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
         const load = async () => {
             if (!isAuthenticated) {
                 setNotifications([]);
-                notificationSignalR.stop();
+                notificationSignalR.stop().catch(console.error);
                 return;
             }
 
             // Restart SignalR with new token
-            notificationSignalR.stop();
+            // Await stop to ensure clean state before starting new connection
+            await notificationSignalR.stop();
             await notificationSignalR.start();
 
             // Fetch missed notifications
@@ -93,8 +94,7 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
         return () => {
             mounted = false;
             unsubscribe();
-            // We generally don't stop SignalR on unmount here to avoid churn logic, 
-            // but relying on auth change to stop it is safer.
+            notificationSignalR.stop().catch(console.error);
         };
     }, [isAuthenticated, addNotification]);
 

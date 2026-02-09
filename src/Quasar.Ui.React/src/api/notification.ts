@@ -37,10 +37,16 @@ class NotificationSignalR {
         }
     }
 
-    public stop() {
+    public async stop() {
         if (this.connection) {
-            this.connection.stop();
-            this.connection = null;
+            try {
+                this.connection.off('ReceiveNotification');
+                await this.connection.stop();
+            } catch (err) {
+                console.error('Error stopping SignalR connection:', err);
+            } finally {
+                this.connection = null;
+            }
         }
     }
 

@@ -1,14 +1,16 @@
 export interface SignalRNotification {
+    id: string;
     title: string;
     message: string;
     type: 'info' | 'success' | 'warning' | 'error';
+    createdAt: string;
 }
 type NotificationCallback = (notification: SignalRNotification) => void;
 declare class NotificationSignalR {
     private connection;
     private listeners;
     start(): Promise<void>;
-    stop(): void;
+    stop(): Promise<void>;
     subscribe(callback: NotificationCallback): () => void;
 }
 export declare const notificationSignalR: NotificationSignalR;
