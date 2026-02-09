@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
 
 namespace Quasar.Persistence.Relational.EfCore;
 
@@ -122,5 +123,18 @@ public static class ReadModelServiceCollectionExtensions
         }
 
         return false;
+    }
+
+    /// <summary>
+    /// Registers a schema initializer and hosted service for the specified read model context.
+    /// This enables automatic, incremental table creation on startup.
+    /// </summary>
+    public static IServiceCollection AddReadModelSchemaInitializer<TContext, TInitializer>(this IServiceCollection services)
+        where TContext : ReadModelContext
+        where TInitializer : class, IReadModelSchemaInitializer<TContext>
+    {
+        services.TryAddTransient<IReadModelSchemaInitializer<TContext>, TInitializer>();
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<IHostedService, ReadModelSchemaInitializerHostedService<TContext>>());
+        return services;
     }
 }
