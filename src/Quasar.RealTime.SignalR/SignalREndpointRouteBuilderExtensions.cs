@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.SignalR;
+using Quasar.RealTime.SignalR.Notifications;
 
 namespace Quasar.RealTime.SignalR;
 
@@ -16,6 +17,15 @@ public static class SignalREndpointRouteBuilderExtensions
         where THub : Hub
     {
         endpoints.MapHub<THub>(pattern);
+        return endpoints;
+    }
+
+    /// <summary>
+    /// Maps the framework-provided <see cref="NotificationHub"/> to <c>/hubs/notifications</c>.
+    /// </summary>
+    public static IEndpointRouteBuilder MapNotificationHub(this IEndpointRouteBuilder endpoints)
+    {
+        endpoints.MapHub<NotificationHub>("/hubs/notifications");
         return endpoints;
     }
 }

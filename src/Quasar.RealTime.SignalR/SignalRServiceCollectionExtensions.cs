@@ -1,5 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Quasar.RealTime;
+using Quasar.RealTime.Notifications;
+using Quasar.RealTime.SignalR.Notifications;
 
 namespace Quasar.RealTime.SignalR;
 
@@ -31,6 +33,25 @@ public static class SignalRServiceCollectionExtensions
         services.AddSingleton<SignalRNotifier<THub, TClient, TPayload>>();
         services.AddSingleton<IRealTimeNotifier<TPayload>>(sp => sp.GetRequiredService<SignalRNotifier<THub, TClient, TPayload>>());
         services.AddSingleton<ITargetedRealTimeNotifier<TPayload>>(sp => sp.GetRequiredService<SignalRNotifier<THub, TClient, TPayload>>());
+        return services;
+    }
+
+    /// <summary>
+    /// Registers the Quasar Notification SignalR hub, dispatcher, notifier, and <see cref="PersistentNotificationService"/>.
+    /// Consumer apps still need to register an <see cref="INotificationStore"/> implementation separately.
+    /// </summary>
+    public static IServiceCollection AddNotificationSignalR(this IServiceCollection services)
+    {
+        // Register the built-in hub infrastructure
+        services.AddSignalRNotifier<
+            NotificationHub,
+            INotificationClient,
+            Notification,
+            NotificationSignalRDispatcher>();
+
+        // Register the notification service that persists + broadcasts
+        services.AddScoped<INotificationService, PersistentNotificationService>();
+
         return services;
     }
 }

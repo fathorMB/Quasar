@@ -2,9 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
+using Quasar.RealTime.Notifications;
 
 namespace Quasar.Persistence.Relational.EfCore;
 
@@ -135,6 +137,35 @@ public static class ReadModelServiceCollectionExtensions
     {
         services.TryAddTransient<IReadModelSchemaInitializer<TContext>, TInitializer>();
         services.TryAddEnumerable(ServiceDescriptor.Singleton<IHostedService, ReadModelSchemaInitializerHostedService<TContext>>());
+        return services;
+    }
+
+    /// <summary>
+    /// Registers the full notification persistence stack: DbContext, read-model definition, store, and schema initializer.
+    /// Consumer apps only need to supply the <see cref="DbContextOptions"/> configuration (e.g. connection string).
+    /// </summary>
+    /// <param name="services">Service collection to populate.</param>
+    /// <param name="configureDb">Action to configure the <see cref="DbContextOptionsBuilder"/> (e.g. <c>UseSqlServer</c>).</param>
+    public static IServiceCollection AddNotificationPersistence(
+        this IServiceCollection services,
+        Action<DbContextOptionsBuilder> configureDb)
+    {
+        // DbContext
+        services.AddDbContext<ReadModelContext<NotificationStoreMarker>>(configureDb);
+
+        // Read-model definition (EF entity mapping)
+        services.AddSingleton<IReadModelDefinition,
+            NotificationReadModelDefinition<NotificationStoreMarker>>();
+
+        // Notification store implementation
+        services.AddScoped<INotificationStore,
+            EfCoreNotificationStore<ReadModelContext<NotificationStoreMarker>>>();
+
+        // Schema initializer (auto-create Notification table on startup)
+        services.AddReadModelSchemaInitializer<
+            ReadModelContext<NotificationStoreMarker>,
+            SqlServerReadModelSchemaInitializer<ReadModelContext<NotificationStoreMarker>>>();
+
         return services;
     }
 }
