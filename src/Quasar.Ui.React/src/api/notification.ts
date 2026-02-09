@@ -13,6 +13,7 @@ type NotificationCallback = (notification: SignalRNotification) => void;
 class NotificationSignalR {
     private connection: signalR.HubConnection | null = null;
     private listeners: NotificationCallback[] = [];
+    private recentIds = new Set<string>();
 
     public async start() {
         if (this.connection) return;
@@ -24,7 +25,26 @@ class NotificationSignalR {
             .withAutomaticReconnect()
             .build();
 
-        this.connection.on('ReceiveNotification', (notification: SignalRNotification) => {
+        this.connection.on('ReceiveNotification', (raw: any) => {
+            // Normalize casing: SignalR sends PascalCase, we want camelCase
+            const notification: SignalRNotification = {
+                id: raw.id || raw.Id || '',
+                title: raw.title || raw.Title || '',
+                message: raw.message || raw.Message || '',
+                type: (raw.type || raw.Type || 'info').toLowerCase(),
+                createdAt: raw.createdAt || raw.CreatedAt || new Date().toISOString(),
+            };
+
+            // Dedup: skip if we already delivered this notification ID recently
+            if (notification.id && this.recentIds.has(notification.id)) {
+                return;
+            }
+            if (notification.id) {
+                this.recentIds.add(notification.id);
+                // Clean up after 10 seconds
+                setTimeout(() => this.recentIds.delete(notification.id), 10000);
+            }
+
             this.listeners.forEach(listener => listener(notification));
         });
 
