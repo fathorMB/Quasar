@@ -20,36 +20,16 @@ interface NotificationContextType {
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
 
-import { fetchUnreadNotifications, markNotificationAsRead, markAllNotificationsAsRead } from '../api/notification';
+import { useAuth } from './AuthContext';
+import { notificationSignalR, fetchUnreadNotifications, markNotificationAsRead, markAllNotificationsAsRead } from '../api/notification';
 
 export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [notifications, setNotifications] = useState<Notification[]>([]);
+    const { isAuthenticated } = useAuth();
 
     const unreadCount = notifications.filter(n => !n.read).length;
 
-    // Fetch initial notifications
-    React.useEffect(() => {
-        const load = async () => {
-            const data = await fetchUnreadNotifications();
-            const mapped = data.map(n => ({
-                id: n.id,
-                title: n.title,
-                message: n.message,
-                type: n.type,
-                timestamp: new Date(n.createdAt),
-                read: n.isRead
-            }));
-            setNotifications(prev => {
-                // Merge with existing (in case SignalR beat us to it)
-                const existingIds = new Set(prev.map(p => p.id));
-                const newItems = mapped.filter(m => !existingIds.has(m.id));
-                return [...newItems, ...prev].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
-            });
-        };
-        load();
-    }, []);
-
-    const addNotification = (n: Omit<Notification, 'id' | 'timestamp' | 'read'>) => {
+    const addNotification = React.useCallback((n: Omit<Notification, 'id' | 'timestamp' | 'read'>) => {
         const newNotification: Notification = {
             ...n,
             id: Math.random().toString(36).substring(2, 9),
@@ -57,21 +37,74 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
             read: false,
         };
         setNotifications(prev => [newNotification, ...prev].slice(0, 50)); // Keep last 50
-    };
+    }, []);
 
-    const markAsRead = (id: string) => {
+    // Load and Connect effect
+    React.useEffect(() => {
+        let mounted = true;
+
+        const load = async () => {
+            if (!isAuthenticated) {
+                setNotifications([]);
+                notificationSignalR.stop();
+                return;
+            }
+
+            // Restart SignalR with new token
+            notificationSignalR.stop();
+            await notificationSignalR.start();
+
+            // Fetch missed notifications
+            const data = await fetchUnreadNotifications();
+            if (mounted) {
+                const mapped = data.map(n => ({
+                    id: n.id,
+                    title: n.title,
+                    message: n.message,
+                    type: n.type,
+                    timestamp: new Date(n.createdAt),
+                    read: n.isRead
+                }));
+                setNotifications(prev => {
+                    const existingIds = new Set(prev.map(p => p.id));
+                    const newItems = mapped.filter(m => !existingIds.has(m.id));
+                    return [...newItems, ...prev].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+                });
+            }
+        };
+
+        load();
+
+        const unsubscribe = notificationSignalR.subscribe((n) => {
+            addNotification({
+                title: n.title,
+                message: n.message,
+                type: n.type
+            });
+        });
+
+        return () => {
+            mounted = false;
+            unsubscribe();
+            // We generally don't stop SignalR on unmount here to avoid churn logic, 
+            // but relying on auth change to stop it is safer.
+        };
+    }, [isAuthenticated, addNotification]);
+
+
+    const markAsRead = React.useCallback((id: string) => {
         markNotificationAsRead(id);
         setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
-    };
+    }, []);
 
-    const markAllAsRead = () => {
+    const markAllAsRead = React.useCallback(() => {
         markAllNotificationsAsRead();
         setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-    };
+    }, []);
 
-    const clearNotifications = () => {
+    const clearNotifications = React.useCallback(() => {
         setNotifications([]);
-    };
+    }, []);
 
     return (
         <NotificationContext.Provider value={{
