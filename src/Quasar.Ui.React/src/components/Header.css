@@ -14,6 +14,8 @@
 .header-left {
     display: flex;
     align-items: center;
+    flex: 1;
+    min-width: 0;
 }
 
 .page-title {
@@ -27,6 +29,7 @@
     display: flex;
     align-items: center;
     gap: var(--spacing-lg);
+    flex-shrink: 0;
 }
 
 .user-profile {

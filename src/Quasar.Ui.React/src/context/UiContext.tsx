@@ -30,6 +30,7 @@ declare global {
     interface Window {
         __QUASAR_CUSTOM_MENU__?: CustomNavSection[];
         __QUASAR_CUSTOM_ROUTES__?: CustomRoute[];
+        __QUASAR_CUSTOM_HEADER__?: React.ComponentType;
     }
 }
 
@@ -38,6 +39,7 @@ interface UiContextValue {
     isLoading: boolean;
     customMenu: CustomNavSection[];
     customRoutes: CustomRoute[];
+    customHeaderComponent: React.ComponentType | null;
 }
 
 const UiContext = createContext<UiContextValue | undefined>(undefined);
@@ -47,6 +49,7 @@ export const UiProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     const [isLoading, setIsLoading] = useState(true);
     const [customMenu, setCustomMenu] = useState<CustomNavSection[]>([]);
     const [customRoutes, setCustomRoutes] = useState<CustomRoute[]>([]);
+    const [customHeaderComponent, setCustomHeaderComponent] = useState<React.ComponentType | null>(null);
 
     useEffect(() => {
         const fetchSettings = async () => {
@@ -76,10 +79,13 @@ export const UiProvider: React.FC<{ children: React.ReactNode }> = ({ children }
         if (Array.isArray(window.__QUASAR_CUSTOM_ROUTES__)) {
             setCustomRoutes(window.__QUASAR_CUSTOM_ROUTES__!);
         }
+        if (window.__QUASAR_CUSTOM_HEADER__) {
+            setCustomHeaderComponent(() => window.__QUASAR_CUSTOM_HEADER__!);
+        }
     }, []);
 
     return (
-        <UiContext.Provider value={{ settings, isLoading, customMenu, customRoutes }}>
+        <UiContext.Provider value={{ settings, isLoading, customMenu, customRoutes, customHeaderComponent }}>
             {children}
         </UiContext.Provider>
     );

@@ -14,6 +14,7 @@ export const Header: React.FC = () => {
     const [copied, setCopied] = useState(false);
     const navigate = useNavigate();
     const menuRef = useRef<HTMLDivElement>(null);
+    const { customMenu, customHeaderComponent } = useUi();
 
     const handleLogout = async () => {
         await logout();
@@ -52,7 +53,6 @@ export const Header: React.FC = () => {
     }, []);
 
     const { pathname } = useLocation();
-    const { customMenu } = useUi();
 
     const getPageTitle = () => {
         // Check custom menu first (with direct window fallback)
@@ -81,13 +81,13 @@ export const Header: React.FC = () => {
     };
 
     const title = getPageTitle();
+    const CustomHeader = customHeaderComponent;
 
     return (
         <>
             <header className="app-header">
                 <div className="header-left">
-                    {/* Placeholder for page title or breadcrumbs if needed later */}
-                    <h2 className="page-title">{title}</h2>
+                    {CustomHeader ? <CustomHeader /> : <h2 className="page-title">{title}</h2>}
                 </div>
 
                 <div className="header-right">
