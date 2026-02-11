@@ -18,10 +18,16 @@ public abstract class AggregateRoot
     
     private readonly List<IDomainEvent> _uncommitted = new();
 
+    private Guid _id;
+
     /// <summary>
     /// Gets the identifier of the aggregate.
     /// </summary>
-    public Guid Id { get; protected set; }
+    public Guid Id 
+    { 
+        get => _id; 
+        protected set => _id = value; 
+    }
 
     /// <summary>
     /// Framework internal: Sets the aggregate ID.
