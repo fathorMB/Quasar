@@ -32,6 +32,7 @@ public sealed class EventSourcedRepository<TAggregate> : IEventSourcedRepository
     {
         var events = await _store.ReadStreamAsync(id, 0, cancellationToken).ConfigureAwait(false);
         var aggregate = new TAggregate();
+        aggregate.SetId(id);
         if (events.Count == 0)
             return aggregate;
 

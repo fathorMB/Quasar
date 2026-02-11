@@ -24,6 +24,11 @@ public abstract class AggregateRoot
     public Guid Id { get; protected set; }
 
     /// <summary>
+    /// Framework internal: Sets the aggregate ID.
+    /// </summary>
+    public void SetId(Guid id) => Id = id;
+
+    /// <summary>
     /// Gets the current aggregate version derived from the number of applied events.
     /// </summary>
     public int Version { get; protected set; } = 0;
