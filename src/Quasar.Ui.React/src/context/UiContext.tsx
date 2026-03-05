@@ -6,6 +6,7 @@ export interface UiSettings {
     logoSymbol?: string;
     customBundleUrl?: string;
     showAdminMenu?: boolean;
+    requireAuthentication?: boolean;
 }
 
 export type CustomNavSection = {

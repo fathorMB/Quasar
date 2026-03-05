@@ -30,5 +30,9 @@ public sealed class UiSettings
     /// Whether to show the framework's Administration menu section (Users, Roles, Logs, etc.).
     /// Defaults to true. Set to false for player-facing applications.
     /// </summary>
-    public bool ShowAdminMenu { get; set; } = true;
+    /// <summary>
+    /// Whether to force the UI shell to require an authenticated session.
+    /// Defaults to true. Set to false for applications that do not require login.
+    /// </summary>
+    public bool RequireAuthentication { get; set; } = true;
 }

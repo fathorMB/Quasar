@@ -1,49 +1,49 @@
-import C, { createContext as L, useState as k, useEffect as P, useContext as D, useRef as ne } from "react";
-import B from "axios";
+import C, { createContext as D, useState as y, useEffect as P, useContext as Y, useRef as ie } from "react";
+import Q from "axios";
 import * as be from "@microsoft/signalr";
-import { useNavigate as oe, useLocation as ye, Link as _, Outlet as ee } from "react-router-dom";
-var F = { exports: {} }, U = {};
-var te;
-function ke() {
-  if (te) return U;
-  te = 1;
+import { useNavigate as ce, useLocation as ke, Link as T, Outlet as se } from "react-router-dom";
+var L = { exports: {} }, I = {};
+var re;
+function ye() {
+  if (re) return I;
+  re = 1;
   var s = Symbol.for("react.transitional.element"), r = Symbol.for("react.fragment");
-  function o(m, l, n) {
-    var h = null;
-    if (n !== void 0 && (h = "" + n), l.key !== void 0 && (h = "" + l.key), "key" in l) {
-      n = {};
-      for (var d in l)
-        d !== "key" && (n[d] = l[d]);
-    } else n = l;
-    return l = n.ref, {
+  function a(m, d, o) {
+    var g = null;
+    if (o !== void 0 && (g = "" + o), d.key !== void 0 && (g = "" + d.key), "key" in d) {
+      o = {};
+      for (var u in d)
+        u !== "key" && (o[u] = d[u]);
+    } else o = d;
+    return d = o.ref, {
       $$typeof: s,
       type: m,
-      key: h,
-      ref: l !== void 0 ? l : null,
-      props: n
+      key: g,
+      ref: d !== void 0 ? d : null,
+      props: o
     };
   }
-  return U.Fragment = r, U.jsx = o, U.jsxs = o, U;
+  return I.Fragment = r, I.jsx = a, I.jsxs = a, I;
 }
-var $ = {};
-var se;
-function je() {
-  return se || (se = 1, process.env.NODE_ENV !== "production" && (function() {
+var U = {};
+var ne;
+function Ne() {
+  return ne || (ne = 1, process.env.NODE_ENV !== "production" && (function() {
     function s(e) {
       if (e == null) return null;
       if (typeof e == "function")
         return e.$$typeof === we ? null : e.displayName || e.name || null;
       if (typeof e == "string") return e;
       switch (e) {
-        case T:
+        case _:
           return "Fragment";
-        case O:
+        case M:
           return "Profiler";
         case R:
           return "StrictMode";
-        case fe:
+        case E:
           return "Suspense";
-        case he:
+        case O:
           return "SuspenseList";
         case ge:
           return "Activity";
@@ -52,21 +52,21 @@ function je() {
         switch (typeof e.tag == "number" && console.error(
           "Received an unexpected object in getComponentNameFromType(). This is likely a bug in React. Please file an issue."
         ), e.$$typeof) {
-          case N:
-            return "Portal";
-          case S:
-            return e.displayName || "Context";
           case j:
+            return "Portal";
+          case $:
+            return e.displayName || "Context";
+          case z:
             return (e._context.displayName || "Context") + ".Consumer";
-          case I:
-            var c = e.render;
-            return e = e.displayName, e || (e = c.displayName || c.name || "", e = e !== "" ? "ForwardRef(" + e + ")" : "ForwardRef"), e;
+          case N:
+            var l = e.render;
+            return e = e.displayName, e || (e = l.displayName || l.name || "", e = e !== "" ? "ForwardRef(" + e + ")" : "ForwardRef"), e;
           case pe:
-            return c = e.displayName || null, c !== null ? c : s(e.type) || "Memo";
-          case Y:
-            c = e._payload, e = e._init;
+            return l = e.displayName || null, l !== null ? l : s(e.type) || "Memo";
+          case q:
+            l = e._payload, e = e._init;
             try {
-              return s(e(c));
+              return s(e(l));
             } catch {
             }
         }
@@ -75,73 +75,73 @@ function je() {
     function r(e) {
       return "" + e;
     }
-    function o(e) {
+    function a(e) {
       try {
         r(e);
-        var c = !1;
+        var l = !1;
       } catch {
-        c = !0;
+        l = !0;
       }
-      if (c) {
-        c = console;
-        var g = c.error, v = typeof Symbol == "function" && Symbol.toStringTag && e[Symbol.toStringTag] || e.constructor.name || "Object";
-        return g.call(
-          c,
+      if (l) {
+        l = console;
+        var w = l.error, v = typeof Symbol == "function" && Symbol.toStringTag && e[Symbol.toStringTag] || e.constructor.name || "Object";
+        return w.call(
+          l,
           "The provided key is an unsupported type %s. This value must be coerced to a string before using it here.",
           v
         ), r(e);
       }
     }
     function m(e) {
-      if (e === T) return "<>";
-      if (typeof e == "object" && e !== null && e.$$typeof === Y)
+      if (e === _) return "<>";
+      if (typeof e == "object" && e !== null && e.$$typeof === q)
         return "<...>";
       try {
-        var c = s(e);
-        return c ? "<" + c + ">" : "<...>";
+        var l = s(e);
+        return l ? "<" + l + ">" : "<...>";
       } catch {
         return "<...>";
       }
     }
-    function l() {
-      var e = z.A;
+    function d() {
+      var e = J.A;
       return e === null ? null : e.getOwner();
     }
-    function n() {
+    function o() {
       return Error("react-stack-top-frame");
     }
-    function h(e) {
+    function g(e) {
       if (G.call(e, "key")) {
-        var c = Object.getOwnPropertyDescriptor(e, "key").get;
-        if (c && c.isReactWarning) return !1;
+        var l = Object.getOwnPropertyDescriptor(e, "key").get;
+        if (l && l.isReactWarning) return !1;
       }
       return e.key !== void 0;
     }
-    function d(e, c) {
-      function g() {
-        Q || (Q = !0, console.error(
+    function u(e, l) {
+      function w() {
+        X || (X = !0, console.error(
           "%s: `key` is not a prop. Trying to access it will result in `undefined` being returned. If you need to access the same value within the child component, you should pass it as a different prop. (https://react.dev/link/special-props)",
-          c
+          l
         ));
       }
-      g.isReactWarning = !0, Object.defineProperty(e, "key", {
-        get: g,
+      w.isReactWarning = !0, Object.defineProperty(e, "key", {
+        get: w,
         configurable: !0
       });
     }
     function b() {
       var e = s(this.type);
-      return H[e] || (H[e] = !0, console.error(
+      return Z[e] || (Z[e] = !0, console.error(
         "Accessing element.ref was removed in React 19. ref is now a regular prop. It will be removed from the JSX Element type in a future release."
       )), e = this.props.ref, e !== void 0 ? e : null;
     }
-    function f(e, c, g, v, M, W) {
-      var x = g.ref;
+    function h(e, l, w, v, F, H) {
+      var x = w.ref;
       return e = {
         $$typeof: p,
         type: e,
-        key: c,
-        props: g,
+        key: l,
+        props: w,
         _owner: v
       }, (x !== void 0 ? x : null) !== null ? Object.defineProperty(e, "ref", {
         enumerable: !1,
@@ -160,16 +160,16 @@ function je() {
         configurable: !1,
         enumerable: !1,
         writable: !0,
-        value: M
+        value: F
       }), Object.defineProperty(e, "_debugTask", {
         configurable: !1,
         enumerable: !1,
         writable: !0,
-        value: W
+        value: H
       }), Object.freeze && (Object.freeze(e.props), Object.freeze(e)), e;
     }
-    function a(e, c, g, v, M, W) {
-      var x = c.children;
+    function n(e, l, w, v, F, H) {
+      var x = l.children;
       if (x !== void 0)
         if (v)
           if (ve(x)) {
@@ -181,12 +181,12 @@ function je() {
               "React.jsx: Static children should always be an array. You are likely explicitly calling React.jsxs or React.jsxDEV. Use the Babel transform instead."
             );
         else i(x);
-      if (G.call(c, "key")) {
+      if (G.call(l, "key")) {
         x = s(e);
-        var A = Object.keys(c).filter(function(xe) {
+        var A = Object.keys(l).filter(function(xe) {
           return xe !== "key";
         });
-        v = 0 < A.length ? "{key: someKey, " + A.join(": ..., ") + ": ...}" : "{key: someKey}", K[x + v] || (A = 0 < A.length ? "{" + A.join(": ..., ") + ": ...}" : "{}", console.error(
+        v = 0 < A.length ? "{key: someKey, " + A.join(": ..., ") + ": ...}" : "{key: someKey}", te[x + v] || (A = 0 < A.length ? "{" + A.join(": ..., ") + ": ...}" : "{}", console.error(
           `A props object containing a "key" prop is being spread into JSX:
   let props = %s;
   <%s {...props} />
@@ -197,72 +197,72 @@ React keys must be passed directly to JSX without using spread:
           x,
           A,
           x
-        ), K[x + v] = !0);
+        ), te[x + v] = !0);
       }
-      if (x = null, g !== void 0 && (o(g), x = "" + g), h(c) && (o(c.key), x = "" + c.key), "key" in c) {
-        g = {};
-        for (var q in c)
-          q !== "key" && (g[q] = c[q]);
-      } else g = c;
-      return x && d(
-        g,
+      if (x = null, w !== void 0 && (a(w), x = "" + w), g(l) && (a(l.key), x = "" + l.key), "key" in l) {
+        w = {};
+        for (var B in l)
+          B !== "key" && (w[B] = l[B]);
+      } else w = l;
+      return x && u(
+        w,
         typeof e == "function" ? e.displayName || e.name || "Unknown" : e
-      ), f(
+      ), h(
         e,
         x,
-        g,
-        l(),
-        M,
-        W
+        w,
+        d(),
+        F,
+        H
       );
     }
     function i(e) {
-      u(e) ? e._store && (e._store.validated = 1) : typeof e == "object" && e !== null && e.$$typeof === Y && (e._payload.status === "fulfilled" ? u(e._payload.value) && e._payload.value._store && (e._payload.value._store.validated = 1) : e._store && (e._store.validated = 1));
+      c(e) ? e._store && (e._store.validated = 1) : typeof e == "object" && e !== null && e.$$typeof === q && (e._payload.status === "fulfilled" ? c(e._payload.value) && e._payload.value._store && (e._payload.value._store.validated = 1) : e._store && (e._store.validated = 1));
     }
-    function u(e) {
+    function c(e) {
       return typeof e == "object" && e !== null && e.$$typeof === p;
     }
-    var w = C, p = Symbol.for("react.transitional.element"), N = Symbol.for("react.portal"), T = Symbol.for("react.fragment"), R = Symbol.for("react.strict_mode"), O = Symbol.for("react.profiler"), j = Symbol.for("react.consumer"), S = Symbol.for("react.context"), I = Symbol.for("react.forward_ref"), fe = Symbol.for("react.suspense"), he = Symbol.for("react.suspense_list"), pe = Symbol.for("react.memo"), Y = Symbol.for("react.lazy"), ge = Symbol.for("react.activity"), we = Symbol.for("react.client.reference"), z = w.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE, G = Object.prototype.hasOwnProperty, ve = Array.isArray, J = console.createTask ? console.createTask : function() {
+    var f = C, p = Symbol.for("react.transitional.element"), j = Symbol.for("react.portal"), _ = Symbol.for("react.fragment"), R = Symbol.for("react.strict_mode"), M = Symbol.for("react.profiler"), z = Symbol.for("react.consumer"), $ = Symbol.for("react.context"), N = Symbol.for("react.forward_ref"), E = Symbol.for("react.suspense"), O = Symbol.for("react.suspense_list"), pe = Symbol.for("react.memo"), q = Symbol.for("react.lazy"), ge = Symbol.for("react.activity"), we = Symbol.for("react.client.reference"), J = f.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE, G = Object.prototype.hasOwnProperty, ve = Array.isArray, W = console.createTask ? console.createTask : function() {
       return null;
     };
-    w = {
+    f = {
       react_stack_bottom_frame: function(e) {
         return e();
       }
     };
-    var Q, H = {}, X = w.react_stack_bottom_frame.bind(
-      w,
-      n
-    )(), Z = J(m(n)), K = {};
-    $.Fragment = T, $.jsx = function(e, c, g) {
-      var v = 1e4 > z.recentlyCreatedOwnerStacks++;
-      return a(
+    var X, Z = {}, K = f.react_stack_bottom_frame.bind(
+      f,
+      o
+    )(), ee = W(m(o)), te = {};
+    U.Fragment = _, U.jsx = function(e, l, w) {
+      var v = 1e4 > J.recentlyCreatedOwnerStacks++;
+      return n(
         e,
-        c,
-        g,
+        l,
+        w,
         !1,
-        v ? Error("react-stack-top-frame") : X,
-        v ? J(m(e)) : Z
+        v ? Error("react-stack-top-frame") : K,
+        v ? W(m(e)) : ee
       );
-    }, $.jsxs = function(e, c, g) {
-      var v = 1e4 > z.recentlyCreatedOwnerStacks++;
-      return a(
+    }, U.jsxs = function(e, l, w) {
+      var v = 1e4 > J.recentlyCreatedOwnerStacks++;
+      return n(
         e,
-        c,
-        g,
+        l,
+        w,
         !0,
-        v ? Error("react-stack-top-frame") : X,
-        v ? J(m(e)) : Z
+        v ? Error("react-stack-top-frame") : K,
+        v ? W(m(e)) : ee
       );
     };
-  })()), $;
+  })()), U;
 }
-var re;
-function Ne() {
-  return re || (re = 1, process.env.NODE_ENV === "production" ? F.exports = ke() : F.exports = je()), F.exports;
+var ae;
+function je() {
+  return ae || (ae = 1, process.env.NODE_ENV === "production" ? L.exports = ye() : L.exports = Ne()), L.exports;
 }
-var t = Ne();
-const y = B.create({
+var t = je();
+const k = Q.create({
   baseURL: "/auth",
   headers: {
     "Content-Type": "application/json"
@@ -270,66 +270,66 @@ const y = B.create({
   withCredentials: !0
   // Important for cookie-based auth if needed
 });
-y.interceptors.request.use(
+k.interceptors.request.use(
   (s) => {
     const r = localStorage.getItem("accessToken");
     return r && (s.headers.Authorization = `Bearer ${r}`), s;
   },
   (s) => Promise.reject(s)
 );
-y.interceptors.response.use(
+k.interceptors.response.use(
   (s) => s,
   async (s) => {
     const r = s.config;
     if (s.response?.status === 401 && r) {
-      const n = localStorage.getItem("refreshToken");
-      if (n && !r._retry) {
+      const o = localStorage.getItem("refreshToken");
+      if (o && !r._retry) {
         r._retry = !0;
         try {
-          const h = await B.post("/auth/token/refresh", {
-            refreshToken: n
-          }), { accessToken: d, refreshToken: b } = h.data;
-          return localStorage.setItem("accessToken", d), localStorage.setItem("refreshToken", b), r.headers.Authorization = `Bearer ${d}`, y(r);
-        } catch (h) {
-          return localStorage.removeItem("accessToken"), localStorage.removeItem("refreshToken"), window.location.href = "/login", Promise.reject(h);
+          const g = await Q.post("/auth/token/refresh", {
+            refreshToken: o
+          }), { accessToken: u, refreshToken: b } = g.data;
+          return localStorage.setItem("accessToken", u), localStorage.setItem("refreshToken", b), r.headers.Authorization = `Bearer ${u}`, k(r);
+        } catch (g) {
+          return localStorage.removeItem("accessToken"), localStorage.removeItem("refreshToken"), localStorage.getItem("quasar_auth_mocked") === "true" || (window.location.href = "/login"), Promise.reject(g);
         }
       }
     }
-    const o = s.config?.url?.endsWith("/login"), m = s.response?.data;
+    const a = s.config?.url?.endsWith("/login"), m = s.response?.data;
     if (s.response?.status === 401 && m?.code === "SESSION_REVOKED") {
       localStorage.removeItem("accessToken"), localStorage.removeItem("refreshToken"), window.dispatchEvent(new CustomEvent("session-revoked", {
         detail: { message: m.message }
       }));
-      const n = {
+      const o = {
         message: m.message,
         statusCode: 401
       };
-      return Promise.reject(n);
+      return Promise.reject(o);
     }
-    const l = {
-      message: s.response?.status === 401 && o ? "Invalid username or password" : m?.message || s.message || "An error occurred",
+    const d = {
+      message: s.response?.status === 401 && a ? "Invalid username or password" : m?.message || s.message || "An error occurred",
       statusCode: s.response?.status || 500
     };
-    return Promise.reject(l);
+    return Promise.reject(d);
   }
 );
-const ae = {
+const oe = {
   /**
    * Login with username and password
    */
   login: async (s) => {
-    const r = await y.post("/login", s);
+    const r = await k.post("/login", s);
     return localStorage.setItem("accessToken", r.data.accessToken), localStorage.setItem("refreshToken", r.data.refreshToken), r.data;
   },
   /**
    * Register a new user
    */
-  register: async (s) => (await y.post("/register", s)).data,
+  register: async (s) => (await k.post("/register", s)).data,
   /**
    * Refresh access token
    */
   refreshToken: async (s) => {
-    const r = await y.post("/token/refresh", s);
+    const r = await k.post("/token/refresh", s);
     return localStorage.setItem("accessToken", r.data.accessToken), localStorage.setItem("refreshToken", r.data.refreshToken), r.data;
   },
   /**
@@ -339,7 +339,7 @@ const ae = {
     const s = localStorage.getItem("refreshToken");
     if (s)
       try {
-        await y.post("/logout", { refreshToken: s });
+        await k.post("/logout", { refreshToken: s });
       } catch (r) {
         console.error("Logout error:", r);
       }
@@ -349,50 +349,50 @@ const ae = {
    * Check if user is authenticated
    */
   isAuthenticated: () => !!localStorage.getItem("accessToken")
-}, ie = {
+}, le = {
   /**
    * Get all users
    */
-  list: async () => (await y.get("/users")).data,
+  list: async () => (await k.get("/users")).data,
   /**
    * Get roles for a specific user
    */
-  getRoles: async (s) => (await y.get(`/users/${s}/roles`)).data,
+  getRoles: async (s) => (await k.get(`/users/${s}/roles`)).data,
   /**
    * Get permissions for a specific user
    */
-  getPermissions: async (s) => (await y.get(`/users/${s}/permissions`)).data,
+  getPermissions: async (s) => (await k.get(`/users/${s}/permissions`)).data,
   /**
    * Assign a role to a user
    */
   assignRole: async (s, r) => {
-    await y.post(`/users/${s}/roles`, r);
+    await k.post(`/users/${s}/roles`, r);
   },
   /**
    * Revoke a role from a user
    */
   revokeRole: async (s, r) => {
-    await y.delete(`/users/${s}/roles/${r}`);
+    await k.delete(`/users/${s}/roles/${r}`);
   },
   /**
    * Reset a user's password (admin only)
    * Returns the new generated password
    */
-  resetPassword: async (s) => (await y.post(`/users/${s}/reset-password`)).data.password,
+  resetPassword: async (s) => (await k.post(`/users/${s}/reset-password`)).data.password,
   /**
    * Reset own password (any authenticated user)
    * Returns the new generated password
    */
-  resetOwnPassword: async () => (await y.post("/users/me/reset-password")).data.password,
+  resetOwnPassword: async () => (await k.post("/users/me/reset-password")).data.password,
   delete: async (s) => {
-    await y.delete(`/users/${s}`);
+    await k.delete(`/users/${s}`);
   }
-}, Te = {
+}, _e = {
   async list() {
-    return (await y.get("/api/features", { baseURL: "/" })).data;
+    return (await k.get("/api/features", { baseURL: "/" })).data;
   },
   async listDirect() {
-    return (await B.get("/api/features", {
+    return (await Q.get("/api/features", {
       headers: Re(),
       withCredentials: !0
     })).data;
@@ -402,87 +402,123 @@ function Re() {
   const s = localStorage.getItem("accessToken");
   return s ? { Authorization: `Bearer ${s}` } : {};
 }
-const ce = L(void 0), V = () => {
-  const s = D(ce);
+const de = D(void 0), V = () => {
+  const s = Y(de);
   if (!s)
     throw new Error("useAuth must be used within an AuthProvider");
   return s;
 }, Fe = ({ children: s }) => {
-  const [r, o] = k(null), [m, l] = k(!0);
+  const [r, a] = y(null), [m, d] = y(!0);
   P(() => {
-    n();
+    let n = !0;
+    return (async () => {
+      try {
+        const c = await fetch("/api/config/ui");
+        if (c.ok) {
+          const f = await c.json();
+          if (f.requireAuthentication === !1) {
+            n && (localStorage.setItem("quasar_auth_mocked", "true"), a({
+              id: "00000000-0000-0000-0000-000000000000",
+              username: f.applicationName || "Local User",
+              email: "local@localhost",
+              roles: ["administrator"]
+              // Give admin access so they can see everything
+            }), d(!1));
+            return;
+          }
+        }
+      } catch (c) {
+        console.error("Failed to fetch UI settings for auth check:", c);
+      }
+      n && await o();
+    })(), () => {
+      n = !1;
+    };
   }, []);
-  const n = async () => {
+  const o = async () => {
     try {
-      const a = localStorage.getItem("accessToken");
-      if (a) {
-        const i = h(a);
+      const n = localStorage.getItem("accessToken");
+      if (n) {
+        const i = g(n);
         console.log("Decoded payload:", i);
-        const u = i.sub, w = i.unique_name || i.name || "User";
+        const c = i.sub, f = i.unique_name || i.name || "User";
         let p = [];
         try {
-          console.log("Fetching roles for userId:", u);
-          const N = await ie.getRoles(u);
-          console.log("Fetched userRoles:", N), p = N.map((T) => T.name), console.log("Mapped roles:", p);
-        } catch (N) {
-          console.error("Failed to fetch roles", N);
+          console.log("Fetching roles for userId:", c);
+          const j = await le.getRoles(c);
+          console.log("Fetched userRoles:", j), p = j.map((_) => _.name), console.log("Mapped roles:", p);
+        } catch (j) {
+          console.error("Failed to fetch roles", j);
         }
-        o({
-          id: u,
-          username: w,
+        a({
+          id: c,
+          username: f,
           email: i.email || "",
           roles: p
         });
       } else
-        o(null);
-    } catch (a) {
-      console.error("Auth check failed:", a), o(null);
+        a(null);
+    } catch (n) {
+      console.error("Auth check failed:", n), a(null);
     } finally {
-      l(!1);
+      d(!1);
     }
   };
-  function h(a) {
-    var i = a.split(".")[1], u = i.replace(/-/g, "+").replace(/_/g, "/"), w = decodeURIComponent(window.atob(u).split("").map(function(p) {
+  function g(n) {
+    var i = n.split(".")[1], c = i.replace(/-/g, "+").replace(/_/g, "/"), f = decodeURIComponent(window.atob(c).split("").map(function(p) {
       return "%" + ("00" + p.charCodeAt(0).toString(16)).slice(-2);
     }).join(""));
-    return JSON.parse(w);
+    return JSON.parse(f);
   }
-  const f = {
+  const h = {
     user: r,
     isAuthenticated: !!r,
     isLoading: m,
-    login: async (a) => {
-      l(!0);
+    login: async (n) => {
+      d(!0);
       try {
-        await ae.login(a), await n();
+        await oe.login(n), await o();
       } catch (i) {
-        throw o(null), i;
+        throw a(null), i;
       } finally {
-        l(!1);
+        d(!1);
       }
     },
     logout: async () => {
-      l(!0);
+      d(!0);
       try {
-        await ae.logout();
-      } catch (a) {
-        console.error("Logout error:", a);
+        await oe.logout();
+      } catch (n) {
+        console.error("Logout error:", n);
       } finally {
-        o(null), l(!1);
+        a(null), d(!1);
       }
     }
   };
-  return /* @__PURE__ */ t.jsx(ce.Provider, { value: f, children: s });
+  return /* @__PURE__ */ t.jsx(de.Provider, { value: h, children: s });
 };
-class _e {
+class Te {
   connection = null;
   listeners = [];
+  recentIds = /* @__PURE__ */ new Set();
   async start() {
     if (!this.connection) {
       this.connection = new be.HubConnectionBuilder().withUrl("/hubs/notifications", {
         accessTokenFactory: () => localStorage.getItem("accessToken") || ""
       }).withAutomaticReconnect().build(), this.connection.on("ReceiveNotification", (r) => {
-        this.listeners.forEach((o) => o(r));
+        console.log("[SignalR] RAW ReceiveNotification:", JSON.stringify(r));
+        const a = {
+          id: r.id || r.Id || "",
+          title: r.title || r.Title || "",
+          message: r.message || r.Message || "",
+          type: (r.type || r.Type || "info").toLowerCase(),
+          createdAt: r.createdAt || r.CreatedAt || (/* @__PURE__ */ new Date()).toISOString()
+        };
+        if (console.log("[SignalR] Normalized notification id:", a.id, "recentIds:", [...this.recentIds], "listeners:", this.listeners.length), a.id && this.recentIds.has(a.id)) {
+          console.log("[SignalR] DEDUP: Skipping already-seen notification", a.id);
+          return;
+        }
+        a.id && (this.recentIds.add(a.id), setTimeout(() => this.recentIds.delete(a.id), 1e4)), console.log("[SignalR] Forwarding to", this.listeners.length, "listeners"), this.listeners.forEach((m) => m(a));
       });
       try {
         await this.connection.start(), console.log("Notification SignalR Connected");
@@ -502,12 +538,12 @@ class _e {
       }
   }
   subscribe(r) {
-    return this.listeners.push(r), () => {
-      this.listeners = this.listeners.filter((o) => o !== r);
+    return this.listeners = [r], () => {
+      this.listeners = this.listeners.filter((a) => a !== r);
     };
   }
 }
-const E = new _e(), Ee = async () => {
+const S = new Te(), Se = async () => {
   const s = localStorage.getItem("accessToken");
   if (!s) return [];
   try {
@@ -522,7 +558,7 @@ const E = new _e(), Ee = async () => {
   } catch (r) {
     return console.error("Error fetching notifications:", r), [];
   }
-}, Se = async (s) => {
+}, Ee = async (s) => {
   const r = localStorage.getItem("accessToken");
   if (r)
     try {
@@ -532,8 +568,8 @@ const E = new _e(), Ee = async () => {
           Authorization: `Bearer ${r}`
         }
       });
-    } catch (o) {
-      console.error("Error marking notification as read:", o);
+    } catch (a) {
+      console.error("Error marking notification as read:", a);
     }
 }, Ae = async () => {
   const s = localStorage.getItem("accessToken");
@@ -548,27 +584,30 @@ const E = new _e(), Ee = async () => {
     } catch (r) {
       console.error("Error marking all notifications as read:", r);
     }
-}, le = L(void 0), Le = ({ children: s }) => {
-  const [r, o] = k([]), { isAuthenticated: m } = V(), l = r.filter((f) => !f.read).length, n = C.useCallback((f) => {
-    const a = {
-      ...f,
-      id: f.id || Math.random().toString(36).substring(2, 9),
-      timestamp: f.createdAt ? new Date(f.createdAt) : /* @__PURE__ */ new Date(),
+}, ue = D(void 0), Le = ({ children: s }) => {
+  const [r, a] = y([]), { isAuthenticated: m } = V(), d = r.filter((h) => !h.read).length, o = C.useCallback((h) => {
+    const n = {
+      ...h,
+      id: h.id || Math.random().toString(36).substring(2, 9),
+      timestamp: h.createdAt ? new Date(h.createdAt) : /* @__PURE__ */ new Date(),
       read: !1
     };
-    o((i) => i.some((w) => w.id === a.id) ? i : [a, ...i].slice(0, 50));
+    console.log("[Notification] addNotification called, id:", n.id, "title:", n.title), a((i) => {
+      const c = i.some((f) => f.id === n.id);
+      return console.log("[Notification] setNotifications: exists=", c, "prevCount=", i.length, "prevIds=", i.map((f) => f.id)), c ? i : [n, ...i].slice(0, 50);
+    });
   }, []);
   C.useEffect(() => {
-    let f = !0;
+    let h = !0;
     (async () => {
       if (!m) {
-        o([]), E.stop().catch(console.error);
+        a([]), S.stop().catch(console.error);
         return;
       }
-      await E.stop(), await E.start();
-      const u = await Ee();
-      if (f) {
-        const w = u.map((p) => ({
+      await S.stop(), await S.start();
+      const c = await Se();
+      if (console.log("[Notification] fetchUnread returned", c.length, "items, ids:", c.map((f) => f.id)), h) {
+        const f = c.map((p) => ({
           id: p.id,
           title: p.title,
           message: p.message,
@@ -576,126 +615,126 @@ const E = new _e(), Ee = async () => {
           timestamp: new Date(p.createdAt),
           read: p.isRead
         }));
-        o((p) => {
-          const N = new Set(p.map((R) => R.id));
-          return [...w.filter((R) => !N.has(R.id)), ...p].sort((R, O) => O.timestamp.getTime() - R.timestamp.getTime());
+        a((p) => {
+          const j = new Set(p.map((R) => R.id)), _ = f.filter((R) => !j.has(R.id));
+          return console.log("[Notification] fetchUnread merge: existingIds=", [...j], "newItems=", _.length), [..._, ...p].sort((R, M) => M.timestamp.getTime() - R.timestamp.getTime());
         });
       }
     })();
-    const i = E.subscribe((u) => {
-      console.error("SignalR Notification Received:", u), n({
-        id: u.id || u.Id,
-        title: u.title || u.Title,
-        message: u.message || u.Message,
-        type: (u.type || u.Type || "info").toLowerCase(),
-        createdAt: u.createdAt || u.CreatedAt
+    const i = S.subscribe((c) => {
+      o({
+        id: c.id,
+        title: c.title,
+        message: c.message,
+        type: c.type,
+        createdAt: c.createdAt
       });
     });
     return () => {
-      f = !1, i(), E.stop().catch(console.error);
+      h = !1, i(), S.stop().catch(console.error);
     };
-  }, [m, n]);
-  const h = C.useCallback((f) => {
-    Se(f), o((a) => a.map((i) => i.id === f ? { ...i, read: !0 } : i));
-  }, []), d = C.useCallback(() => {
-    Ae(), o((f) => f.map((a) => ({ ...a, read: !0 })));
+  }, [m, o]);
+  const g = C.useCallback((h) => {
+    Ee(h), a((n) => n.map((i) => i.id === h ? { ...i, read: !0 } : i));
+  }, []), u = C.useCallback(() => {
+    Ae(), a((h) => h.map((n) => ({ ...n, read: !0 })));
   }, []), b = C.useCallback(() => {
-    o([]);
+    a([]);
   }, []);
-  return /* @__PURE__ */ t.jsx(le.Provider, { value: {
+  return /* @__PURE__ */ t.jsx(ue.Provider, { value: {
     notifications: r,
-    unreadCount: l,
-    addNotification: n,
-    markAsRead: h,
-    markAllAsRead: d,
+    unreadCount: d,
+    addNotification: o,
+    markAsRead: g,
+    markAllAsRead: u,
     clearNotifications: b
   }, children: s });
 }, Ce = () => {
-  const s = D(le);
+  const s = Y(ue);
   if (!s)
     throw new Error("useNotifications must be used within a NotificationProvider");
   return s;
-}, ue = L(void 0), De = ({ children: s }) => {
-  const [r, o] = k(null), [m, l] = k(!0), [n, h] = k([]), [d, b] = k([]);
+}, me = D(void 0), De = ({ children: s }) => {
+  const [r, a] = y(null), [m, d] = y(!0), [o, g] = y([]), [u, b] = y([]), [h, n] = y(null);
   return P(() => {
     (async () => {
       try {
-        const a = await fetch("/api/config/ui");
-        if (a.ok) {
-          const i = await a.json();
-          o(i);
-          const u = `theme-${i.theme || "dark"}`;
-          document.documentElement.className = u;
+        const c = await fetch("/api/config/ui");
+        if (c.ok) {
+          const f = await c.json();
+          a(f);
+          const p = `theme-${f.theme || "dark"}`;
+          document.documentElement.className = p;
         }
-      } catch (a) {
-        console.error("Failed to fetch UI settings:", a), document.documentElement.className = "theme-dark";
+      } catch (c) {
+        console.error("Failed to fetch UI settings:", c), document.documentElement.className = "theme-dark";
       } finally {
-        l(!1);
+        d(!1);
       }
-    })(), Array.isArray(window.__QUASAR_CUSTOM_MENU__) && h(window.__QUASAR_CUSTOM_MENU__), Array.isArray(window.__QUASAR_CUSTOM_ROUTES__) && b(window.__QUASAR_CUSTOM_ROUTES__);
-  }, []), /* @__PURE__ */ t.jsx(ue.Provider, { value: { settings: r, isLoading: m, customMenu: n, customRoutes: d }, children: s });
-}, de = () => {
-  const s = D(ue);
+    })(), Array.isArray(window.__QUASAR_CUSTOM_MENU__) && g(window.__QUASAR_CUSTOM_MENU__), Array.isArray(window.__QUASAR_CUSTOM_ROUTES__) && b(window.__QUASAR_CUSTOM_ROUTES__), window.__QUASAR_CUSTOM_HEADER__ && n(() => window.__QUASAR_CUSTOM_HEADER__);
+  }, []), /* @__PURE__ */ t.jsx(me.Provider, { value: { settings: r, isLoading: m, customMenu: o, customRoutes: u, customHeaderComponent: h }, children: s });
+}, fe = () => {
+  const s = Y(me);
   if (!s)
     throw new Error("useUi must be used within a UiProvider");
   return s;
-}, me = L(void 0), Ye = ({ children: s }) => {
-  const [r, o] = k([]), [m, l] = k(!0);
+}, he = D(void 0), Ye = ({ children: s }) => {
+  const [r, a] = y([]), [m, d] = y(!0);
   P(() => {
     (async () => {
       try {
-        const d = await Te.list();
-        o(d);
-      } catch (d) {
-        console.error("Failed to fetch features:", d);
+        const u = await _e.list();
+        a(u);
+      } catch (u) {
+        console.error("Failed to fetch features:", u);
       } finally {
-        l(!1);
+        d(!1);
       }
     })();
   }, []);
-  const n = (h) => r.some((d) => d.id === h);
-  return /* @__PURE__ */ t.jsx(me.Provider, { value: { features: r, isLoading: m, hasFeature: n }, children: s });
+  const o = (g) => r.some((u) => u.id === g);
+  return /* @__PURE__ */ t.jsx(he.Provider, { value: { features: r, isLoading: m, hasFeature: o }, children: s });
 }, Pe = () => {
-  const s = D(me);
+  const s = Y(he);
   if (!s)
     throw new Error("useFeatures must be used within a FeatureProvider");
   return s;
 }, Oe = () => {
-  const { notifications: s, unreadCount: r, addNotification: o, markAsRead: m, markAllAsRead: l } = Ce(), [n, h] = k(!1), d = ne(null);
+  const { notifications: s, unreadCount: r, addNotification: a, markAsRead: m, markAllAsRead: d } = Ce(), [o, g] = y(!1), u = ie(null);
   P(() => {
-    const a = E.subscribe((i) => {
-      o({
+    const n = S.subscribe((i) => {
+      a({
         title: i.title,
         message: i.message,
         type: i.type
       });
     });
-    return E.start(), () => {
-      a();
+    return S.start(), () => {
+      n();
     };
-  }, [o]), P(() => {
-    const a = (i) => {
-      d.current && !d.current.contains(i.target) && h(!1);
+  }, [a]), P(() => {
+    const n = (i) => {
+      u.current && !u.current.contains(i.target) && g(!1);
     };
-    return n && document.addEventListener("mousedown", a), () => {
-      document.removeEventListener("mousedown", a);
+    return o && document.addEventListener("mousedown", n), () => {
+      document.removeEventListener("mousedown", n);
     };
-  }, [n]);
-  const b = (a) => {
-    const u = (/* @__PURE__ */ new Date()).getTime() - a.getTime(), w = Math.floor(u / 6e4);
-    if (w < 1) return "Just now";
-    if (w < 60) return `${w}m ago`;
-    const p = Math.floor(w / 60);
-    return p < 24 ? `${p}h ago` : a.toLocaleDateString();
-  }, f = (a) => {
-    m(a);
+  }, [o]);
+  const b = (n) => {
+    const c = (/* @__PURE__ */ new Date()).getTime() - n.getTime(), f = Math.floor(c / 6e4);
+    if (f < 1) return "Just now";
+    if (f < 60) return `${f}m ago`;
+    const p = Math.floor(f / 60);
+    return p < 24 ? `${p}h ago` : n.toLocaleDateString();
+  }, h = (n) => {
+    m(n);
   };
-  return /* @__PURE__ */ t.jsxs("div", { className: "notifications-container", ref: d, children: [
+  return /* @__PURE__ */ t.jsxs("div", { className: "notifications-container", ref: u, children: [
     /* @__PURE__ */ t.jsxs(
       "button",
       {
         className: "bell-button",
-        onClick: () => h(!n),
+        onClick: () => g(!o),
         "aria-label": "Notifications",
         children: [
           /* @__PURE__ */ t.jsx("span", { children: "🔔" }),
@@ -703,53 +742,53 @@ const E = new _e(), Ee = async () => {
         ]
       }
     ),
-    n && /* @__PURE__ */ t.jsxs("div", { className: "notifications-dropdown", children: [
+    o && /* @__PURE__ */ t.jsxs("div", { className: "notifications-dropdown", children: [
       /* @__PURE__ */ t.jsxs("div", { className: "notifications-header", children: [
         /* @__PURE__ */ t.jsx("h3", { children: "Notifications" }),
-        r > 0 && /* @__PURE__ */ t.jsx("button", { className: "mark-all-btn", onClick: l, children: "Mark all as read" })
+        r > 0 && /* @__PURE__ */ t.jsx("button", { className: "mark-all-btn", onClick: d, children: "Mark all as read" })
       ] }),
-      /* @__PURE__ */ t.jsx("div", { className: "notifications-list", children: s.length === 0 ? /* @__PURE__ */ t.jsx("div", { className: "empty-notifications", children: "No notifications yet" }) : s.map((a) => /* @__PURE__ */ t.jsxs(
+      /* @__PURE__ */ t.jsx("div", { className: "notifications-list", children: s.length === 0 ? /* @__PURE__ */ t.jsx("div", { className: "empty-notifications", children: "No notifications yet" }) : s.map((n) => /* @__PURE__ */ t.jsxs(
         "div",
         {
-          className: `notification-item ${a.read ? "read" : "unread"}`,
-          onClick: () => f(a.id),
+          className: `notification-item ${n.read ? "read" : "unread"}`,
+          onClick: () => h(n.id),
           children: [
             /* @__PURE__ */ t.jsxs("div", { className: "notification-item-header", children: [
-              /* @__PURE__ */ t.jsx("span", { className: `notification-title type-${a.type}`, children: a.title }),
-              /* @__PURE__ */ t.jsx("span", { className: "notification-time", children: b(a.timestamp) })
+              /* @__PURE__ */ t.jsx("span", { className: `notification-title type-${n.type}`, children: n.title }),
+              /* @__PURE__ */ t.jsx("span", { className: "notification-time", children: b(n.timestamp) })
             ] }),
-            /* @__PURE__ */ t.jsx("div", { className: "notification-message", children: a.message })
+            /* @__PURE__ */ t.jsx("div", { className: "notification-message", children: n.message })
           ]
         },
-        a.id
+        n.id
       )) })
     ] })
   ] });
 }, Ie = () => {
-  const { user: s, logout: r } = V(), [o, m] = k(!1), [l, n] = k(null), [h, d] = k(!1), [b, f] = k(!1), a = oe(), i = ne(null), u = async () => {
-    await r(), a("/login");
-  }, w = async () => {
-    d(!0), m(!1);
-  }, p = async () => {
+  const { user: s, logout: r } = V(), [a, m] = y(!1), [d, o] = y(null), [g, u] = y(!1), [b, h] = y(!1), n = ce(), i = ie(null), { customMenu: c, customHeaderComponent: f } = fe(), p = async () => {
+    await r(), n("/login");
+  }, j = async () => {
+    u(!0), m(!1);
+  }, _ = async () => {
     try {
-      const j = await ie.resetOwnPassword();
-      n(j), d(!1);
-    } catch (j) {
-      console.error("Failed to change password:", j), alert("Failed to change password"), d(!1);
+      const N = await le.resetOwnPassword();
+      o(N), u(!1);
+    } catch (N) {
+      console.error("Failed to change password:", N), alert("Failed to change password"), u(!1);
     }
   };
   P(() => {
-    const j = (S) => {
-      i.current && !i.current.contains(S.target) && m(!1);
+    const N = (E) => {
+      i.current && !i.current.contains(E.target) && m(!1);
     };
-    return document.addEventListener("mousedown", j), () => {
-      document.removeEventListener("mousedown", j);
+    return document.addEventListener("mousedown", N), () => {
+      document.removeEventListener("mousedown", N);
     };
   }, []);
-  const { pathname: N } = ye(), { customMenu: T } = de(), O = (() => {
-    const S = (T.length > 0 ? T : window.__QUASAR_CUSTOM_MENU__ || []).flatMap((I) => I.items).find((I) => I.path === N);
-    if (S) return S.label;
-    switch (N) {
+  const { pathname: R } = ke(), z = (() => {
+    const E = (c.length > 0 ? c : window.__QUASAR_CUSTOM_MENU__ || []).flatMap((O) => O.items).find((O) => O.path === R);
+    if (E) return E.label;
+    switch (R) {
       case "/":
         return "Dashboard";
       // Fallback if not overridden
@@ -770,10 +809,10 @@ const E = new _e(), Ee = async () => {
       default:
         return "Dashboard";
     }
-  })();
+  })(), $ = f;
   return /* @__PURE__ */ t.jsxs(t.Fragment, { children: [
     /* @__PURE__ */ t.jsxs("header", { className: "app-header", children: [
-      /* @__PURE__ */ t.jsx("div", { className: "header-left", children: /* @__PURE__ */ t.jsx("h2", { className: "page-title", children: O }) }),
+      /* @__PURE__ */ t.jsx("div", { className: "header-left", children: $ ? /* @__PURE__ */ t.jsx($, {}) : /* @__PURE__ */ t.jsx("h2", { className: "page-title", children: z }) }),
       /* @__PURE__ */ t.jsxs("div", { className: "header-right", children: [
         /* @__PURE__ */ t.jsx(Oe, {}),
         /* @__PURE__ */ t.jsxs("div", { className: "user-profile", children: [
@@ -789,21 +828,21 @@ const E = new _e(), Ee = async () => {
             {
               className: "menu-button",
               "aria-label": "Menu",
-              onClick: () => m(!o),
+              onClick: () => m(!a),
               children: /* @__PURE__ */ t.jsx("span", { className: "menu-icon", children: "⋮" })
             }
           ),
-          o && /* @__PURE__ */ t.jsxs("div", { className: "dropdown-menu", children: [
-            /* @__PURE__ */ t.jsx("button", { onClick: w, className: "dropdown-item", children: "Change Password" }),
-            /* @__PURE__ */ t.jsx("button", { onClick: u, className: "dropdown-item danger", children: "Sign Out" })
+          a && /* @__PURE__ */ t.jsxs("div", { className: "dropdown-menu", children: [
+            /* @__PURE__ */ t.jsx("button", { onClick: j, className: "dropdown-item", children: "Change Password" }),
+            /* @__PURE__ */ t.jsx("button", { onClick: p, className: "dropdown-item danger", children: "Sign Out" })
           ] })
         ] })
       ] })
     ] }),
-    h && /* @__PURE__ */ t.jsx("div", { className: "modal-overlay", onClick: () => d(!1), children: /* @__PURE__ */ t.jsxs("div", { className: "modal", onClick: (j) => j.stopPropagation(), children: [
+    g && /* @__PURE__ */ t.jsx("div", { className: "modal-overlay", onClick: () => u(!1), children: /* @__PURE__ */ t.jsxs("div", { className: "modal", onClick: (N) => N.stopPropagation(), children: [
       /* @__PURE__ */ t.jsxs("div", { className: "modal-header", children: [
         /* @__PURE__ */ t.jsx("h2", { className: "modal-title", children: "Confirm Password Change" }),
-        /* @__PURE__ */ t.jsx("button", { className: "modal-close", onClick: () => d(!1), children: "×" })
+        /* @__PURE__ */ t.jsx("button", { className: "modal-close", onClick: () => u(!1), children: "×" })
       ] }),
       /* @__PURE__ */ t.jsxs("div", { className: "modal-body", children: [
         /* @__PURE__ */ t.jsx("p", { children: "Generate a new password?" }),
@@ -813,7 +852,7 @@ const E = new _e(), Ee = async () => {
             "button",
             {
               className: "btn btn-secondary",
-              onClick: () => d(!1),
+              onClick: () => u(!1),
               style: { flex: 1 },
               children: "Cancel"
             }
@@ -822,7 +861,7 @@ const E = new _e(), Ee = async () => {
             "button",
             {
               className: "btn btn-primary",
-              onClick: p,
+              onClick: _,
               style: { flex: 1 },
               children: "Change Password"
             }
@@ -830,20 +869,20 @@ const E = new _e(), Ee = async () => {
         ] })
       ] })
     ] }) }),
-    l && /* @__PURE__ */ t.jsx("div", { className: "modal-overlay", onClick: () => {
-      n(null), u();
-    }, children: /* @__PURE__ */ t.jsxs("div", { className: "modal", onClick: (j) => j.stopPropagation(), children: [
+    d && /* @__PURE__ */ t.jsx("div", { className: "modal-overlay", onClick: () => {
+      o(null), p();
+    }, children: /* @__PURE__ */ t.jsxs("div", { className: "modal", onClick: (N) => N.stopPropagation(), children: [
       /* @__PURE__ */ t.jsx("div", { className: "modal-header", children: /* @__PURE__ */ t.jsx("h2", { className: "modal-title", children: "Password Changed Successfully" }) }),
       /* @__PURE__ */ t.jsxs("div", { className: "modal-body", children: [
         /* @__PURE__ */ t.jsx("p", { children: "Your new password is:" }),
         /* @__PURE__ */ t.jsxs("div", { className: "password-display", style: { display: "flex", alignItems: "center", gap: "var(--spacing-md)", padding: "var(--spacing-md)", background: "var(--color-bg-secondary)", borderRadius: "var(--radius-md)" }, children: [
-          /* @__PURE__ */ t.jsx("code", { style: { flex: 1, fontSize: "var(--font-size-base)", fontWeight: "bold" }, children: l }),
+          /* @__PURE__ */ t.jsx("code", { style: { flex: 1, fontSize: "var(--font-size-base)", fontWeight: "bold" }, children: d }),
           /* @__PURE__ */ t.jsx(
             "button",
             {
               className: "btn btn-sm btn-secondary",
               onClick: () => {
-                navigator.clipboard.writeText(l), f(!0), setTimeout(() => f(!1), 2e3);
+                navigator.clipboard.writeText(d), h(!0), setTimeout(() => h(!1), 2e3);
               },
               children: b ? "✓ Copied!" : "📋 Copy"
             }
@@ -855,7 +894,7 @@ const E = new _e(), Ee = async () => {
           {
             className: "btn btn-primary",
             onClick: () => {
-              n(null), u();
+              o(null), p();
             },
             style: { marginTop: "var(--spacing-lg)", width: "100%" },
             children: "Logout Now"
@@ -865,8 +904,8 @@ const E = new _e(), Ee = async () => {
     ] }) })
   ] });
 }, ze = ({ children: s }) => {
-  const { user: r, logout: o } = V(), { settings: m, customMenu: l } = de(), { hasFeature: n } = Pe(), h = oe(), d = async () => {
-    await o(), h("/login");
+  const { user: r, logout: a } = V(), { settings: m, customMenu: d } = fe(), { hasFeature: o } = Pe(), g = ce(), u = async () => {
+    await a(), g("/login");
   };
   return /* @__PURE__ */ t.jsxs("div", { className: "main-layout", children: [
     /* @__PURE__ */ t.jsxs("aside", { className: "sidebar", children: [
@@ -875,26 +914,26 @@ const E = new _e(), Ee = async () => {
         /* @__PURE__ */ t.jsx("span", { className: "logo-text", children: m?.applicationName || "Quasar" })
       ] }) }),
       /* @__PURE__ */ t.jsxs("nav", { className: "sidebar-nav", children: [
-        l.map((b, f) => /* @__PURE__ */ t.jsxs("div", { className: "nav-section", children: [
+        d.map((b, h) => /* @__PURE__ */ t.jsxs("div", { className: "nav-section", children: [
           b.title && /* @__PURE__ */ t.jsx("h3", { className: "nav-section-title", children: b.title }),
-          b.items.map((a, i) => a.roles && !a.roles.some((u) => r?.roles?.includes(u)) || a.feature && !n(a.feature) ? null : /* @__PURE__ */ t.jsx(_, { to: a.path, className: "nav-link", children: /* @__PURE__ */ t.jsx("span", { children: a.label }) }, `custom-item-${i}-${a.path}`))
-        ] }, `custom-${f}`)),
+          b.items.map((n, i) => n.roles && !n.roles.some((c) => r?.roles?.includes(c)) || n.feature && !o(n.feature) ? null : /* @__PURE__ */ t.jsx(T, { to: n.path, className: "nav-link", children: /* @__PURE__ */ t.jsx("span", { children: n.label }) }, `custom-item-${i}-${n.path}`))
+        ] }, `custom-${h}`)),
         r?.roles?.includes("administrator") && m?.showAdminMenu !== !1 && /* @__PURE__ */ t.jsxs("div", { className: "nav-section", children: [
           /* @__PURE__ */ t.jsx("h3", { className: "nav-section-title", children: "Administration" }),
-          /* @__PURE__ */ t.jsx(_, { to: "/users", className: "nav-link", children: /* @__PURE__ */ t.jsx("span", { children: "Users" }) }),
-          /* @__PURE__ */ t.jsx(_, { to: "/roles", className: "nav-link", children: /* @__PURE__ */ t.jsx("span", { children: "Roles" }) }),
-          /* @__PURE__ */ t.jsx(_, { to: "/features", className: "nav-link", children: /* @__PURE__ */ t.jsx("span", { children: "Features" }) }),
-          /* @__PURE__ */ t.jsx(_, { to: "/logs", className: "nav-link", children: /* @__PURE__ */ t.jsx("span", { children: "Logs" }) }),
-          /* @__PURE__ */ t.jsx(_, { to: "/sessions", className: "nav-link", children: /* @__PURE__ */ t.jsx("span", { children: "Sessions" }) }),
-          n("scheduler") && /* @__PURE__ */ t.jsx(_, { to: "/jobs", className: "nav-link", children: /* @__PURE__ */ t.jsx("span", { children: "Jobs" }) }),
-          n("telemetry") && /* @__PURE__ */ t.jsx(_, { to: "/metrics", className: "nav-link", children: /* @__PURE__ */ t.jsx("span", { children: "Metrics" }) })
+          /* @__PURE__ */ t.jsx(T, { to: "/users", className: "nav-link", children: /* @__PURE__ */ t.jsx("span", { children: "Users" }) }),
+          /* @__PURE__ */ t.jsx(T, { to: "/roles", className: "nav-link", children: /* @__PURE__ */ t.jsx("span", { children: "Roles" }) }),
+          /* @__PURE__ */ t.jsx(T, { to: "/features", className: "nav-link", children: /* @__PURE__ */ t.jsx("span", { children: "Features" }) }),
+          /* @__PURE__ */ t.jsx(T, { to: "/logs", className: "nav-link", children: /* @__PURE__ */ t.jsx("span", { children: "Logs" }) }),
+          /* @__PURE__ */ t.jsx(T, { to: "/sessions", className: "nav-link", children: /* @__PURE__ */ t.jsx("span", { children: "Sessions" }) }),
+          o("scheduler") && /* @__PURE__ */ t.jsx(T, { to: "/jobs", className: "nav-link", children: /* @__PURE__ */ t.jsx("span", { children: "Jobs" }) }),
+          o("telemetry") && /* @__PURE__ */ t.jsx(T, { to: "/metrics", className: "nav-link", children: /* @__PURE__ */ t.jsx("span", { children: "Metrics" }) })
         ] })
       ] }),
-      /* @__PURE__ */ t.jsx("div", { className: "sidebar-footer", children: /* @__PURE__ */ t.jsx("button", { onClick: d, className: "btn btn-secondary w-full btn-sm", children: "Sign Out" }) })
+      /* @__PURE__ */ t.jsx("div", { className: "sidebar-footer", children: /* @__PURE__ */ t.jsx("button", { onClick: u, className: "btn btn-secondary w-full btn-sm", children: "Sign Out" }) })
     ] }),
     /* @__PURE__ */ t.jsxs("div", { className: "content-wrapper", children: [
       /* @__PURE__ */ t.jsx(Ie, {}),
-      /* @__PURE__ */ t.jsx("main", { className: `main-content ${ee?.type?.layoutOptions?.noPadding ? "no-padding" : ""}`, children: s || /* @__PURE__ */ t.jsx(ee, {}) })
+      /* @__PURE__ */ t.jsx("main", { className: `main-content ${se?.type?.layoutOptions?.noPadding ? "no-padding" : ""}`, children: s || /* @__PURE__ */ t.jsx(se, {}) })
     ] })
   ] });
 };
@@ -909,5 +948,5 @@ export {
   V as useAuth,
   Pe as useFeatures,
   Ce as useNotifications,
-  de as useUi
+  fe as useUi
 };

@@ -5,6 +5,7 @@ export interface UiSettings {
     logoSymbol?: string;
     customBundleUrl?: string;
     showAdminMenu?: boolean;
+    requireAuthentication?: boolean;
 }
 export type CustomNavSection = {
     title?: string;
@@ -26,6 +27,7 @@ declare global {
     interface Window {
         __QUASAR_CUSTOM_MENU__?: CustomNavSection[];
         __QUASAR_CUSTOM_ROUTES__?: CustomRoute[];
+        __QUASAR_CUSTOM_HEADER__?: React.ComponentType;
     }
 }
 interface UiContextValue {
@@ -33,6 +35,7 @@ interface UiContextValue {
     isLoading: boolean;
     customMenu: CustomNavSection[];
     customRoutes: CustomRoute[];
+    customHeaderComponent: React.ComponentType | null;
 }
 export declare const UiProvider: React.FC<{
     children: React.ReactNode;

@@ -9,6 +9,7 @@ type NotificationCallback = (notification: SignalRNotification) => void;
 declare class NotificationSignalR {
     private connection;
     private listeners;
+    private recentIds;
     start(): Promise<void>;
     stop(): Promise<void>;
     subscribe(callback: NotificationCallback): () => void;

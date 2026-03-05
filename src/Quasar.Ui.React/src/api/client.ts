@@ -51,10 +51,15 @@ apiClient.interceptors.response.use(
                     originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
                     return apiClient(originalRequest);
                 } catch (refreshError) {
-                    // Refresh failed, clear tokens and redirect to login
+                    // Refresh failed, clear tokens
                     localStorage.removeItem('accessToken');
                     localStorage.removeItem('refreshToken');
-                    window.location.href = '/login';
+
+                    // Only redirect if auth is required (check if we mocked it)
+                    const isMocked = localStorage.getItem('quasar_auth_mocked') === 'true';
+                    if (!isMocked) {
+                        window.location.href = '/login';
+                    }
                     return Promise.reject(refreshError);
                 }
             }
