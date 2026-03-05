@@ -92,6 +92,13 @@
     padding-top: var(--spacing-md);
 }
 
+.sidebar-actions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-sm);
+}
+
 /* Main Content Wrapper */
 .content-wrapper {
     display: flex;

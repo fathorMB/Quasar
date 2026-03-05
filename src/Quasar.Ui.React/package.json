@@ -22,6 +22,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:shell": "vite build --config vite.config.shell.ts",
     "lint": "eslint .",
     "preview": "vite preview"
   },

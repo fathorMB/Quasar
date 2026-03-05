@@ -14,7 +14,8 @@ export const Header: React.FC = () => {
     const [copied, setCopied] = useState(false);
     const navigate = useNavigate();
     const menuRef = useRef<HTMLDivElement>(null);
-    const { customMenu, customHeaderComponent } = useUi();
+    const { customMenu, customHeaderComponent, settings } = useUi();
+    const requireAuthentication = settings?.requireAuthentication !== false;
 
     const handleLogout = async () => {
         await logout();
@@ -92,35 +93,39 @@ export const Header: React.FC = () => {
 
                 <div className="header-right">
                     <NotificationBell />
-                    <div className="user-profile">
-                        <div className="user-info">
-                            <span className="user-name">{user?.username || 'Guest'}</span>
-                            <span className="user-role">{user?.roles?.[0] || 'User'}</span>
-                        </div>
-                        <div className="user-avatar">
-                            {user?.username?.charAt(0).toUpperCase() || 'U'}
-                        </div>
-                    </div>
-                    <div className="menu-container" ref={menuRef}>
-                        <button
-                            className="menu-button"
-                            aria-label="Menu"
-                            onClick={() => setIsMenuOpen(!isMenuOpen)}
-                        >
-                            <span className="menu-icon">⋮</span>
-                        </button>
-
-                        {isMenuOpen && (
-                            <div className="dropdown-menu">
-                                <button onClick={handleChangePassword} className="dropdown-item">
-                                    Change Password
-                                </button>
-                                <button onClick={handleLogout} className="dropdown-item danger">
-                                    Sign Out
-                                </button>
+                    {requireAuthentication && (
+                        <div className="user-profile">
+                            <div className="user-info">
+                                <span className="user-name">{user?.username || 'Guest'}</span>
+                                <span className="user-role">{user?.roles?.[0] || 'User'}</span>
                             </div>
-                        )}
-                    </div>
+                            <div className="user-avatar">
+                                {user?.username?.charAt(0).toUpperCase() || 'U'}
+                            </div>
+                        </div>
+                    )}
+                    {requireAuthentication && (
+                        <div className="menu-container" ref={menuRef}>
+                            <button
+                                className="menu-button"
+                                aria-label="Menu"
+                                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                            >
+                                <span className="menu-icon">⋮</span>
+                            </button>
+
+                            {isMenuOpen && (
+                                <div className="dropdown-menu">
+                                    <button onClick={handleChangePassword} className="dropdown-item">
+                                        Change Password
+                                    </button>
+                                    <button onClick={handleLogout} className="dropdown-item danger">
+                                        Sign Out
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
             </header>
 

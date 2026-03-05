@@ -27,11 +27,18 @@ export type CustomRoute = {
     feature?: string;
 };
 
+export type CustomSidebarAction = {
+    label: string;
+    variant?: 'primary' | 'secondary' | 'danger';
+    onClick: () => void;
+};
+
 declare global {
     interface Window {
         __QUASAR_CUSTOM_MENU__?: CustomNavSection[];
         __QUASAR_CUSTOM_ROUTES__?: CustomRoute[];
         __QUASAR_CUSTOM_HEADER__?: React.ComponentType;
+        __QUASAR_CUSTOM_ACTIONS__?: CustomSidebarAction[];
     }
 }
 
@@ -41,6 +48,7 @@ interface UiContextValue {
     customMenu: CustomNavSection[];
     customRoutes: CustomRoute[];
     customHeaderComponent: React.ComponentType | null;
+    customActions: CustomSidebarAction[];
 }
 
 const UiContext = createContext<UiContextValue | undefined>(undefined);
@@ -51,6 +59,7 @@ export const UiProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     const [customMenu, setCustomMenu] = useState<CustomNavSection[]>([]);
     const [customRoutes, setCustomRoutes] = useState<CustomRoute[]>([]);
     const [customHeaderComponent, setCustomHeaderComponent] = useState<React.ComponentType | null>(null);
+    const [customActions, setCustomActions] = useState<CustomSidebarAction[]>([]);
 
     useEffect(() => {
         const fetchSettings = async () => {
@@ -83,10 +92,13 @@ export const UiProvider: React.FC<{ children: React.ReactNode }> = ({ children }
         if (window.__QUASAR_CUSTOM_HEADER__) {
             setCustomHeaderComponent(() => window.__QUASAR_CUSTOM_HEADER__!);
         }
+        if (Array.isArray(window.__QUASAR_CUSTOM_ACTIONS__)) {
+            setCustomActions(window.__QUASAR_CUSTOM_ACTIONS__!);
+        }
     }, []);
 
     return (
-        <UiContext.Provider value={{ settings, isLoading, customMenu, customRoutes, customHeaderComponent }}>
+        <UiContext.Provider value={{ settings, isLoading, customMenu, customRoutes, customHeaderComponent, customActions }}>
             {children}
         </UiContext.Provider>
     );

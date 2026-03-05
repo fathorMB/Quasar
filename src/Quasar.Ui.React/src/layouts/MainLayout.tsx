@@ -8,9 +8,10 @@ import './MainLayout.css';
 
 export const MainLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
     const { user, logout } = useAuth();
-    const { settings, customMenu } = useUi();
+    const { settings, customMenu, customActions } = useUi();
     const { hasFeature } = useFeatures();
     const navigate = useNavigate();
+    const requireAuthentication = settings?.requireAuthentication !== false;
 
     const handleLogout = async () => {
         await logout();
@@ -82,9 +83,27 @@ export const MainLayout: React.FC<{ children?: React.ReactNode }> = ({ children 
                 </nav>
 
                 <div className="sidebar-footer">
-                    <button onClick={handleLogout} className="btn btn-secondary w-full btn-sm">
-                        Sign Out
-                    </button>
+                    {customActions.length > 0 && (
+                        <div className="sidebar-actions">
+                            {customActions.map((action, i) => (
+                                <button
+                                    key={i}
+                                    onClick={action.onClick}
+                                    className={`btn btn-sm w-full ${action.variant === 'primary' ? 'btn-primary'
+                                            : action.variant === 'danger' ? 'btn-danger'
+                                                : 'btn-secondary'
+                                        }`}
+                                >
+                                    {action.label}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                    {requireAuthentication && (
+                        <button onClick={handleLogout} className="btn btn-secondary w-full btn-sm">
+                            Sign Out
+                        </button>
+                    )}
                 </div>
             </aside>
 
