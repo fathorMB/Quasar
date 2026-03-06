@@ -95,8 +95,59 @@
 .sidebar-actions {
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-sm);
+    gap: 4px;
     margin-bottom: var(--spacing-sm);
+}
+
+/* Management game style for sidebar action buttons */
+.sidebar-actions .btn {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    text-align: left;
+    justify-content: flex-start;
+    border-radius: 2px;
+    padding: 10px 14px;
+    outline: none !important;
+    box-shadow: none !important;
+    transition: all 0.2s;
+}
+
+.sidebar-actions .btn:focus,
+.sidebar-actions .btn:focus-visible {
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+/* Secondary (Save) - subtle green style */
+.sidebar-actions .btn-secondary {
+    background: rgba(74, 222, 128, 0.06);
+    border: 1px solid rgba(74, 222, 128, 0.25);
+    color: rgba(74, 222, 128, 0.8);
+}
+
+.sidebar-actions .btn-secondary:hover:not(:disabled) {
+    background: rgba(74, 222, 128, 0.12);
+    border-color: rgba(74, 222, 128, 0.5);
+    color: #4ade80;
+    box-shadow: 0 0 10px rgba(74, 222, 128, 0.1) !important;
+    transform: none;
+}
+
+/* Danger (Exit) - subtle red style */
+.sidebar-actions .btn-danger {
+    background: rgba(239, 68, 68, 0.04);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    color: rgba(239, 68, 68, 0.6);
+}
+
+.sidebar-actions .btn-danger:hover:not(:disabled) {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: rgba(239, 68, 68, 0.4);
+    color: #ef4444;
+    box-shadow: none;
 }
 
 /* Main Content Wrapper */

@@ -122,7 +122,7 @@ function App() {
         <AuthProvider>
           <FeatureProvider>
             <NotificationProvider>
-              <AppRoutes />
+              <AppWithOverlay />
               {showSessionRevokedModal && (
                 <SessionRevokedModal onClose={handleModalClose} />
               )}
@@ -132,6 +132,18 @@ function App() {
       </UiProvider>
     </BrowserRouter>
   );
+}
+
+function AppWithOverlay() {
+  const { customOverlayComponent } = useUi();
+  const [overlayDismissed, setOverlayDismissed] = React.useState(false);
+
+  if (customOverlayComponent && !overlayDismissed) {
+    const Overlay = customOverlayComponent as any;
+    return <Overlay onDismiss={() => setOverlayDismissed(true)} />;
+  }
+
+  return <AppRoutes />;
 }
 
 export default App;

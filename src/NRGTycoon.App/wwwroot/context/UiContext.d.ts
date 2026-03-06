@@ -23,11 +23,18 @@ export type CustomRoute = {
     roles?: string[];
     feature?: string;
 };
+export type CustomSidebarAction = {
+    label: string;
+    variant?: 'primary' | 'secondary' | 'danger';
+    onClick: () => void;
+};
 declare global {
     interface Window {
         __QUASAR_CUSTOM_MENU__?: CustomNavSection[];
         __QUASAR_CUSTOM_ROUTES__?: CustomRoute[];
         __QUASAR_CUSTOM_HEADER__?: React.ComponentType;
+        __QUASAR_CUSTOM_ACTIONS__?: CustomSidebarAction[];
+        __QUASAR_CUSTOM_OVERLAY__?: React.ComponentType;
     }
 }
 interface UiContextValue {
@@ -36,6 +43,8 @@ interface UiContextValue {
     customMenu: CustomNavSection[];
     customRoutes: CustomRoute[];
     customHeaderComponent: React.ComponentType | null;
+    customActions: CustomSidebarAction[];
+    customOverlayComponent: React.ComponentType | null;
 }
 export declare const UiProvider: React.FC<{
     children: React.ReactNode;

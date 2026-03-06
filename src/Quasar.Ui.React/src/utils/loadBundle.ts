@@ -20,6 +20,8 @@ export async function fetchUiConfig() {
         console.error('Failed to load UI config/bundle', err);
     } finally {
         window.__QUASAR_BUNDLE_LOADED__ = true;
+        // Notify listeners (e.g. UiContext) that the bundle has finished loading
+        window.dispatchEvent(new CustomEvent('quasar-bundle-loaded'));
     }
 }
 

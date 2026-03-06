@@ -39,6 +39,7 @@ declare global {
         __QUASAR_CUSTOM_ROUTES__?: CustomRoute[];
         __QUASAR_CUSTOM_HEADER__?: React.ComponentType;
         __QUASAR_CUSTOM_ACTIONS__?: CustomSidebarAction[];
+        __QUASAR_CUSTOM_OVERLAY__?: React.ComponentType;
     }
 }
 
@@ -49,6 +50,7 @@ interface UiContextValue {
     customRoutes: CustomRoute[];
     customHeaderComponent: React.ComponentType | null;
     customActions: CustomSidebarAction[];
+    customOverlayComponent: React.ComponentType | null;
 }
 
 const UiContext = createContext<UiContextValue | undefined>(undefined);
@@ -60,6 +62,7 @@ export const UiProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     const [customRoutes, setCustomRoutes] = useState<CustomRoute[]>([]);
     const [customHeaderComponent, setCustomHeaderComponent] = useState<React.ComponentType | null>(null);
     const [customActions, setCustomActions] = useState<CustomSidebarAction[]>([]);
+    const [customOverlayComponent, setCustomOverlayComponent] = useState<React.ComponentType | null>(null);
 
     useEffect(() => {
         const fetchSettings = async () => {
@@ -95,10 +98,43 @@ export const UiProvider: React.FC<{ children: React.ReactNode }> = ({ children }
         if (Array.isArray(window.__QUASAR_CUSTOM_ACTIONS__)) {
             setCustomActions(window.__QUASAR_CUSTOM_ACTIONS__!);
         }
+        if (window.__QUASAR_CUSTOM_OVERLAY__) {
+            setCustomOverlayComponent(() => window.__QUASAR_CUSTOM_OVERLAY__!);
+        }
+    }, []);
+
+    // Re-read globals when the custom bundle finishes loading
+    useEffect(() => {
+        const applyGlobals = () => {
+            if (Array.isArray(window.__QUASAR_CUSTOM_MENU__)) {
+                setCustomMenu(window.__QUASAR_CUSTOM_MENU__!);
+            }
+            if (Array.isArray(window.__QUASAR_CUSTOM_ROUTES__)) {
+                setCustomRoutes(window.__QUASAR_CUSTOM_ROUTES__!);
+            }
+            if (window.__QUASAR_CUSTOM_HEADER__) {
+                setCustomHeaderComponent(() => window.__QUASAR_CUSTOM_HEADER__!);
+            }
+            if (Array.isArray(window.__QUASAR_CUSTOM_ACTIONS__)) {
+                setCustomActions(window.__QUASAR_CUSTOM_ACTIONS__!);
+            }
+            if (window.__QUASAR_CUSTOM_OVERLAY__) {
+                setCustomOverlayComponent(() => window.__QUASAR_CUSTOM_OVERLAY__!);
+            }
+        };
+
+        // Apply immediately if bundle already loaded
+        if (window.__QUASAR_BUNDLE_LOADED__) {
+            applyGlobals();
+        }
+
+        // Also listen for the event in case bundle loads after mount
+        window.addEventListener('quasar-bundle-loaded', applyGlobals);
+        return () => window.removeEventListener('quasar-bundle-loaded', applyGlobals);
     }, []);
 
     return (
-        <UiContext.Provider value={{ settings, isLoading, customMenu, customRoutes, customHeaderComponent, customActions }}>
+        <UiContext.Provider value={{ settings, isLoading, customMenu, customRoutes, customHeaderComponent, customActions, customOverlayComponent }}>
             {children}
         </UiContext.Provider>
     );
