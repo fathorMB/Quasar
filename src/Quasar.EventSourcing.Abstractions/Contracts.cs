@@ -56,6 +56,12 @@ public interface IEventStore
     /// Reads events from the stream starting at <paramref name="fromVersion"/>.
     /// </summary>
     Task<IReadOnlyList<EventEnvelope>> ReadStreamAsync(Guid streamId, int fromVersion = 0, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Retrieves stream IDs that contain any of the specified event types.
+    /// If no event types are specified, returns all stream IDs.
+    /// </summary>
+    Task<IReadOnlyList<Guid>> GetStreamIdsAsync(IEnumerable<string>? eventTypes = null, CancellationToken cancellationToken = default);
 }
 
 /// <summary>

@@ -40,4 +40,22 @@ public sealed class InMemoryEventStore : IEventStore
         var result = list.Where(e => e.Version > fromVersion).OrderBy(e => e.Version).ToArray();
         return Task.FromResult<IReadOnlyList<EventEnvelope>>(result);
     }
+
+    /// <inheritdoc />
+    public Task<IReadOnlyList<Guid>> GetStreamIdsAsync(IEnumerable<string>? eventTypes = null, CancellationToken cancellationToken = default)
+    {
+        IReadOnlyList<Guid> result;
+        if (eventTypes == null || !eventTypes.Any())
+        {
+            result = _streams.Keys.ToList();
+        }
+        else
+        {
+            var typesSet = new HashSet<string>(eventTypes);
+            result = _streams.Where(kvp => kvp.Value.Any(e => typesSet.Contains(e.Event.GetType().Name)))
+                             .Select(kvp => kvp.Key)
+                             .ToList();
+        }
+        return Task.FromResult(result);
+    }
 }

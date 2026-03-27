@@ -115,6 +115,42 @@ public sealed class SqlEventStore : IEventStore
         return list;
     }
 
+    public async Task<IReadOnlyList<Guid>> GetStreamIdsAsync(IEnumerable<string>? eventTypes = null, CancellationToken cancellationToken = default)
+    {
+        var ambient = SqlExecutionContext.Current;
+        var ownsConnection = ambient is null;
+        await using var conn = ownsConnection ? _options.ConnectionFactory() : null;
+        var useConn = ambient?.Connection ?? conn!;
+        if (useConn.State != ConnectionState.Open)
+            await useConn.OpenAsync(cancellationToken).ConfigureAwait(false);
+
+        var eventsTable = _options.EventsTable;
+        var cmd = useConn.CreateCommand();
+
+        if (eventTypes == null || !eventTypes.Any())
+        {
+            cmd.CommandText = $"SELECT DISTINCT [StreamId] FROM [dbo].[{eventsTable}]";
+        }
+        else
+        {
+            var typesList = eventTypes.ToList();
+            var parameters = string.Join(",", typesList.Select((_, i) => $"@Type{i}"));
+            cmd.CommandText = $"SELECT DISTINCT [StreamId] FROM [dbo].[{eventsTable}] WHERE [Type] IN ({parameters})";
+            for (int i = 0; i < typesList.Count; i++)
+            {
+                AddParam(cmd, $"@Type{i}", typesList[i]);
+            }
+        }
+
+        var list = new List<Guid>();
+        await using var reader = await cmd.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+        while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+        {
+            list.Add(reader.GetGuid(0));
+        }
+        return list;
+    }
+
     private static void AddParam(DbCommand cmd, string name, object value)
     {
         var p = cmd.CreateParameter();
