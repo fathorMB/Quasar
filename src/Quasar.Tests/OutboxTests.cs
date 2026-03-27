@@ -276,6 +276,11 @@ public class OutboxTests
         {
             return Task.FromResult<IReadOnlyList<EventEnvelope>>(Array.Empty<EventEnvelope>());
         }
+
+        public Task<IReadOnlyList<Guid>> GetStreamIdsAsync(IEnumerable<string>? eventTypes = null, CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult<IReadOnlyList<Guid>>(Array.Empty<Guid>());
+        }
     }
 
     private sealed class FakeAggregate : AggregateRoot

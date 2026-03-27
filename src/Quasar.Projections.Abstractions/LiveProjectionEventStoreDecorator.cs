@@ -49,4 +49,10 @@ public sealed class LiveProjectionEventStoreDecorator : IEventStore
             version++;
         }
     }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<Guid>> GetStreamIdsAsync(IEnumerable<string>? eventTypes = null, CancellationToken cancellationToken = default)
+    {
+        return await _innerStore.GetStreamIdsAsync(eventTypes, cancellationToken).ConfigureAwait(false);
+    }
 }
